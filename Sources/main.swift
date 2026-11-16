@@ -57,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         web.underPageBackgroundColor = .clear
         web.wantsLayer = true; web.layer?.cornerRadius = 12; web.layer?.masksToBounds = true
         window = NotePanel(contentRect: NSRect(x: 0, y: 0, width: 580, height: 560), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
-        window.title = "Quicknote"; window.minSize = NSSize(width: 380, height: 320)
+        window.title = "QuickNote"; window.minSize = NSSize(width: 380, height: 320)
         window.isFloatingPanel = true; window.level = .floating; window.hidesOnDeactivate = false
         window.isOpaque = false; window.backgroundColor = .clear; window.hasShadow = true
         window.contentView = web; window.delegate = self; window.center()
@@ -78,9 +78,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 button.title = ""
             }
             let menu = NSMenu()
-            menu.addItem(withTitle: "打开 Quicknote", action: #selector(showWindow), keyEquivalent: "")
+            menu.addItem(withTitle: "打开 QuickNote", action: #selector(showWindow), keyEquivalent: "")
             hotKeyItem = menu.addItem(withTitle: "设置全局快捷键…", action: #selector(recordShortcut), keyEquivalent: "")
-            menu.addItem(.separator()); menu.addItem(withTitle: "退出 Quicknote", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            menu.addItem(.separator()); menu.addItem(withTitle: "退出 QuickNote", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             let handlerStatus = InstallEventHandler(GetApplicationEventTarget(), { _, _, data in
