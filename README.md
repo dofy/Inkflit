@@ -29,6 +29,7 @@ Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide 
 | `⌘⇧D` | Delete the current feature block; undo with Vim `u` |
 | `⌘K` | Change the current block type |
 | `⌘L` | Choose a code block language |
+| `⌘O` / `⌘⇧O` | Insert an editable line below / above the current feature block |
 | `⌘/` | Toggle comments on the current or selected lines |
 | `Esc` | Leave the Vim editing mode; press again in normal mode to hide |
 
@@ -42,7 +43,7 @@ In insert mode, type `/` on an empty line to choose a block. Use arrow keys and 
 - **math:** End an expression with `=` to calculate. Supports arithmetic, percentages, functions, units and per-block variables such as `price: 80`. Currency conversions use uppercase codes, e.g. `10 USD to CNY =`.
 - **sum / avg / count:** Sum or average numbers, or count nonempty items, words and characters. Lines beginning `//` are excluded.
 - **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
-- **timer:** `timer` starts a stopwatch, `timer 5` a five-minute countdown, `timer 3:30` a three-minute-thirty-second countdown and `timer pomo` a 25/5-minute Pomodoro. Add a title with `timer 5: title`. Use `timer p`, `timer r`, `timer s` or the buttons to pause, reset or stop. One timer runs at a time; alerts require the app to be running.
+- **timer:** `timer` starts a stopwatch, `timer 5` a five-minute countdown, `timer 3:30` a three-minute-thirty-second countdown and `timer pomo` a 25/5-minute Pomodoro. Add a title with `timer 5: title`. Use `timer p`, `timer r`, `timer s` or the buttons to pause, reset or stop. One timer runs at a time. While the app is running, completion shows a dismissible reminder and plays a sound even when the note window is hidden; alerts do not fire after the app quits.
 
 Blocks use Inkflit text markers such as `:::quicknote math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 

@@ -55,6 +55,19 @@ export function currentBlockScope(state) {
   if(!first || first.kind!=='block' || !first.closed || !last || first.start!==last.start || first.end!==last.end)return null;
   return first;
 }
+// Insert a separate editable line without joining either structural marker to text.
+export function planAdjacentBlockLine(state, above) {
+  const scope=currentBlockScope(state);
+  if(!scope)return null;
+  const doc=state.doc;
+  if(above) {
+    const pos=doc.line(scope.start).from;
+    return {changes:{from:pos,insert:'\n'},selection:{anchor:pos},scrollIntoView:true,userEvent:'input.block.open'};
+  }
+  const end=doc.line(scope.end);
+  const pos=end.to===doc.length ? end.to : end.to+1;
+  return {changes:{from:pos,insert:'\n'},selection:{anchor:end.to===doc.length ? pos+1 : pos},scrollIntoView:true,userEvent:'input.block.open'};
+}
 export function openCurrentBlockMenu(editor) {
   const scope=currentBlockScope(editor.state);
   if(!scope)return false;

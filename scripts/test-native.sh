@@ -12,7 +12,7 @@ for indentation in spaces2 spaces4 tabs; do
   python3 - "$test_dir/notes.json" <<'PY'
 import json, sys
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
-    json.dump({'notes': [{'id': 'test', 'content': ':::quicknote code json\n\n:::end', 'updated': '2026-01-01'}, {'id': 'pairs', 'content': ':::quicknote code json\n\n:::end', 'updated': '2026-01-01'}, {'id': 'plain', 'content': '', 'updated': '2026-01-01'}, {'id': 'gap', 'content': '// comment\n\n:::quicknote code json\n{}\n:::end', 'updated': '2026-01-01'}], 'selected': 'test'}, f)
+    json.dump({'notes': [{'id': 'test', 'content': ':::quicknote code json\n\n:::end', 'updated': '2026-01-01'}, {'id': 'pairs', 'content': ':::quicknote code json\n\n:::end', 'updated': '2026-01-01'}, {'id': 'plain', 'content': '', 'updated': '2026-01-01'}, {'id': 'gap', 'content': '// comment\n\n:::quicknote code json\n{}\n:::end', 'updated': '2026-01-01'}, {'id': 'open', 'content': ':::quicknote code json\n{}\n:::end', 'updated': '2026-01-01'}, {'id': 'timer', 'content': ':::quicknote timer\n\n:::end', 'updated': '2026-01-01'}], 'selected': 'test'}, f)
 PY
   appearance=dark
   if [[ "$indentation" == spaces2 ]]; then appearance=light; fi
@@ -26,3 +26,12 @@ if result.returncode:
     sys.exit(result.returncode)
 PY
 done
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_TIMER_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+import subprocess, sys
+try:
+    result = subprocess.run([sys.argv[1]], timeout=20)
+except subprocess.TimeoutExpired:
+    sys.exit('FAIL: native timer test timed out')
+if result.returncode:
+    sys.exit(result.returncode)
+PY

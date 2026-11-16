@@ -25,6 +25,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var reopenLanguageSettings = false
     var activationObserver: NSObjectProtocol?
     var timerAlert: Timer?
+    var timerReminder: NSPanel?
+    var timerSound: NSSound?
+    #if INKFLIT_NATIVE_TEST
+    var testTimerReminderCount = 0
+    var testTimerReminderHeading = ""
+    #endif
     let isolatedTest = ProcessInfo.processInfo.environment["QUICKNOTE_ISOLATED_TEST"] == "1"
     var insertMode = false
     var savedInputSource: TISInputSource?
@@ -361,6 +367,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CURSOR_TEST"] == "1" {
             NativeCodeEditingTest.testCursorColors(self)
         }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TIMER_TEST"] == "1" {
+            NativeTimerTest.start(self)
+        }
         #endif
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -378,6 +387,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if prompt == "quicknote-input-mode", let mode = defaultText { setEditorMode(mode); completionHandler(""); return }
         completionHandler(nil)
     }
+    @objc func dismissTimerReminder() { timerReminder?.orderOut(nil); timerReminder = nil }
+    func showTimerReminder(title: String, phase: String, pomodoro: Bool) {
+        dismissTimerReminder()
+        let heading = L(pomodoro ? (phase == "work" ? "休息时间到了" : "专注时间到了") : "计时结束")
+        #if INKFLIT_NATIVE_TEST
+        testTimerReminderCount += 1; testTimerReminderHeading = heading
+        #endif
+        let panel = NotePanel(contentRect: NSRect(x: 0, y: 0, width: 340, height: 110), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isReleasedWhenClosed = false; panel.isFloatingPanel = true; panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.hidesOnDeactivate = false; panel.hasShadow = true; panel.isOpaque = false; panel.backgroundColor = .clear
+        let surface = NSVisualEffectView(); surface.material = .popover; surface.blendingMode = .behindWindow; surface.state = .active
+        surface.wantsLayer = true; surface.layer?.cornerRadius = 12; surface.layer?.masksToBounds = true
+        let icon = NSImageView(); icon.image = NSImage(systemSymbolName: "bell.badge.fill", accessibilityDescription: nil)
+        icon.contentTintColor = UIThemes.accent(windowAppearance().theme); icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 22, weight: .medium)
+        icon.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        let header = NSTextField(labelWithString: heading); header.font = .systemFont(ofSize: 15, weight: .semibold)
+        let detail = NSTextField(labelWithString: title.isEmpty ? L("计时提醒") : title); detail.font = .systemFont(ofSize: 12); detail.textColor = .secondaryLabelColor; detail.lineBreakMode = .byTruncatingTail
+        let labels = NSStackView(views: [header, detail]); labels.orientation = .vertical; labels.alignment = .leading; labels.spacing = 6
+        let close = NSButton(title: L("关闭"), target: self, action: #selector(dismissTimerReminder)); close.bezelStyle = .rounded
+        let row = NSStackView(views: [icon, labels, close]); row.orientation = .horizontal; row.alignment = .centerY; row.spacing = 12
+        labels.setContentHuggingPriority(.defaultLow, for: .horizontal); row.translatesAutoresizingMaskIntoConstraints = false
+        surface.addSubview(row); NSLayoutConstraint.activate([row.leadingAnchor.constraint(equalTo: surface.leadingAnchor, constant: 18), row.trailingAnchor.constraint(equalTo: surface.trailingAnchor, constant: -16), row.centerYAnchor.constraint(equalTo: surface.centerYAnchor)])
+        panel.contentView = surface
+        let frame = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
+        panel.setFrameOrigin(NSPoint(x: frame.maxX - panel.frame.width - 20, y: frame.maxY - panel.frame.height - 20))
+        timerReminder = panel; panel.orderFrontRegardless()
+        timerSound?.stop(); timerSound = NSSound(named: "Glass")
+        if timerSound?.play() != true { NSSound.beep() }
+    }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
         if type == "hide" { hideWindow(); return }
@@ -390,10 +429,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             timerAlert?.invalidate(); timerAlert = nil
             if let deadline = body["deadline"] as? Double, deadline > 0 {
                 let delay = max(0.01, deadline / 1000 - Date().timeIntervalSince1970)
-                timerAlert = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-                    NSSound.beep()
+                let title = body["title"] as? String ?? "", phase = body["phase"] as? String ?? "work", pomodoro = body["pomodoro"] as? Bool ?? false
+                let alert = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
+                    self?.showTimerReminder(title: title, phase: phase, pomodoro: pomodoro)
                     self?.web.evaluateJavaScript("window.timerFinished?.()", completionHandler: nil)
                 }
+                timerAlert = alert; RunLoop.main.add(alert, forMode: .common)
             }
             return
         }

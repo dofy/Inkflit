@@ -7,7 +7,7 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
-import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock, openCurrentBlockMenu } from './block-menu.js';
+import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine } from './block-menu.js';
 import { initLanguageMenu, languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
@@ -105,7 +105,7 @@ setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)})
 function scheduleTimer() {
   const t=state?.timer; const d=timerDisplay(t);
   const deadline=t && d && !t.paused && !t.done && d.length ? Date.now()+Math.max(0,d.length-d.elapsed)*1000 : 0;
-  window.webkit?.messageHandlers?.quicknote?.postMessage({type:'timer',deadline});
+  window.webkit?.messageHandlers?.quicknote?.postMessage({type:'timer',deadline,title:t?.title || '',phase:t?.phase || 'work',pomodoro:!!t?.rest});
 }
 function applyTimer(command) { state.timer=timerCommand(state.timer,command); persist(); scheduleTimer(); renderTimer(); }
 function renderTimer(forceAdvance=false) {
@@ -133,6 +133,20 @@ document.addEventListener('keydown', event => {
   }
   if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='k' && editor?.hasFocus) {
     if(!event.repeat && openCurrentBlockMenu(editor)) {closeLanguageMenu();event.preventDefault(); event.stopPropagation();}
+    return;
+  }
+  if(event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='o' && editor?.hasFocus && !blockMenuOpen() && !languageMenuOpen()) {
+    let plan=planAdjacentBlockLine(editor.state,event.shiftKey);
+    if(plan) {
+      event.preventDefault(); event.stopPropagation();
+      if(event.repeat)return;
+      const cm=getCM(editor);
+      if(cm?.state?.vim?.visualMode) { Vim.handleKey(cm,'<Esc>','user'); plan=planAdjacentBlockLine(editor.state,event.shiftKey); }
+      if(!plan)return;
+      editor.dispatch(plan);
+      if(cm && !cm.state.vim?.insertMode) Vim.handleKey(cm,'i','user');
+      editor.focus();
+    }
     return;
   }
   if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='d') {

@@ -182,6 +182,29 @@ test('block switch shortcut only targets one complete feature block',async()=>{
  assert.equal(currentBlockScope(state),null);
 });
 
+test('adjacent text lines can be opened above or below a feature block and undone',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {history,undo,redo}=await import('@codemirror/commands');
+ const {blockProtection}=await import('../web/block-protection.js');
+ const {planAdjacentBlockLine}=await import('../web/block-menu.js');
+ for(const [doc,above,expected,anchor] of [
+   [':::quicknote code json\n{}\n:::end',true,'\n:::quicknote code json\n{}\n:::end',0],
+   [':::quicknote code json\n{}\n:::end',false,':::quicknote code json\n{}\n:::end\n',33],
+   ['before\n:::quicknote list\nitem\n:::end\nafter',true,'before\n\n:::quicknote list\nitem\n:::end\nafter',7],
+   ['before\n:::quicknote list\nitem\n:::end\nafter',false,'before\n:::quicknote list\nitem\n:::end\n\nafter',37]
+ ]) {
+   let state=EditorState.create({doc,selection:{anchor:doc.indexOf(above && doc.includes('item')?'item':doc.includes('{}')?'{}':'item')},extensions:[history(),blockProtection]});
+   const plan=planAdjacentBlockLine(state,above); assert.ok(plan);
+   state=state.update(plan).state;
+   assert.equal(state.doc.toString(),expected);assert.equal(state.selection.main.head,anchor);
+   let next=state;assert.equal(undo({state,dispatch:tr=>next=tr.state}),true);assert.equal(next.doc.toString(),doc);
+   state=next;assert.equal(redo({state,dispatch:tr=>next=tr.state}),true);assert.equal(next.doc.toString(),expected);
+ }
+ const text='outside\n:::quicknote code\nx\n:::end';
+ let state=EditorState.create({doc:text,selection:{anchor:0}});assert.equal(planAdjacentBlockLine(state,true),null);
+ state=EditorState.create({doc:':::quicknote code\nx',selection:{anchor:18}});assert.equal(planAdjacentBlockLine(state,false),null);
+});
+
 test('task cursor skips checkbox marker while preserving code and plain text',async()=>{
  const {EditorState}=await import('@codemirror/state');
  const {markdown}=await import('@codemirror/lang-markdown');

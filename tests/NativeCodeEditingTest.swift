@@ -281,11 +281,148 @@ final class NativeCodeEditingTest {
                         expect(text, ":::quicknote code json\n{}\n:::end", "Vim delete blank line before block")
                         sequence([{ self.key(32, "u") }, { self.key(32, "u") }]) { [self] in content { [self] text in
                             expect(text, original, "Vim undo deleted lines before block")
-                            print("PASS native configuration \(app.codeIndentation())")
-                            app.restoreInputSource(); exit(0)
+                            testOpenAroundBlock()
                         } }
                     } }
                 } }
+            }
+        }
+    }
+    private func testOpenAroundBlock() {
+        let original = ":::quicknote code json\n{}\n:::end"
+        sequence([{ self.key(33, "[", "[", .command) }, { self.key(31, "O", "o", [.command,.shift]) }, { self.key(0, "a") }]) { [self] in content { [self] text in
+            expect(text, "a\n" + original, "Cmd Shift O opens editable text above first block")
+            sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }]) { [self] in content { [self] text in
+                expect(text, original, "undo opened line above block")
+                key(15, "\u{12}", "r", .control)
+                later { [self] in content { [self] text in
+                expect(text, "a\n" + original, "redo opened line above block")
+                sequence([{ self.key(32, "u") }, { self.key(5, "g") }, { self.key(5, "g") }, { self.key(31, "o", "o", .command) }, { self.key(11, "b") }]) { [self] in content { [self] text in
+                    expect(text, original + "\nb", "Cmd O opens editable text below last block")
+                    sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }]) { [self] in content { [self] text in
+                        expect(text, original, "undo opened line below block")
+                        key(15, "\u{12}", "r", .control)
+                        later { [self] in content { [self] text in
+                        expect(text, original + "\nb", "redo opened line below block")
+                        sequence([{ self.key(32, "u") }, { self.key(5, "g") }, { self.key(5, "g") }, { self.key(34, "i") }, { self.key(31, "O", "o", [.command,.shift]) }, { self.key(8, "c") }]) { [self] in content { [self] text in
+                            expect(text, "c\n" + original, "Cmd Shift O works from insert mode")
+                            sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }, { self.key(5, "g") }, { self.key(5, "g") }, { self.key(34, "i") }, { self.key(31, "o", "o", .command) }, { self.key(2, "d") }]) { [self] in content { [self] text in
+                                expect(text, original + "\nd", "Cmd O works from insert mode")
+                                testTimerCommand()
+                            } }
+                        } }
+                        } }
+                    } }
+                } }
+                } }
+            } }
+        } }
+    }
+    private func testTimerCommand() {
+        let keys: [() -> Void] = [
+            { self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(34, "i") },
+            { self.key(17, "t") }, { self.key(34, "i") }, { self.key(46, "m") }, { self.key(14, "e") }, { self.key(15, "r") },
+            { self.key(49, " ") }, { self.key(29, "0") }, { self.key(47, ".") }, { self.key(18, "1") }, { self.key(36, "\r") }
+        ]
+        sequence(keys) { [self] in
+            later { [self] in
+                guard app.timerAlert?.isValid == true else { fail("timer command did not schedule native timer") }
+                app.web.evaluateJavaScript("document.getElementById('timer-stop').click()") { [self] _, error in
+                    guard error == nil else { fail("timer stop button") }
+                    later { [self] in
+                        guard app.timerAlert == nil else { fail("timer stop did not cancel native timer") }
+                        print("PASS native timer command start and stop")
+                        print("PASS native configuration \(app.codeIndentation())")
+                        app.restoreInputSource(); exit(0)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Exercises the actual WebKit -> AppKit timer bridge in an isolated app process.
+final class NativeTimerTest {
+    private let app: AppDelegate
+    private static var running: NativeTimerTest?
+    init(_ app: AppDelegate) { self.app = app }
+    static func start(_ app: AppDelegate) {
+        running = NativeTimerTest(app)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
+    }
+    private func fail(_ message: String) -> Never { app.restoreInputSource(); fputs("FAIL timer: \(message)\n", stderr); exit(1) }
+    private func later(_ seconds: Double, _ action: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: action) }
+    private func load(_ timer: String, _ completion: @escaping () -> Void) {
+        let script = """
+        (() => { const fixture={notes:[{id:'timer-test',content:':::quicknote timer\\n\\n:::end',updated:'2026-01-01'}],selected:'timer-test',timer:\(timer)};
+        window.loadNotesBase64(btoa(unescape(encodeURIComponent(JSON.stringify(fixture))))); return true; })()
+        """
+        app.web.evaluateJavaScript(script) { [self] _, error in if let error { fail("could not load fixture: \(error)") }; completion() }
+    }
+    private func run() {
+        load("{duration:1.2,rest:0,title:'Native test',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
+            app.hideWindow()
+            later(1.8) { [self] in
+                guard app.testTimerReminderCount == 1, let panel = app.timerReminder, panel.isVisible, !panel.isKeyWindow, !app.window.isVisible else { fail("countdown did not show a nonactivating reminder while note was hidden") }
+                guard app.testTimerReminderHeading == L("计时结束") else { fail("countdown heading") }
+                if ProcessInfo.processInfo.environment["INKFLIT_TIMER_VISUAL_QA"] == "1" {
+                    print("PASS native reminder visible for visual inspection")
+                    later(10) { [self] in app.dismissTimerReminder(); app.restoreInputSource(); exit(0) }
+                    return
+                }
+                app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.done") { [self] value, error in
+                    guard error == nil, (value as? Bool) == true else { fail("countdown was not marked done") }
+                    print("PASS native hidden-window countdown reminder and completion")
+                    guard NSApp.sendAction(#selector(AppDelegate.dismissTimerReminder), to: app, from: nil), app.timerReminder == nil else { fail("reminder close action") }
+                    testPause()
+                }
+            }
+        }
+    }
+    private func testPause() {
+        load("{duration:0.7,rest:0,title:'Paused',phase:'work',startedAt:Date.now(),elapsed:0,paused:true,done:false}") { [self] in
+            later(1.0) { [self] in
+                guard app.testTimerReminderCount == 1 else { fail("paused timer alerted") }
+                app.web.evaluateJavaScript("document.getElementById('timer-pause').click()") { [self] _, error in
+                    guard error == nil else { fail("resume action failed") }
+                    later(1.2) { [self] in
+                        guard app.testTimerReminderCount == 2, app.timerReminder?.isVisible == true else { fail("resumed timer failed to alert") }
+                        print("PASS native pause and resume timer")
+                        app.dismissTimerReminder(); testStop()
+                    }
+                }
+            }
+        }
+    }
+    private func testStop() {
+        load("{duration:0.7,rest:0,title:'Stopped',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
+            app.web.evaluateJavaScript("document.getElementById('timer-stop').click()") { [self] _, error in
+                guard error == nil else { fail("stop action failed") }
+                later(1.0) { [self] in
+                    guard app.testTimerReminderCount == 2, app.timerReminder == nil else { fail("stopped timer alerted") }
+                    print("PASS native stopped timer does not alert")
+                    testPomodoro()
+                }
+            }
+        }
+    }
+    private func testPomodoro() {
+        load("{duration:0.7,rest:3,title:'Focus',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
+            later(1.2) { [self] in
+                guard app.testTimerReminderCount == 3, app.timerReminder?.isVisible == true, app.testTimerReminderHeading == L("休息时间到了") else { fail("pomodoro work boundary reminder") }
+                app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.phase") { [self] value, error in
+                    guard error == nil, value as? String == "rest" else { fail("pomodoro did not advance to break") }
+                    print("PASS native pomodoro phase transition reminder")
+                    app.dismissTimerReminder()
+                    later(2.8) { [self] in
+                        guard app.testTimerReminderCount == 4, app.timerReminder?.isVisible == true, app.testTimerReminderHeading == L("专注时间到了") else { fail("pomodoro break boundary reminder") }
+                        app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.phase") { [self] value, error in
+                            guard error == nil, value as? String == "work" else { fail("pomodoro did not advance to work") }
+                            print("PASS native pomodoro break completion reminder")
+                            app.dismissTimerReminder(); app.restoreInputSource(); exit(0)
+                        }
+                    }
+                }
             }
         }
     }
