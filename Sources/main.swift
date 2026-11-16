@@ -8,20 +8,21 @@ final class NotePanel: NSPanel {
     override var canBecomeMain: Bool { true }
 }
 final class DragWebView: WKWebView {
-    override func mouseDown(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        if point.y >= bounds.height - 18 { window?.performDrag(with: event) }
-        else { super.mouseDown(with: event) }
-    }
+    override var isOpaque: Bool { false }
+}
+final class WindowDragView: NSView {
+    override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
 }
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NotePanel!
     var web: WKWebView!
+    var backdrop: NSVisualEffectView!
     var status: NSStatusItem!
     var hotKey: EventHotKeyRef?
     var hotKeyID: UInt32 = 0
     var hotKeyItem: NSMenuItem!
     var settingsController: SettingsController?
+    var reopenLanguageSettings = false
     var activationObserver: NSObjectProtocol?
     var timerAlert: Timer?
     let isolatedTest = ProcessInfo.processInfo.environment["QUICKNOTE_ISOLATED_TEST"] == "1"
@@ -40,6 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         #if INKFLIT_NATIVE_TEST
+        if isolatedTest, let appearance = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"] {
+            NSApp.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
+        }
         if isolatedTest, let value = ProcessInfo.processInfo.environment["INKFLIT_NATIVE_INDENT"] {
             UserDefaults.standard.set(value, forKey: "codeIndentation")
         }
@@ -49,38 +53,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let mainMenu = NSMenu()
         let appRoot = NSMenuItem(title: "Inkflit", action: nil, keyEquivalent: "")
         let appMenu = NSMenu(title: "Inkflit")
-        let settingsItem = appMenu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
+        let settingsItem = appMenu.addItem(withTitle: L("设置…"), action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "退出 Inkflit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("退出 Inkflit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appRoot.submenu = appMenu; mainMenu.addItem(appRoot)
-        let editRoot = NSMenuItem(title: "编辑", action: nil, keyEquivalent: "")
-        let editMenu = NSMenu(title: "编辑")
-        editMenu.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "复制", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editRoot = NSMenuItem(title: L("编辑"), action: nil, keyEquivalent: "")
+        let editMenu = NSMenu(title: L("编辑"))
+        editMenu.addItem(withTitle: L("剪切"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: L("复制"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L("粘贴"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L("全选"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editRoot.submenu = editMenu; mainMenu.addItem(editRoot)
-        let windowRoot = NSMenuItem(title: "窗口", action: nil, keyEquivalent: "")
-        let windowMenu = NSMenu(title: "窗口")
-        windowMenu.addItem(withTitle: "关闭窗口", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let windowRoot = NSMenuItem(title: L("窗口"), action: nil, keyEquivalent: "")
+        let windowMenu = NSMenu(title: L("窗口"))
+        windowMenu.addItem(withTitle: L("关闭窗口"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         windowRoot.submenu = windowMenu; mainMenu.addItem(windowRoot); NSApp.mainMenu = mainMenu
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "quicknote")
         web = DragWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self; web.uiDelegate = self
         web.underPageBackgroundColor = .clear
+        // WebKit's transparent drawing switch is not public on macOS; probe it
+        // first so a future WebKit without it does not fail at startup.
+        if web.responds(to: NSSelectorFromString("_setDrawsBackground:")) { web.setValue(false, forKey: "drawsBackground") }
         web.wantsLayer = true; web.layer?.cornerRadius = 12; web.layer?.masksToBounds = true
-        window = NotePanel(contentRect: NSRect(x: 0, y: 0, width: 580, height: 560), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
-        window.title = "Inkflit"; window.minSize = NSSize(width: 380, height: 320)
+        let visible = NSScreen.main?.visibleFrame.size ?? NSSize(width: 800, height: 832)
+        let defaultWidth = max(1, min(480, (visible.height - 32) * 2 / 3, visible.width - 32))
+        window = NotePanel(contentRect: NSRect(x: 0, y: 0, width: defaultWidth, height: defaultWidth * 3 / 2), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
+        window.title = "Inkflit"; window.minSize = NSSize(width: min(300, defaultWidth), height: min(280, defaultWidth * 3 / 2))
         // Keep the note below system overlays such as macOS screenshot selection.
         window.isFloatingPanel = false; window.level = .normal; window.hidesOnDeactivate = false
         window.isOpaque = false; window.backgroundColor = .clear; window.hasShadow = true
-        window.contentView = web; window.delegate = self; window.center()
+        let container = NSView(frame: NSRect(origin: .zero, size: window.frame.size))
+        container.wantsLayer = true; container.layer?.cornerRadius = 12; container.layer?.masksToBounds = true
+        backdrop = NSVisualEffectView(frame: container.bounds); backdrop.blendingMode = .behindWindow; backdrop.material = .underWindowBackground; backdrop.state = .active
+        backdrop.autoresizingMask = [.width, .height]; web.frame = container.bounds; web.autoresizingMask = [.width, .height]
+        container.addSubview(backdrop); container.addSubview(web)
+        let drag = WindowDragView(frame: NSRect(x: 0, y: container.bounds.height - 10, width: container.bounds.width, height: 10))
+        drag.autoresizingMask = [.width, .minYMargin]; container.addSubview(drag)
+        let headerDrag = WindowDragView(frame: NSRect(x: 130, y: container.bounds.height - 46, width: max(0, container.bounds.width - 230), height: 36))
+        headerDrag.autoresizingMask = [.width, .minYMargin]; container.addSubview(headerDrag)
+        window.contentView = container; window.delegate = self; window.center()
+        applyWindowAppearance()
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] notification in
-            guard let self, self.window.isVisible,
+            guard let self, !self.isolatedTest, self.window.isVisible,
                   let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   activated.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
             self.hideWindow()
@@ -97,9 +116,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 button.title = ""
             }
             let menu = NSMenu()
-            menu.addItem(withTitle: "打开 Inkflit", action: #selector(showWindow), keyEquivalent: "")
-            hotKeyItem = menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
-            menu.addItem(.separator()); menu.addItem(withTitle: "退出 Inkflit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            menu.addItem(withTitle: L("打开 Inkflit"), action: #selector(showWindow), keyEquivalent: "")
+            hotKeyItem = menu.addItem(withTitle: L("设置…"), action: #selector(showSettings), keyEquivalent: ",")
+            menu.addItem(.separator()); menu.addItem(withTitle: L("退出 Inkflit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             let handlerStatus = InstallEventHandler(GetApplicationEventTarget(), { _, _, data in
@@ -127,14 +146,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
         } catch {
             storageURL = legacyStorageURL; requireExistingStorage = true
-            storageWarning = "未迁移笔记：\(error.localizedDescription) 仍使用原位置。"
+            storageWarning = L("未迁移笔记：") + error.localizedDescription + L(" 仍使用原位置。")
         }
     }
     func changeStorageDirectory(_ directory: URL, completion: @escaping (String?) -> Void) {
         let destination = directory.appendingPathComponent("notes.json").standardizedFileURL
         if destination == storageURL.standardizedFileURL { completion(nil); return }
         web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
-            guard let self else { completion("设置窗口不可用。"); return }
+            guard let self else { completion(L("设置窗口不可用。")); return }
             guard error == nil, let json = value as? String, let data = json.data(using: .utf8) else { completion(NoteStorageError.invalidSnapshot.localizedDescription); return }
             do {
                 try NoteStorage.saveCopy(data, to: destination)
@@ -176,19 +195,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         return text + (keys[hotKeyCode] ?? "Key \(hotKeyCode)")
     }
     func updateHotKeyLabel() {
-        let label = hotKeyDisabled ? "未设置" : shortcutLabel()
-        status?.button?.toolTip = hotKeyDisabled ? "全局快捷键未设置" : "全局快捷键 \(label)"
-        hotKeyItem?.title = "设置…"
+        let label = hotKeyDisabled ? L("未设置") : shortcutLabel()
+        status?.button?.toolTip = hotKeyDisabled ? L("全局快捷键未设置") : L("全局快捷键") + " " + label
+        hotKeyItem?.title = L("设置…")
         if let data = try? JSONSerialization.data(withJSONObject: [label]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func reportHotKeyFailure() {
-        status?.button?.toolTip = "全局快捷键不可用，请在设置中重新设置"
-        hotKeyItem?.title = "设置…（快捷键不可用）"
-        web.evaluateJavaScript("window.setShortcutLabel?.('快捷键不可用')", completionHandler: nil)
+        status?.button?.toolTip = L("全局快捷键不可用，请在设置中重新设置")
+        hotKeyItem?.title = L("设置…（快捷键不可用）")
+        if let data = try? JSONSerialization.data(withJSONObject: [L("快捷键不可用")]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func saveShortcut(code: UInt32, modifiers: UInt32) -> String? {
         if code == hotKeyCode && modifiers == hotKeyModifiers && hotKey != nil { return nil }
-        guard registerHotKey(code: code, modifiers: modifiers) else { return "这个快捷键不可用，请换一个。" }
+        guard registerHotKey(code: code, modifiers: modifiers) else { return L("这个快捷键不可用，请换一个。") }
         hotKeyDisabled = false
         let defaults = UserDefaults.standard
         defaults.set(Int(code), forKey: "hotKeyCode"); defaults.set(Int(modifiers), forKey: "hotKeyModifiers"); defaults.set(false, forKey: "hotKeyDisabled")
@@ -213,26 +232,78 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let value = codeIndentation()
         web.evaluateJavaScript("window.setCodeIndentation?.('\(value)')", completionHandler: nil)
     }
+    func codeTheme() -> String { CodeThemes.validID(UserDefaults.standard.string(forKey: "codeTheme")) }
+    func updateCodeTheme(_ value: String) {
+        guard CodeThemes.all.contains(where: { $0.id == value }) else { return }
+        UserDefaults.standard.set(value, forKey: "codeTheme"); syncCodeTheme()
+    }
+    func syncCodeTheme() {
+        guard let data = try? JSONSerialization.data(withJSONObject: [codeTheme()]), let json = String(data: data, encoding: .utf8) else { return }
+        web.evaluateJavaScript("window.setCodeTheme?.(\(json)[0])", completionHandler: nil)
+    }
+    func windowAppearance() -> WindowAppearance {
+        let defaults = UserDefaults.standard
+        let opacity = defaults.object(forKey: "windowOpacity") == nil ? 100 : defaults.integer(forKey: "windowOpacity")
+        let blur = defaults.object(forKey: "windowBlur") == nil ? 0 : defaults.integer(forKey: "windowBlur")
+        return WindowAppearance(theme: UIThemes.validID(defaults.string(forKey: "uiTheme")), opacity: max(50, min(100, opacity)), blur: max(0, min(100, blur)))
+    }
+    func updateWindowAppearance(_ appearance: WindowAppearance) {
+        let defaults = UserDefaults.standard
+        defaults.set(UIThemes.validID(appearance.theme), forKey: "uiTheme")
+        defaults.set(max(50, min(100, appearance.opacity)), forKey: "windowOpacity")
+        defaults.set(max(0, min(100, appearance.blur)), forKey: "windowBlur")
+        applyWindowAppearance()
+    }
+    func applyWindowAppearance() {
+        let appearance = windowAppearance()
+        backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
+        guard let data = try? JSONSerialization.data(withJSONObject: [appearance.theme, appearance.opacity]), let json = String(data: data, encoding: .utf8) else { return }
+        web?.evaluateJavaScript("window.setUIAppearance?.(...\(json))", completionHandler: nil)
+    }
+    func syncLanguage() {
+        guard let data = try? JSONSerialization.data(withJSONObject: [Localization.current]), let json = String(data: data, encoding: .utf8) else { return }
+        web?.evaluateJavaScript("window.setLanguage?.(\(json)[0])", completionHandler: nil)
+        if let menu = NSApp.mainMenu, menu.items.count >= 3 {
+            if let app = menu.items[0].submenu, app.items.count >= 3 { app.items[0].title = L("设置…"); app.items[2].title = L("退出 Inkflit") }
+            menu.items[1].title = L("编辑"); menu.items[1].submenu?.title = L("编辑")
+            if let edit = menu.items[1].submenu { for (i, key) in ["剪切", "复制", "粘贴", "全选"].enumerated() where i < edit.items.count { edit.items[i].title = L(key) } }
+            menu.items[2].title = L("窗口"); menu.items[2].submenu?.title = L("窗口"); menu.items[2].submenu?.items.first?.title = L("关闭窗口")
+        }
+        if let menu = status?.menu, menu.items.count >= 4 { menu.items[0].title = L("打开 Inkflit"); menu.items[1].title = L("设置…"); menu.items[3].title = L("退出 Inkflit") }
+        if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
+    }
     @objc func showSettings() {
         hideWindow()
         if settingsController == nil {
             settingsController = SettingsController(
                 getShortcut: { [weak self] in guard let self else { return "" }; return self.hotKeyDisabled ? "" : self.shortcutLabel() },
-                saveShortcut: { [weak self] code, modifiers in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: code, modifiers: modifiers) },
+                saveShortcut: { [weak self] code, modifiers in guard let self else { return L("设置窗口不可用。") }; return self.saveShortcut(code: code, modifiers: modifiers) },
                 clearShortcut: { [weak self] in self?.clearShortcut() },
-                resetShortcut: { [weak self] in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
+                resetShortcut: { [weak self] in guard let self else { return L("设置窗口不可用。") }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
                 getStorage: { [weak self] in self?.storageURL.path ?? "" },
-                changeStorage: { [weak self] url, completion in guard let self else { completion("设置窗口不可用。"); return }; self.changeStorageDirectory(url, completion: completion) },
+                changeStorage: { [weak self] url, completion in guard let self else { completion(L("设置窗口不可用。")); return }; self.changeStorageDirectory(url, completion: completion) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
                 setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
+                getTheme: { [weak self] in self?.codeTheme() ?? "amber" },
+                setTheme: { [weak self] value in self?.updateCodeTheme(value) },
+                getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
+                setAppearance: { [weak self] value in self?.updateWindowAppearance(value) },
                 loginStatus: { [weak self] in guard let self else { return .notFound }; return self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? self.testLoginStatus : SMAppService.mainApp.status },
                 setLogin: { [weak self] enabled in
-                    guard let self else { return "设置窗口不可用。" }
+                    guard let self else { return L("设置窗口不可用。") }
                     if self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" { self.testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
                     do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
-                    catch { return "无法更改开机启动：\(error.localizedDescription)" }
+                    catch { return L("无法更改开机启动：") + error.localizedDescription }
                 })
+            settingsController?.languageChanged = { [weak self] in
+                guard let self else { return }
+                self.syncLanguage()
+                self.reopenLanguageSettings = true
+                self.settingsController?.window?.close(); self.settingsController = nil
+                DispatchQueue.main.async { [weak self] in self?.showSettings() }
+            }
         }
+        if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
         settingsController?.show()
     }
     @objc func showWindow() { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil) }
@@ -255,7 +326,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         savedInputSource = nil; forcedInputSourceID = nil
     }
     func applicationDidResignActive(_ notification: Notification) {
-        if window?.isVisible == true { hideWindow() }
+        if !isolatedTest && window?.isVisible == true { hideWindow() }
     }
     func windowDidBecomeKey(_ notification: Notification) { useVimInputSource() }
     func windowDidResignKey(_ notification: Notification) { restoreInputSource() }
@@ -266,20 +337,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func hideWindow() { restoreInputSource(); window.orderOut(nil) }
     func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        syncLanguage()
         syncCodeIndentation()
+        syncCodeTheme()
+        applyWindowAppearance()
         do {
             if FileManager.default.fileExists(atPath: storageURL.path) {
                 let data = try Data(contentsOf: storageURL); let base64 = data.base64EncodedString()
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
             } else if requireExistingStorage {
-                showError("笔记文件不存在或位置不可用，请恢复文件后重新启动。")
+                showError(L("笔记文件不存在或位置不可用，请恢复文件后重新启动。"))
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
             if let storageWarning { showError(storageWarning) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
-        } catch { showError("无法读取笔记：\(error.localizedDescription)") }
+        } catch { showError(L("无法读取笔记：") + error.localizedDescription) }
         #if INKFLIT_NATIVE_TEST
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_BACKDROP"] == "1" {
+            NativeCodeEditingTest.installBackdrop(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_NATIVE_TEST"] == "1" {
             NativeCodeEditingTest.start(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CURSOR_TEST"] == "1" {
+            NativeCodeEditingTest.testCursorColors(self)
         }
         #endif
     }
@@ -287,7 +367,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if action.navigationType == .linkActivated { if let url = action.request.url, ["https", "http"].contains(url.scheme?.lowercased() ?? "") { NSWorkspace.shared.open(url) }; decisionHandler(.cancel); return }; decisionHandler(.allow)
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        let alert = NSAlert(); alert.messageText = message; alert.addButton(withTitle: "删除"); alert.addButton(withTitle: "取消")
+        let alert = NSAlert(); alert.messageText = message; alert.addButton(withTitle: L("删除")); alert.addButton(withTitle: L("取消"))
         completionHandler(alert.runModal() == .alertFirstButtonReturn)
     }
     func setEditorMode(_ mode: String) {
@@ -324,14 +404,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard type == "save", let json = body["json"] as? String, let data = json.data(using: .utf8) else { return }
         do {
             if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
-                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: "笔记文件不存在或位置不可用，请恢复文件后重试。"])
+                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
             }
             try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try data.write(to: storageURL, options: .atomic); web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
             if !isolatedTest && UserDefaults.standard.string(forKey: "notesStoragePath") == nil && storageWarning == nil {
                 UserDefaults.standard.set(storageURL.path, forKey: "notesStoragePath"); requireExistingStorage = true
             }
-        } catch { showError("保存失败：\(error.localizedDescription)") }
+        } catch { showError(L("保存失败：") + error.localizedDescription) }
     }
     func showError(_ message: String) {
         if let data = try? JSONSerialization.data(withJSONObject: [message]), let text = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }

@@ -1,10 +1,12 @@
 # Inkflit
 
-本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。
+English · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
 
-## 构建和运行
+A local-first floating note app for macOS, with Markdown, Vim editing, code highlighting, feature blocks and automatic saving.
 
-需要 macOS 13 或更新版本、Xcode Command Line Tools、Node.js 和 npm。
+## Build and run
+
+Requires macOS 13 or later, Xcode Command Line Tools, Node.js and npm.
 
 ```sh
 npm ci
@@ -12,38 +14,40 @@ npm run build
 open build/Inkflit.app
 ```
 
-运行 `npm test` 检查编辑逻辑；`npm run test:native` 使用独立测试笔记和原生窗口验证代码输入、缩进与 Vim 撤销重做。
+Run `npm test` for editor tests and `npm run test:native` for isolated native-window, code editing and Vim undo/redo tests. Builds use an ad hoc signature by default; set `QUICKNOTE_CODESIGN_IDENTITY` to use an Apple Development certificate. The app is not notarized.
 
-应用常驻菜单栏。快捷键默认 `Control + Option + Space`，按一次显示，再按一次隐藏。点击菜单栏笔记图标，选择“设置…”，或在应用中按 `⌘,`，即可录制、清除或恢复全局快捷键；注册冲突时会显示提示，不覆盖已有快捷键。设置窗口支持 `⌘W` 关闭，并提供离线使用帮助。设置中也可选择登录 Mac 时自动启动；若系统要求授权，请在系统设置中允许。拖动窗口顶部的空白条可以移动浮窗；激活其他应用时浮窗自动收起。
+Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. Appearance follows macOS light/dark mode. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
-## 键盘操作
+## Keyboard shortcuts
 
-- `⌘N`：新建笔记。
-- `⌘[` / `⌘]`：上一条 / 下一条笔记。
-- `⌘1`：回到最新笔记。
-- `⌘D`：删除当前笔记，删除前需要确认，且无法撤销。
-- `⌘⇧D`：删除光标所在的功能块及其内容，可通过 Vim 的 `u` 撤销。
-- `⌘K`：打开当前功能块的类型切换菜单，包括代码块。
-- `⌘L`：在代码功能块中打开语言菜单。
-- `⌘/`：切换当前或选中行的注释。普通笔记使用 `//`；代码块使用对应语言的注释语法，未知语言的代码块使用 `//`。
-- `Esc`：先退出 Vim 的插入、可视、搜索或待完成命令；在普通模式下再按一次隐藏窗口。
+| Shortcut | Action |
+| --- | --- |
+| `⌘N` | New note |
+| `⌘[` / `⌘]` | Previous / next note |
+| `⌘1` | Latest note |
+| `⌘D` | Delete the current note after confirmation; cannot be undone |
+| `⌘⇧D` | Delete the current feature block; undo with Vim `u` |
+| `⌘K` | Change the current block type |
+| `⌘L` | Choose a code block language |
+| `⌘/` | Toggle comments on the current or selected lines |
+| `Esc` | Leave the Vim editing mode; press again in normal mode to hide |
 
-编辑器使用 CodeMirror 和 `@replit/codemirror-vim` 提供 Vim 模拟；它不是 Neovim，也不会读取 vimrc。每条笔记的撤销历史在运行期间保留，退出后不保留。普通模式临时切换到当前的英文键盘布局，插入模式恢复原输入法；隐藏或失焦时也会恢复，避免中文输入法吞掉 Vim 命令。拼音候选未上屏时，Esc 先取消候选，再退出插入模式。完整 Vim 命令及其他第三方输入法仍需进一步验证。
+Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and does not load vimrc. Undo history is retained per note while the app runs, but not after exit. Normal mode temporarily switches to an ASCII input source and restores the previous input method in insert mode or when the window loses focus. An active IME candidate is cancelled before Esc leaves insert mode.
 
-笔记默认自动保存在 `~/Documents/Inkflit/notes.json`，可在设置中选择其他文件夹。文件是包含多条笔记的 JSON，其中 `content` 为 Markdown 原文，功能块带有 Inkflit 自有标记。更改目录时复制当前笔记并保留旧文件，不覆盖目标目录中已有的 `notes.json`。旧版笔记会复制到默认位置，原文件保留；若默认位置已有同名文件，则继续使用旧位置，避免覆盖。Inkflit 不提供云同步，但保存目录可能由 iCloud 等服务同步。待办格式 `[ ]`、`[x]` 和 `- [ ]` 在编辑区显示为可点击的复选框，底层仍是 Markdown；代码块中的同样文本不会转换。在行首使用 `//` 可以注释整行；标注了语言的 Markdown 代码块会按对应语言高亮。
+## Feature blocks
 
-构建默认使用本机临时签名；设置 `QUICKNOTE_CODESIGN_IDENTITY` 可以指定可用的 Apple 开发者证书。当前未公证。默认全局快捷键已通过真实键盘的隐藏和跨应用唤起测试；同一独占快捷键的冲突提示也已通过隔离实例测试。
+In insert mode, type `/` on an empty line to choose a block. Use arrow keys and Return or click an item. A note may contain multiple independent blocks; use the block header or `⌘K` to change its type, convert it to plain text or delete it. These actions can be undone. On the last blank line of a non-code block, press Return again to leave the block.
 
-## 功能块
+- **list:** Check items by clicking or typing `/x` at the end of a line; checked items are saved as Markdown `[x]`.
+- **math:** End an expression with `=` to calculate. Supports arithmetic, percentages, functions, units and per-block variables such as `price: 80`. Currency conversions use uppercase codes, e.g. `10 USD to CNY =`.
+- **sum / avg / count:** Sum or average numbers, or count nonempty items, words and characters. Lines beginning `//` are excluded.
+- **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
+- **timer:** `timer` starts a stopwatch, `timer 5` a five-minute countdown, `timer 3:30` a three-minute-thirty-second countdown and `timer pomo` a 25/5-minute Pomodoro. Add a title with `timer 5: title`. Use `timer p`, `timer r`, `timer s` or the buttons to pause, reset or stop. One timer runs at a time; alerts require the app to be running.
 
-在插入模式的空行输入 `/` 打开功能菜单，可以继续输入名称筛选，用方向键和回车选择，也可以鼠标点击。支持清单、计算、求和、平均值、计数、代码和计时器。每个块只处理自己的内容，同一条笔记可以有多个块。点击块头的类型名称可以修改类型、转为普通文本或删除整个块；这些操作可以撤销。跨块复制只包含可见正文，跨块删除保留块边界。
+Blocks use Inkflit text markers such as `:::quicknote math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 
-在非代码块的最后一个空行再按回车可退出块，再输入 `/` 插入下一个块。代码块在块头选择语言；普通 Markdown 代码围栏仍支持语言高亮。
+## Notes and storage
 
-- `list`：逐行显示复选框；点击或在行末输入 `/x` 切换。勾选结果保存为 Markdown `[x]`。
-- `math`：在表达式末尾输入 `=`，支持基本运算、百分比、常见数学函数、单位换算和单词变量（例如 `price: 80`）。结果仅显示，不写入正文；各块变量互不影响。大写三字母货币代码可换算，例如 `10 USD to CNY =`。
-- `sum` / `avg`：汇总块内数字；以 `=` 结尾的算式只计计算结果。`count` 显示非空项目、词和字符数。`//` 行不计入统计。
-- `code`：选择语言后高亮。插入模式下自动配对括号和引号，回车根据上下文缩进；在匹配的括号之间回车会创建缩进的中间行。`Tab` 插入缩进，`⇧Tab` 减少缩进，可在设置中选择 2 个空格、4 个空格或 Tab。光标在代码块内且没有选中文本时，`⌘C` 复制块内代码（不含边界标记）；选中文本时照常复制选区。保留原始缩进。
-- `timer`：在计时器块内输入 `timer 5` 并回车，启动 5 分钟倒计时；`timer` 启动正计时，`timer 3:30` 启动 3 分 30 秒倒计时，`timer pomo` 启动 25/5 分钟番茄钟，`timer 5: 标题` 设置标题。`timer p` 暂停/继续、`timer r` 重置、`timer s` 停止，也可使用窗口中的按钮。当前同时运行一个计时器；应用运行期间计时结束播放系统提示音。退出应用后不会后台提醒，重新启动后会按实际时间恢复状态。
+Notes are saved automatically to `~/Documents/Inkflit/notes.json` by default, or to a folder selected in Settings. The JSON contains multiple notes; each `content` is Markdown with Inkflit block markers. Changing folders copies the current notes and preserves the original; an existing destination `notes.json` is never overwritten. Legacy notes are copied when safe. Inkflit does not provide cloud sync, although the chosen folder may be synced by another service. Back up the file regularly.
 
-功能块保存在笔记正文中，使用 Inkflit 自有的文本标记（例如 `:::quicknote math` 与 `:::end`），编辑器显示为块头与边界，而不是代码围栏。旧版本的功能围栏和首行关键词仍可读取。货币汇率由 [Frankfurter](https://frankfurter.dev/) 提供，按服务返回日期显示；请求只获取公开汇率，不上传笔记。离线或服务不可用时不显示伪造汇率。
+Markdown checkboxes (`[ ]`, `[x]`, `- [ ]`) are clickable in the editor; their source remains Markdown. `//` at the start of a line comments that line. Language-labelled Markdown code fences are highlighted.

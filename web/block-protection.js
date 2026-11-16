@@ -22,6 +22,19 @@ export function changesTouchMarkers(doc,changes) {
   });
   return touches;
 }
+// A whole line immediately before a block can disappear if the opening marker
+// will still begin a line afterwards. Joining ordinary text onto a marker is
+// never safe, so keep the adjacent newline in all other cases.
+export function removesLinesBeforeBlock(doc, changes) {
+  let edit=null, count=0;
+  changes.iterChanges((from,to,_a,_b,inserted)=>{ count++; edit={from,to,inserted}; });
+  if(count!==1 || !edit || edit.from===edit.to || edit.inserted.length!==0)return false;
+  if(edit.from!==0 && doc.sliceString(edit.from-1,edit.from)!=='\n')return false;
+  const markers=markerRanges(doc);
+  const marker=markers.find(m=>m.kind==='start' && m.from===edit.to);
+  if(!marker)return false;
+  return !markers.some(m=>m!==marker && edit.from<m.to && edit.to>m.from);
+}
 export function nearestEditablePosition(doc, pos, previous=pos, changed=false) {
   for(const marker of markerRanges(doc)) {
     if(pos<marker.from || pos>marker.to)continue;
@@ -90,7 +103,7 @@ export function visibleCopiedText(text,state) {
 }
 export const blockProtection=EditorState.transactionFilter.of(tr=>{
   const internal=tr.isUserEvent('input.block') || tr.isUserEvent('undo') || tr.isUserEvent('redo');
-  if(tr.docChanged && !internal && changesTouchMarkers(tr.startState.doc,tr.changes)) {
+  if(tr.docChanged && !internal && changesTouchMarkers(tr.startState.doc,tr.changes) && !removesLinesBeforeBlock(tr.startState.doc,tr.changes)) {
     const trimmed=trimFinalLineDeletion(tr.startState.doc,tr.changes);
     if(trimmed) return {changes:trimmed,selection:{anchor:trimmed.from},userEvent:'delete'};
     const safeChanges=splitReplacementAroundMarkers(tr.startState.doc,tr.changes);

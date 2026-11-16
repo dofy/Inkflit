@@ -5,8 +5,8 @@ enum NoteStorageError: LocalizedError {
     case invalidSnapshot
     var errorDescription: String? {
         switch self {
-        case .destinationExists: return "目标文件夹已有 notes.json，未覆盖。请选择其他文件夹。"
-        case .invalidSnapshot: return "无法读取当前笔记，保存位置未更改。"
+        case .destinationExists: return L("目标文件夹已有 notes.json，未覆盖。请选择其他文件夹。")
+        case .invalidSnapshot: return L("无法读取当前笔记，保存位置未更改。")
         }
     }
 }

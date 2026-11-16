@@ -1,8 +1,8 @@
+import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
 import { analyzeScopes, scopeAt } from './features.js';
 import { codeLanguage } from './code-languages.js';
-import { defaultHighlightStyle } from '@codemirror/language';
-import { highlightTree } from '@lezer/highlight';
+import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
 import { openLanguageMenu } from './language-menu.js';
 let rates = null, onRates = () => {}, requestedAt = 0;
@@ -27,7 +27,7 @@ class ListBox extends WidgetType {
   constructor(pos) { super(); this.pos=pos; }
   eq(other) { return this.pos===other.pos; }
   toDOM(view) {
-    const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label','标记为已完成');
+    const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label',t('标记为已完成'));
     b.addEventListener('mousedown', e=>{e.preventDefault();e.stopPropagation();});
     b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();view.dispatch({changes:{from:this.pos,insert:'[x] '},userEvent:'input.task.toggle'});view.focus();});
     return b;
@@ -37,16 +37,16 @@ class ListBox extends WidgetType {
 const pendingLanguages=new Set();
 const blockNames={list:'清单',math:'计算',sum:'求和',avg:'平均值',count:'计数',code:'代码',timer:'计时器'};
 class BlockHeader extends WidgetType {
-  constructor(scope) {super();this.scope=scope;}
-  eq(other){return this.scope.start===other.scope.start && this.scope.mode===other.scope.mode && this.scope.language===other.scope.language && this.scope.end===other.scope.end;}
+  constructor(scope) {super();this.scope=scope;this.language=lang();}
+  eq(other){return this.language===other.language && this.scope.start===other.scope.start && this.scope.mode===other.scope.mode && this.scope.language===other.scope.language && this.scope.end===other.scope.end;}
   toDOM(view) {
     const wrap=document.createElement('span');wrap.className='block-header';
-    const button=document.createElement('button');button.type='button';button.className='block-type';button.textContent=blockNames[this.scope.mode]+' ▾';button.setAttribute('aria-label',`更改${blockNames[this.scope.mode]}块类型`);
+    const button=document.createElement('button');button.type='button';button.className='block-type';button.textContent=t(blockNames[this.scope.mode])+' ▾';button.setAttribute('aria-label',t('功能块')+': '+t(blockNames[this.scope.mode]));
     button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',e=>{e.preventDefault();openBlockMenu({from:view.state.doc.line(this.scope.start).from,scope:this.scope});});wrap.append(button);
     if(this.scope.mode==='code') {
       const language=document.createElement('button');language.type='button';language.className='block-language';language.tabIndex=-1;
       const names={'':'纯文本',javascript:'JavaScript',typescript:'TypeScript',python:'Python',swift:'Swift',json:'JSON',html:'HTML',css:'CSS',sql:'SQL',shell:'Shell',markdown:'Markdown'};
-      language.textContent=names[this.scope.language||''] || this.scope.language;language.setAttribute('aria-label','代码语言');language.setAttribute('aria-haspopup','listbox');language.setAttribute('aria-expanded','false');language.setAttribute('aria-controls','language-menu');language.title='选择代码语言 ⌘L';
+      language.textContent=t(names[this.scope.language||''] || this.scope.language);language.setAttribute('aria-label',t('代码语言'));language.setAttribute('aria-haspopup','listbox');language.setAttribute('aria-expanded','false');language.setAttribute('aria-controls','language-menu');language.title=t('选择代码语言 ⌘L');
       language.addEventListener('mousedown',event=>event.preventDefault());language.addEventListener('click',event=>{event.preventDefault();openLanguageMenu(view,this.scope,language);});wrap.append(language);
     }
     return wrap;
@@ -63,7 +63,7 @@ function decorateCode(view,scope,decorations) {
   }
   const doc=view.state.doc, from=doc.line(scope.start+1).from, to=scope.end<=doc.lines?doc.line(scope.end).from-1:doc.length;
   if(to<=from)return;
-  try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),defaultHighlightStyle,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
+  try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),classHighlighter,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
 }
 function decorate(view) {
   const doc=view.state.doc, text=doc.toString(), scopes=analyzeScopes(text,rates), decorations=[];

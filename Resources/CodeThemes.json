@@ -1,0 +1,80 @@
+[
+  {
+    "id": "amber",
+    "title": "琥珀",
+    "colors": {
+      "property": "#a33f0a",
+      "string": "#007464",
+      "keyword": "#85338e",
+      "number": "#075eac",
+      "comment": "#75685e",
+      "function": "#775000",
+      "variable": "#30465c",
+      "operator": "#95520f",
+      "punctuation": "#61564d"
+    },
+    "darkColors": {
+      "property": "#ffb57a",
+      "string": "#8cdbc4",
+      "keyword": "#dfa5f1",
+      "number": "#8bc6ff",
+      "comment": "#b4aa9c",
+      "function": "#e6ce81",
+      "variable": "#c4d4e4",
+      "operator": "#e9b778",
+      "punctuation": "#d5c9bc"
+    }
+  },
+  {
+    "id": "ocean",
+    "title": "海蓝",
+    "colors": {
+      "property": "#005e9e",
+      "string": "#087344",
+      "keyword": "#822b9d",
+      "number": "#b0440e",
+      "comment": "#637680",
+      "function": "#8b4e00",
+      "variable": "#24536a",
+      "operator": "#006f80",
+      "punctuation": "#52646e"
+    },
+    "darkColors": {
+      "property": "#8dcfff",
+      "string": "#8cdda6",
+      "keyword": "#e3a5f5",
+      "number": "#ffb082",
+      "comment": "#a7bac6",
+      "function": "#f2c485",
+      "variable": "#b4d8e8",
+      "operator": "#87d6df",
+      "punctuation": "#c2d1dc"
+    }
+  },
+  {
+    "id": "contrast",
+    "title": "鲜明",
+    "colors": {
+      "property": "#a01821",
+      "string": "#006b35",
+      "keyword": "#5b22a6",
+      "number": "#a33c00",
+      "comment": "#655e57",
+      "function": "#775000",
+      "variable": "#1e3c73",
+      "operator": "#811f4e",
+      "punctuation": "#433d38"
+    },
+    "darkColors": {
+      "property": "#ff9c9c",
+      "string": "#8fe2a5",
+      "keyword": "#d8b1ff",
+      "number": "#ffb084",
+      "comment": "#c4bcb0",
+      "function": "#f2d17f",
+      "variable": "#b2cbff",
+      "operator": "#f2a4c7",
+      "punctuation": "#e1d7cd"
+    }
+  }
+]

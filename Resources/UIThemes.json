@@ -1,0 +1,5 @@
+[
+  {"id":"orange","title":"暖橙","colors":{"ink":"#302921","muted":"#89796e","accent":"#b95c1d","bar":"#fff0e2","paper":"#fffdfa","border":"#f0dbc9","hover":"#f9ddc6","button":"#8c5b39","active":"#fff5ec","cursor":"#ad4f12","checked":"#d87932","selection":"#f8d7bc"}},
+  {"id":"blue","title":"海蓝","colors":{"ink":"#263341","muted":"#718493","accent":"#2868a2","bar":"#eaf3fc","paper":"#fbfdff","border":"#d4e3f2","hover":"#d4e8f9","button":"#496c88","active":"#f0f7ff","cursor":"#2868a2","checked":"#397fb8","selection":"#cce3f6"}},
+  {"id":"green","title":"鼠尾草","colors":{"ink":"#29362e","muted":"#728478","accent":"#387452","bar":"#eaf4ec","paper":"#fcfefb","border":"#d7e8da","hover":"#d4ead8","button":"#4e745a","active":"#f0f8f1","cursor":"#387452","checked":"#4c8a60","selection":"#cfe8d4"}}
+]

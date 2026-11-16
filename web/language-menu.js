@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { currentBlockScope, closeBlockMenu } from './block-menu.js';
 
 export const languages = [['','纯文本'],['javascript','JavaScript'],['typescript','TypeScript'],['python','Python'],['swift','Swift'],['json','JSON'],['html','HTML'],['css','CSS'],['sql','SQL'],['shell','Shell'],['markdown','Markdown']];
@@ -19,7 +20,7 @@ function render() {
   active.choices.forEach(([value,label], index) => {
     const item=document.createElement('button'); item.type='button'; item.className='language-menu-item';
     item.setAttribute('role','option'); item.setAttribute('aria-selected',String(index===active.index));
-    const name=document.createElement('span'); name.textContent=label;
+    const name=document.createElement('span'); name.textContent=t(label);
     const mark=document.createElement('span'); mark.className='language-menu-check'; mark.textContent=value===active.scope.language?'✓':'';
     item.append(name,mark); item.addEventListener('mousedown',event=>event.preventDefault()); item.addEventListener('click',()=>choose(value)); menu.append(item);
   });

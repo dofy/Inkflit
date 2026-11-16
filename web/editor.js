@@ -1,3 +1,4 @@
+import { t, setLanguage, lang } from './i18n.js';
 import { EditorState, Text, Transaction } from '@codemirror/state';
 import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, toggleLineComment } from '@codemirror/commands';
@@ -14,6 +15,9 @@ import { parseTimer, scopeAt } from './features.js';
 import { timerCommand, timerDisplay, advanceTimer } from './timer.js';
 import { commentChanges, blockCodeCommentChanges, isCodeAt, noteComments, selectedLines } from './comments.js';
 import { planCodeEdit, normalizeIndentation } from './code-editing.js';
+import { classHighlighter } from '@lezer/highlight';
+import { applyCodeTheme } from './code-themes.js';
+import { applyUIAppearance } from './ui-themes.js';
 
 const $ = id => document.getElementById(id);
 let state = null, editor = null;
@@ -23,12 +27,23 @@ const editorStates = new Map();
 const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
 const current = () => state.notes.find(n => n.id === state.selected);
 function persist() {
-  $('save').textContent = '保存中…'; $('save').className = '';
+  $('save').textContent = t('保存中…'); $('save').className = '';
   if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'save', json:JSON.stringify(state)});
   else { localStorage.setItem('quicknote-test', JSON.stringify(state)); window.saveResult(true); }
 }
-window.saveResult = (ok, error) => { $('save').textContent = ok ? '已保存' : (error || '保存失败'); $('save').className = ok ? '' : 'error'; };
+window.saveResult = (ok, error) => { $('save').textContent = ok ? t('已保存') : (error || t('保存失败')); $('save').className = ok ? '' : 'error'; };
 window.setShortcutLabel = label => { $('shortcut').textContent = label; };
+window.setLanguage = value => {
+  setLanguage(value); document.documentElement.lang=lang();
+  for(const [id,key,shortcut] of [['previous','上一条笔记','⌘['],['next','下一条笔记','⌘]'],['new','新建笔记','⌘N'],['delete','删除笔记','⌘D']]) {
+    $(id).setAttribute('aria-label',t(key)); $(id).title=t(key)+' '+shortcut;
+  }
+  $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
+  document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
+  $('timer-reset').textContent=t('重置'); $('timer-stop').textContent=t('停止');
+  if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); renderTimer(); }
+  if(state && !$('save').classList.contains('error')) $('save').textContent=t('已保存');
+};
 function refreshNav() {
   const index = state.notes.findIndex(n => n.id === state.selected);
   $('position').textContent = `${index + 1} / ${state.notes.length}`;
@@ -43,7 +58,7 @@ function makeState(content) {
       if (tr.annotation(Transaction.userEvent) === 'input.type.compose') return tr;
       return {changes:tr.changes, selection:tr.selection, effects:tr.effects, scrollIntoView:tr.scrollIntoView,
         annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
-    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, syntaxHighlighting(defaultHighlightStyle), EditorView.lineWrapping,
+    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
     keymap.of([...defaultKeymap,...historyKeymap]),
     EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
   ]});
@@ -73,7 +88,7 @@ function changeEditor(id) {
 function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(); }
 function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(); }
 function deleteNote() {
-  if (!state || !confirm('删除这条笔记？此操作无法撤销。')) return;
+  if (!state || !confirm(t('删除这条笔记？此操作无法撤销。'))) return;
   const deleted = state.selected; const index = state.notes.findIndex(n => n.id === deleted);
   state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
   changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist();
@@ -95,14 +110,14 @@ function scheduleTimer() {
 function applyTimer(command) { state.timer=timerCommand(state.timer,command); persist(); scheduleTimer(); renderTimer(); }
 function renderTimer(forceAdvance=false) {
   if (!state) return;
-  let t=state.timer; const before=t;
-  if (t && (forceAdvance || !window.webkit?.messageHandlers?.quicknote)) t=advanceTimer(t);
-  if(t!==before) { state.timer=t; persist(); scheduleTimer(); }
-  $('timer').hidden=!t;
-  if(!t)return;
-  $('timer-label').textContent=(t.title ? t.title+' · ' : '')+(t.rest ? (t.phase==='work'?'专注':'休息') : t.duration?'倒计时':'计时');
-  $('timer-value').textContent=timerDisplay(t).text+(t.done?' 完成':'');
-  $('timer-pause').textContent=t.paused?'继续':'暂停'; $('timer-pause').disabled=!!t.done;
+  let timer=state.timer; const before=timer;
+  if (timer && (forceAdvance || !window.webkit?.messageHandlers?.quicknote)) timer=advanceTimer(timer);
+  if(timer!==before) { state.timer=timer; persist(); scheduleTimer(); }
+  $('timer').hidden=!timer;
+  if(!timer)return;
+  $('timer-label').textContent=(timer.title ? timer.title+' · ' : '')+(timer.rest ? t(timer.phase==='work'?'专注':'休息') : t(timer.duration?'倒计时':'计时'));
+  $('timer-value').textContent=timerDisplay(timer).text+(timer.done?' '+t('完成'):'');
+  $('timer-pause').textContent=t(timer.paused?'继续':'暂停'); $('timer-pause').disabled=!!timer.done;
 }
 window.timerFinished=()=>renderTimer(true);
 setInterval(renderTimer,1000);
@@ -202,13 +217,22 @@ registers.pushText=function(name,operator,text,linewise,blockwise) {
 Vim.defineEx('write', 'w', () => { if (state) persist(); });
 window.focusEditor = () => { if (editor) editor.focus(); };
 window.setCodeIndentation = value => { codeIndentation=normalizeIndentation(value); };
+let currentCodeTheme='amber', currentUITheme='orange', currentOpacity=100;
+window.setCodeTheme = value => { currentCodeTheme=value; applyCodeTheme(value); };
+applyCodeTheme('amber');
+window.setUIAppearance = (theme, opacity) => { currentUITheme=theme; currentOpacity=opacity; applyUIAppearance(theme, opacity); };
+globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+  applyUIAppearance(currentUITheme,currentOpacity); applyCodeTheme(currentCodeTheme);
+});
+applyUIAppearance('orange',100);
 window.exportNotesJSON = () => state ? JSON.stringify(state) : null;
 window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
-    if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error('笔记文件格式无效');
+    if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('笔记文件格式无效'));
     if (loaded) state = loaded; else { const n = newNote(); state = {notes:[n],selected:n.id}; }
-    changeEditor(state.selected); renderTimer(true); scheduleTimer(); $('save').textContent = loaded ? '已载入' : '新笔记';
-  } catch (error) { $('save').className='error'; $('save').textContent = '读取失败：'+error.message; }
+    changeEditor(state.selected); renderTimer(true); scheduleTimer(); $('save').textContent = loaded ? t('已载入') : t('新笔记');
+  } catch (error) { $('save').className='error'; $('save').textContent = t('读取失败：')+error.message; }
 };
+window.setLanguage(lang());
 if (!window.webkit?.messageHandlers?.quicknote) { const saved = localStorage.getItem('quicknote-test'); window.loadNotesBase64(saved ? btoa(unescape(encodeURIComponent(saved))) : null); }

@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { featureScopes, scopeAt } from './features.js';
 const items = [
   ['list','清单','逐行显示复选框'],['math','计算','算式、变量与单位换算'],
@@ -14,10 +15,10 @@ export function blockMenuOpen() { return !!active; }
 export function closeBlockMenu() { active=null; if(menu) menu.hidden=true; }
 function render(query='') {
   const previousScrollTop=menu.scrollTop;
-  const choices=items.filter(x=>(x[0]!=='delete'||active.scope) && (x[0].includes(query.toLowerCase())||x[1].includes(query)));
+  const choices=items.map(([id,name,detail])=>[id,t(name),t(detail)]).filter(x=>(x[0]!=='delete'||active.scope) && (x[0].includes(query.toLowerCase())||x[1].toLowerCase().includes(query.toLowerCase())));
   active.choices=choices; active.index=Math.min(active.index,Math.max(0,choices.length-1));
   menu.replaceChildren();
-  if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent='没有匹配的功能块';menu.append(e); return; }
+  if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent=t('没有匹配的功能块');menu.append(e); return; }
   choices.forEach(([id,name,description],index)=>{
     const b=document.createElement('button'); b.type='button';b.className='block-menu-item'+(id==='delete'?' danger':'');b.setAttribute('role','option');b.setAttribute('aria-selected',String(index===active.index));
     const title=document.createElement('span'); title.textContent=name;
@@ -39,7 +40,7 @@ function render(query='') {
 function position(pos) {
   const editor=view(), coords=editor.coordsAtPos(pos), parent=menu.offsetParent.getBoundingClientRect();
   if(!coords) return;
-  const left=Math.max(8,Math.min(coords.left-parent.left,parent.width-280));
+  const left=Math.max(8,Math.min(coords.left-parent.left,parent.width-menu.offsetWidth-8));
   const top=Math.max(8,Math.min(coords.bottom-parent.top+4,parent.height-240));
   menu.style.left=`${left}px`;menu.style.top=`${top}px`;
 }
@@ -65,7 +66,7 @@ export function updateBlockMenu() {
   const editor=view(), pos=editor.state.selection.main.head;
   if(pos<active.from+1 || editor.state.doc.lineAt(pos).number!==editor.state.doc.lineAt(active.from).number) return closeBlockMenu();
   const query=editor.state.sliceDoc(active.from,pos);
-  if(!/^\/[\w\u4e00-\u9fff]*$/.test(query)) return closeBlockMenu();
+  if(!/^\/[\p{L}\p{N}_]*$/u.test(query)) return closeBlockMenu();
   render(query.slice(1));position(active.from);
 }
 function choose(mode) {

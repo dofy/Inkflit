@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { create, all } from 'mathjs';
 
 const math = create(all);
@@ -47,10 +48,10 @@ export function evaluateExpression(expression, scope = {}, rates = null) {
     if (!source || source.length > 256) return null;
     const currency = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([A-Za-z]{3})\s+(?:to|in)\s+([A-Za-z]{3})$/i.exec(source);
     if (currency && currency[2] === currency[2].toUpperCase() && currency[3] === currency[3].toUpperCase()) {
-      if (!rates) return {text:'汇率加载中或不可用'};
+      if (!rates) return {text:t('汇率加载中或不可用')};
       const from = currency[2].toUpperCase(), to = currency[3].toUpperCase();
       if (rates.values[from] && rates.values[to]) return {value:Number(currency[1]) * rates.values[to] / rates.values[from], text:`${formatNumber(Number(currency[1]) * rates.values[to] / rates.values[from])} ${to}`, rateDate:rates.date};
-      return {text:'不支持的币种'};
+      return {text:t('不支持的币种')};
     }
     const node = math.parse(source);
     let nodes = 0, valid = true;
@@ -93,10 +94,11 @@ export function analyze(text, rates = null) {
     const joined=content.join('\n');
     const words=typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter(undefined,{granularity:'word'}).segment(joined)].filter(x=>x.isWordLike).length : (joined.match(/[\p{L}\p{N}]+/gu)||[]).length;
     const chars=typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(joined)].length : Array.from(joined).length;
-    return {mode, results, summary:`${content.length} 项 · ${words} 词 · ${chars} 字符`};
+    return {mode, results, summary:t('{items} 项 · {words} 词 · {chars} 字符').replace('{items}',content.length).replace('{words}',words).replace('{chars}',chars)};
   }
   const total=values.reduce((a,b)=>a+b,0);
-  return {mode,results,summary: mode==='sum' ? `合计 ${formatNumber(total)} · ${values.length} 个数` : mode==='avg' ? `平均 ${values.length ? formatNumber(total/values.length) : '—'} · ${values.length} 个数` : ''};
+  const summary=mode==='sum' ? t('合计 {total} · {count} 个数') : mode==='avg' ? t('平均 {total} · {count} 个数') : '';
+  return {mode,results,summary:summary.replace('{total}',mode==='avg' ? (values.length ? formatNumber(total/values.length) : '—') : formatNumber(total)).replace('{count}',values.length)};
 }
 export function parseTimer(line, now = new Date()) {
   const match=/^\s*timer(?:\s+([^:]*?(?::\d{1,2})?(?:\s+\d+(?:\.\d+)?)?))?(?:\s*:\s*(.*))?\s*$/i.exec(line);

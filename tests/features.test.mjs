@@ -85,6 +85,24 @@ test('Vim line deletion keeps the end marker and remains editable',async()=>{
  assert.equal(result.state.doc.toString(),':::quicknote list\nfirst\n\n:::end\n');
 });
 
+test('whole lines before a feature block can be removed and undone without joining its marker',async()=>{
+ const {EditorState,Transaction}=await import('@codemirror/state');
+ const {history,undo}=await import('@codemirror/commands');
+ const {blockProtection}=await import('../web/block-protection.js');
+ const original='// comment\n\n:::quicknote code json\n{}\n:::end';
+ let state=EditorState.create({doc:original,extensions:[history(),blockProtection]});
+ const marker=state.doc.toString().indexOf(':::quicknote');
+ state=state.update({changes:{from:0,to:marker},annotations:Transaction.userEvent.of('delete')}).state;
+ assert.equal(state.doc.toString(),':::quicknote code json\n{}\n:::end');
+ let restored=state; assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true); assert.equal(restored.doc.toString(),original);
+ const doc='before\n\n:::quicknote list\nitem\n:::end';
+ state=EditorState.create({doc,extensions:[blockProtection]});
+ state=state.update({changes:{from:7,to:8},annotations:Transaction.userEvent.of('delete')}).state;
+ assert.equal(state.doc.toString(),'before\n:::quicknote list\nitem\n:::end');
+ const unsafe=state.update({changes:{from:3,to:7},annotations:Transaction.userEvent.of('delete')}).state;
+ assert.equal(unsafe.doc.toString(),'bef\n:::quicknote list\nitem\n:::end');
+});
+
 test('first cursor position and insertions preserve hidden block markers',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');
  const {blockProtection,nearestEditablePosition}=await import('../web/block-protection.js');
@@ -176,3 +194,5 @@ test('task cursor skips checkbox marker while preserving code and plain text',as
  assert.equal(taskContentPosition(state,finished+4),finished+4);
  assert.equal(taskContentPosition(state,code),code);
 });
+import { setLanguage } from '../web/i18n.js';
+setLanguage('zh-Hans');

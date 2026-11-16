@@ -3,8 +3,38 @@ import Carbon
 import ServiceManagement
 import WebKit
 
+struct CodeTheme: Decodable {
+    let id: String
+    let title: String
+    let colors: [String: String]
+    let darkColors: [String: String]
+}
+enum CodeThemes {
+    static let all: [CodeTheme] = {
+        guard let url = Bundle.main.url(forResource: "CodeThemes", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let themes = try? JSONDecoder().decode([CodeTheme].self, from: data), !themes.isEmpty else { return [] }
+        return themes
+    }()
+    static func validID(_ id: String?) -> String { all.first(where: { $0.id == id })?.id ?? all.first?.id ?? "amber" }
+}
+struct UITheme: Decodable { let id: String; let title: String; let colors: [String: String] }
+enum UIThemes {
+    static let all: [UITheme] = {
+        guard let url = Bundle.main.url(forResource: "UIThemes", withExtension: "json"), let data = try? Data(contentsOf: url),
+              let themes = try? JSONDecoder().decode([UITheme].self, from: data), !themes.isEmpty else { return [] }
+        return themes
+    }()
+    static func validID(_ id: String?) -> String { all.first(where: { $0.id == id })?.id ?? all.first?.id ?? "orange" }
+    static func accent(_ id: String) -> NSColor {
+        switch validID(id) { case "blue": return .systemBlue; case "green": return .systemGreen; default: return .systemOrange }
+    }
+}
+struct WindowAppearance { var theme: String; var opacity: Int; var blur: Int }
+
 /// A compact switch with an app-colored on state and standard button behavior.
 final class OrangeSwitch: NSButton {
+    var accentColor: NSColor = .systemOrange { didSet { needsDisplay = true } }
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setButtonType(.toggle); isBordered = false; title = ""
@@ -14,7 +44,7 @@ final class OrangeSwitch: NSButton {
     override var intrinsicContentSize: NSSize { NSSize(width: 50, height: 26) }
     override func draw(_ dirtyRect: NSRect) {
         let track = bounds.insetBy(dx: 1, dy: 2)
-        (state == .on ? NSColor.systemOrange : NSColor.quaternaryLabelColor).setFill()
+        (state == .on ? accentColor : NSColor.quaternaryLabelColor).setFill()
         NSBezierPath(roundedRect: track, xRadius: track.height / 2, yRadius: track.height / 2).fill()
         let size = track.height - 4
         let x = state == .on ? track.maxX - size - 2 : track.minX + 2
@@ -41,17 +71,17 @@ final class ShortcutField: NSButton {
         super.init(frame: frameRect)
         bezelStyle = .rounded; font = .monospacedSystemFont(ofSize: 13, weight: .medium)
         target = self; action = #selector(startRecording)
-        setAccessibilityLabel("全局快捷键")
+        setAccessibilityLabel(L("全局快捷键"))
         refresh()
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
     override var acceptsFirstResponder: Bool { true }
     @objc private func startRecording() {
-        recording = true; onMessage?("按下组合键，按 Esc 取消。")
+        recording = true; onMessage?(L("按下组合键，按 Esc 取消。"))
         window?.makeFirstResponder(self)
     }
     private func refresh() {
-        title = recording ? "输入快捷键…" : (displayValue.isEmpty ? "添加快捷键" : displayValue)
+        title = recording ? L("输入快捷键…") : (displayValue.isEmpty ? L("添加快捷键") : displayValue)
         setAccessibilityValue(title)
     }
     override func keyDown(with event: NSEvent) {
@@ -64,14 +94,14 @@ final class ShortcutField: NSButton {
         if flags.contains(.shift) { mods |= UInt32(shiftKey) }
         if flags.contains(.command) { mods |= UInt32(cmdKey) }
         guard mods & UInt32(controlKey | optionKey | cmdKey) != 0 else {
-            onMessage?("请包含 ⌘、⌥ 或 ⌃。")
+            onMessage?(L("请包含 ⌘、⌥ 或 ⌃。"))
             NSSound.beep(); return
         }
         if let message = onCapture?(UInt32(event.keyCode), mods) {
             onMessage?(message); NSSound.beep(); return
         }
         recording = false
-        onMessage?("快捷键已更新。")
+        onMessage?(L("快捷键已更新。"))
     }
 }
 final class SettingsWindow: NSWindow {
@@ -88,12 +118,28 @@ final class SettingsWindow: NSWindow {
 }
 final class SettingsController: NSWindowController {
     private let shortcut = ShortcutField(frame: .zero)
-    private let shortcutMessage = NSTextField(wrappingLabelWithString: "点击快捷键，然后按下新的组合键。")
+    private let shortcutMessage = NSTextField(wrappingLabelWithString: L("点击快捷键，然后按下新的组合键。"))
     private let loginSwitch = OrangeSwitch(frame: .zero)
-    private let loginMessage = NSTextField(wrappingLabelWithString: "当前为手动启动。")
-    private let loginSettings = NSButton(title: "打开系统设置", target: nil, action: nil)
+    private let loginMessage = NSTextField(wrappingLabelWithString: L("当前为手动启动。"))
+    private let loginSettings = NSButton(title: L("打开系统设置"), target: nil, action: nil)
     private let storageMessage = NSTextField(wrappingLabelWithString: "")
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let themePreview = NSTextField(labelWithString: "")
+    private let previewBox = NSBox()
+    private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
+    var languageChanged: (() -> Void)?
+    private let opacitySlider = NSSlider(value: 100, minValue: 50, maxValue: 100, target: nil, action: nil)
+    private let blurSlider = NSSlider(value: 0, minValue: 0, maxValue: 100, target: nil, action: nil)
+    private let opacityValue = NSTextField(labelWithString: "100%")
+    private let blurValue = NSTextField(labelWithString: "0%")
+    private let tabs = NSTabView()
+    private var symbols: [NSImageView] = []
+    private let getAppearance: () -> WindowAppearance
+    private let setAppearance: (WindowAppearance) -> Void
+    private let getTheme: () -> String
+    private let setTheme: (String) -> Void
     private let getIndentation: () -> String
     private let setIndentation: (String) -> Void
     private let getStorage: () -> String
@@ -106,23 +152,25 @@ final class SettingsController: NSWindowController {
     private let loginStatus: () -> SMAppService.Status
     private let setLogin: (Bool) -> String?
 
-    init(getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?, clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?, getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void, getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void, loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?) {
+    init(getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?, clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?, getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void, getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void, getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void, getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void, loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?) {
         self.getShortcut = getShortcut; self.saveShortcut = saveShortcut; self.clearShortcut = clearShortcut
         self.resetShortcut = resetShortcut; self.loginStatus = loginStatus; self.setLogin = setLogin
         self.getStorage = getStorage; self.changeStorage = changeStorage
         self.getIndentation = getIndentation; self.setIndentation = setIndentation
-        let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 570), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "Inkflit 设置"; window.isReleasedWhenClosed = false; window.center()
+        self.getTheme = getTheme; self.setTheme = setTheme
+        self.getAppearance = getAppearance; self.setAppearance = setAppearance
+        let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 500), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window.title = L("Inkflit 设置"); window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
         window.shortcutField = shortcut
         buildUI(window)
         shortcut.onCapture = { [weak self] code, mods in
-            guard let self else { return "设置窗口不可用。" }
+            guard let self else { return L("设置窗口不可用。") }
             let error = self.saveShortcut(code, mods)
             if error == nil { self.shortcut.displayValue = self.getShortcut() }
             return error
         }
-        shortcut.onCancel = { [weak self] in self?.shortcutMessage.stringValue = "已取消，原快捷键保持不变。" }
+        shortcut.onCancel = { [weak self] in self?.shortcutMessage.stringValue = L("已取消，原快捷键保持不变。") }
         shortcut.onMessage = { [weak self] in self?.shortcutMessage.stringValue = $0 }
         NotificationCenter.default.addObserver(self, selector: #selector(windowBecameKey), name: NSWindow.didBecomeKeyNotification, object: window)
         refresh()
@@ -138,7 +186,7 @@ final class SettingsController: NSWindowController {
         let textStack = NSStackView(views: [heading, subtitle]); textStack.orientation = .vertical; textStack.alignment = .leading; textStack.spacing = 4
         let symbol = NSImageView(); symbol.image = NSImage(systemSymbolName: icon, accessibilityDescription: nil)
         symbol.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-        symbol.contentTintColor = .systemOrange
+        symbol.contentTintColor = UIThemes.accent(getAppearance().theme); symbols.append(symbol)
         symbol.imageScaling = .scaleProportionallyDown; symbol.setAccessibilityElement(false)
         symbol.widthAnchor.constraint(equalToConstant: 32).isActive = true; symbol.heightAnchor.constraint(equalToConstant: 32).isActive = true
         textStack.widthAnchor.constraint(equalToConstant: 160).isActive = true
@@ -155,60 +203,117 @@ final class SettingsController: NSWindowController {
         ])
         return container
     }
+    private func page(_ sections: [NSView]) -> NSView {
+        let page = NSView(); let stack = NSStackView(views: sections)
+        stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 16; stack.translatesAutoresizingMaskIntoConstraints = false
+        page.addSubview(stack)
+        NSLayoutConstraint.activate([stack.topAnchor.constraint(equalTo: page.topAnchor, constant: 16), stack.leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 16), stack.trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: -16), stack.bottomAnchor.constraint(lessThanOrEqualTo: page.bottomAnchor, constant: -12)])
+        for section in sections { section.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true }
+        return page
+    }
+    private func sliderControls(_ slider: NSSlider, value: NSTextField, label: String) -> NSView {
+        slider.target = self; slider.action = #selector(appearanceChanged); slider.isContinuous = true; slider.setAccessibilityLabel(label)
+        slider.widthAnchor.constraint(equalToConstant: 136).isActive = true
+        value.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular); value.textColor = .secondaryLabelColor
+        value.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        let controls = NSStackView(views: [slider, value]); controls.orientation = .horizontal; controls.alignment = .centerY; controls.spacing = 8
+        return controls
+    }
     private func buildUI(_ window: SettingsWindow) {
-        let title = label("设置", size: 20, weight: .semibold)
-        let description = label("按你的习惯使用 Inkflit", size: 12, color: .secondaryLabelColor)
+        let title = label(L("设置"), size: 20, weight: .semibold)
+        let description = label(L("按你的习惯使用 Inkflit"), size: 12, color: .secondaryLabelColor)
         let header = NSStackView(views: [title, description]); header.orientation = .vertical; header.alignment = .leading; header.spacing = 4
-        let clear = NSButton(title: "清除", target: self, action: #selector(clearPressed)); clear.bezelStyle = .rounded; clear.setAccessibilityLabel("清除全局快捷键")
-        let reset = NSButton(title: "恢复默认", target: self, action: #selector(resetPressed)); reset.bezelStyle = .rounded
+        let clear = NSButton(title: L("清除"), target: self, action: #selector(clearPressed)); clear.bezelStyle = .rounded; clear.setAccessibilityLabel(L("清除全局快捷键"))
+        let reset = NSButton(title: L("恢复默认"), target: self, action: #selector(resetPressed)); reset.bezelStyle = .rounded
         shortcut.widthAnchor.constraint(greaterThanOrEqualToConstant: 112).isActive = true
         let shortcutControls = NSStackView(views: [shortcut, clear, reset]); shortcutControls.orientation = .horizontal; shortcutControls.alignment = .centerY; shortcutControls.spacing = 4
-        let shortcutSection = section("全局快捷键", icon: "keyboard", detail: "随时唤起或收起笔记", controls: shortcutControls, message: shortcutMessage)
-        loginSwitch.target = self; loginSwitch.action = #selector(loginChanged); loginSwitch.setAccessibilityLabel("开机启动")
+        let shortcutSection = section(L("全局快捷键"), icon: "keyboard", detail: L("随时唤起或收起笔记"), controls: shortcutControls, message: shortcutMessage)
+        loginSwitch.target = self; loginSwitch.action = #selector(loginChanged); loginSwitch.setAccessibilityLabel(L("开机启动"))
         loginSettings.target = self; loginSettings.action = #selector(openLoginSettings); loginSettings.bezelStyle = .rounded; loginSettings.isHidden = true
         let loginControls = NSStackView(views: [loginSettings, loginSwitch]); loginControls.orientation = .horizontal; loginControls.alignment = .centerY; loginControls.spacing = 8
-        let loginSection = section("开机启动", icon: "power", detail: "登录 Mac 后自动运行", controls: loginControls, message: loginMessage)
-        let chooseStorage = NSButton(title: "选择文件夹…", target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
+        let loginSection = section(L("开机启动"), icon: "power", detail: L("登录 Mac 后自动运行"), controls: loginControls, message: loginMessage)
+        let chooseStorage = NSButton(title: L("选择文件夹…"), target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
         storageMessage.lineBreakMode = .byTruncatingMiddle; storageMessage.maximumNumberOfLines = 1
-        let storageSection = section("笔记保存位置", icon: "folder", detail: "更改时保留原文件", controls: chooseStorage, message: storageMessage)
-        for (title, value) in [("2 个空格", "spaces2"), ("4 个空格", "spaces4"), ("Tab", "tabs")] {
+        let storageSection = section(L("笔记保存位置"), icon: "folder", detail: L("更改时保留原文件"), controls: chooseStorage, message: storageMessage)
+        for (title, value) in [(L("2 个空格"), "spaces2"), (L("4 个空格"), "spaces4"), ("Tab", "tabs")] {
             indentation.addItem(withTitle: title); indentation.lastItem?.representedObject = value
         }
-        indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel("代码缩进")
-        let indentMessage = NSTextField(wrappingLabelWithString: "回车自动缩进；Tab 插入缩进。")
-        let indentSection = section("代码缩进", icon: "increase.indent", detail: "代码块使用的缩进方式", controls: indentation, message: indentMessage)
-        let separator = NSBox(); separator.boxType = .separator
-        let help = NSButton(title: "打开使用帮助", target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
+        indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel(L("代码缩进"))
+        let indentMessage = NSTextField(wrappingLabelWithString: L("回车自动缩进；Tab 插入缩进。"))
+        let indentSection = section(L("代码缩进"), icon: "increase.indent", detail: L("代码块使用的缩进方式"), controls: indentation, message: indentMessage)
+        for theme in CodeThemes.all { themePicker.addItem(withTitle: L(theme.title)); themePicker.lastItem?.representedObject = theme.id }
+        themePicker.target = self; themePicker.action = #selector(themeChanged); themePicker.setAccessibilityLabel(L("代码配色"))
+        let themeMessage = NSTextField(wrappingLabelWithString: L("选择后立即应用，预览展示 JSON 代码。"))
+        let themeSection = section(L("代码配色"), icon: "paintpalette", detail: L("选择语法高亮颜色"), controls: themePicker, message: themeMessage)
+        themePreview.font = .monospacedSystemFont(ofSize: 12, weight: .regular); themePreview.maximumNumberOfLines = 0
+        themePreview.setAccessibilityLabel(L("代码配色预览"))
+        previewBox.boxType = .custom; previewBox.borderWidth = 0
+        previewBox.fillColor = NSColor(calibratedRed: 1, green: 0.992, blue: 0.98, alpha: 1); previewBox.cornerRadius = 8
+        themePreview.translatesAutoresizingMaskIntoConstraints = false; previewBox.addSubview(themePreview)
+        NSLayoutConstraint.activate([themePreview.leadingAnchor.constraint(equalTo: previewBox.leadingAnchor, constant: 12), themePreview.trailingAnchor.constraint(equalTo: previewBox.trailingAnchor, constant: -12), themePreview.topAnchor.constraint(equalTo: previewBox.topAnchor, constant: 8), themePreview.bottomAnchor.constraint(equalTo: previewBox.bottomAnchor, constant: -8)])
+        let previewRow = NSView(); previewBox.translatesAutoresizingMaskIntoConstraints = false; previewRow.addSubview(previewBox)
+        NSLayoutConstraint.activate([previewBox.leadingAnchor.constraint(equalTo: previewRow.leadingAnchor, constant: 44), previewBox.trailingAnchor.constraint(equalTo: previewRow.trailingAnchor), previewBox.topAnchor.constraint(equalTo: previewRow.topAnchor), previewBox.bottomAnchor.constraint(equalTo: previewRow.bottomAnchor)])
+        let themeGroup = NSStackView(views: [themeSection, previewRow]); themeGroup.orientation = .vertical; themeGroup.alignment = .leading; themeGroup.spacing = 8
+        themeSection.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true; previewRow.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true
+        for theme in UIThemes.all { uiThemePicker.addItem(withTitle: L(theme.title)); uiThemePicker.lastItem?.representedObject = theme.id }
+        uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged); uiThemePicker.setAccessibilityLabel(L("界面主色"))
+        let uiThemeSection = section(L("界面主色"), icon: "paintbrush", detail: L("设置笔记窗口的主色调"), controls: uiThemePicker, message: NSTextField(wrappingLabelWithString: L("更改后立即应用。")))
+        let opacitySection = section(L("窗口不透明度"), icon: "circle.lefthalf.filled", detail: L("调整笔记背景的透明程度"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("窗口不透明度")), message: NSTextField(wrappingLabelWithString: L("100% 为不透明。")))
+        let blurSection = section(L("背景模糊"), icon: "drop.halffull", detail: L("柔化窗口后方内容"), controls: sliderControls(blurSlider, value: blurValue, label: L("背景模糊")), message: NSTextField(wrappingLabelWithString: L("降低不透明度后可看到模糊效果。")))
+        tabs.tabViewType = .topTabsBezelBorder
+        for (title, value) in [(L("跟随系统"), "system"), ("English", "en"), ("简体中文", "zh-Hans"), ("繁體中文", "zh-Hant"), ("日本語", "ja")] {
+            languagePicker.addItem(withTitle: title); languagePicker.lastItem?.representedObject = value
+        }
+        languagePicker.target = self; languagePicker.action = #selector(changeLanguage)
+        languagePicker.setAccessibilityLabel(L("语言"))
+        let languageSection = section(L("语言"), icon: "globe", detail: L("选择应用界面语言"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("默认跟随系统语言。")))
+        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([indentSection, themeGroup])), (L("语言"), page([languageSection]))] {
+            let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
+        }
+        tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
+        let help = NSButton(title: L("打开使用帮助"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
         let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
         let footer = NSStackView(views: [copyright, help]); footer.orientation = .horizontal; footer.alignment = .centerY; footer.distribution = .gravityAreas
-        let stack = NSStackView(views: [header, separator, loginSection, shortcutSection, indentSection, storageSection, footer]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 24
+        let stack = NSStackView(views: [header, tabs, footer]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -24),
-            stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 24),
-            separator.widthAnchor.constraint(equalTo: stack.widthAnchor), shortcutSection.widthAnchor.constraint(equalTo: stack.widthAnchor), loginSection.widthAnchor.constraint(equalTo: stack.widthAnchor), indentSection.widthAnchor.constraint(equalTo: stack.widthAnchor), storageSection.widthAnchor.constraint(equalTo: stack.widthAnchor), footer.widthAnchor.constraint(equalTo: stack.widthAnchor)
+            stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 24), stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 20), stack.bottomAnchor.constraint(lessThanOrEqualTo: window.contentView!.bottomAnchor, constant: -16),
+            tabs.widthAnchor.constraint(equalTo: stack.widthAnchor), footer.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
     }
     @objc private func windowBecameKey() { refresh() }
     func refresh() {
+        if let index = languagePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == Localization.preference }) { languagePicker.selectItem(at: index) }
         shortcut.displayValue = getShortcut()
         if let index = indentation.itemArray.firstIndex(where: { ($0.representedObject as? String) == getIndentation() }) { indentation.selectItem(at: index) }
+        if let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == getTheme() }) { themePicker.selectItem(at: index) }
+        renderThemePreview(getTheme())
+        let appearance = getAppearance()
+        if let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) { uiThemePicker.selectItem(at: index) }
+        opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
+        opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
+        let accent = UIThemes.accent(appearance.theme); symbols.forEach { $0.contentTintColor = accent }; loginSwitch.accentColor = accent
         storageMessage.stringValue = getStorage(); storageMessage.toolTip = getStorage()
         let status = loginStatus()
         loginSwitch.state = status == .enabled || status == .requiresApproval ? .on : .off
         loginSwitch.setAccessibilityValue(loginSwitch.state == .on ? 1 : 0); loginSwitch.needsDisplay = true
         loginSettings.isHidden = status != .requiresApproval
         switch status {
-        case .enabled: loginMessage.stringValue = "已在登录时自动启动。"
-        case .requiresApproval: loginMessage.stringValue = "需要在系统设置中允许 Inkflit。"
-        case .notFound: loginMessage.stringValue = "当前为手动启动。"
-        default: loginMessage.stringValue = "当前为手动启动。"
+        case .enabled: loginMessage.stringValue = L("已在登录时自动启动。")
+        case .requiresApproval: loginMessage.stringValue = L("需要在系统设置中允许 Inkflit。")
+        case .notFound: loginMessage.stringValue = L("当前为手动启动。")
+        default: loginMessage.stringValue = L("当前为手动启动。")
         }
     }
-    @objc private func clearPressed() { shortcut.recording = false; clearShortcut(); refresh(); shortcutMessage.stringValue = "全局快捷键已清除。" }
-    @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? "已恢复默认快捷键。" }
+    @objc private func clearPressed() { shortcut.recording = false; clearShortcut(); refresh(); shortcutMessage.stringValue = L("全局快捷键已清除。") }
+    @objc private func changeLanguage() {
+        guard let value = languagePicker.selectedItem?.representedObject as? String, value == "system" || Localization.supported.contains(value) else { return }
+        UserDefaults.standard.set(value, forKey: "language"); languageChanged?()
+    }
+    func selectLanguageTab() { tabs.selectTabViewItem(at: 3) }
+    @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? L("已恢复默认快捷键。") }
     @objc private func loginChanged() {
         let requested = loginSwitch.state == .on
         let error = setLogin(requested)
@@ -220,9 +325,58 @@ final class SettingsController: NSWindowController {
         guard let value = indentation.selectedItem?.representedObject as? String else { return }
         setIndentation(value)
     }
+    @objc private func appearanceChanged() {
+        guard let theme = uiThemePicker.selectedItem?.representedObject as? String else { return }
+        let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue)
+        opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
+        let accent = UIThemes.accent(theme); symbols.forEach { $0.contentTintColor = accent }; loginSwitch.accentColor = accent
+        setAppearance(appearance)
+    }
+    private func renderThemePreview(_ id: String) {
+        guard let theme = CodeThemes.all.first(where: { $0.id == CodeThemes.validID(id) }) else { return }
+        let dark = window?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        previewBox.fillColor = dark ? NSColor(calibratedWhite: 0.12, alpha: 1) : NSColor(calibratedRed: 1, green: 0.992, blue: 0.98, alpha: 1)
+        let palette = dark ? theme.darkColors : theme.colors
+        let text = "{\n  \"name\": \"Inkflit\",\n  \"active\": true,\n  \"count\": 42\n}"
+        func color(_ key: String) -> NSColor {
+            let hex = palette[key]?.trimmingCharacters(in: CharacterSet(charactersIn: "#")) ?? "302921"
+            let value = UInt64(hex, radix: 16) ?? 0x302921
+            return NSColor(calibratedRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
+        }
+        let attributed = NSMutableAttributedString(string: text, attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular), .foregroundColor: color("punctuation")])
+        let source = text as NSString
+        for (key, tokens) in [("property", ["\"name\"", "\"active\"", "\"count\""]), ("string", ["\"Inkflit\""]), ("keyword", ["true"]), ("number", ["42"])] {
+            for token in tokens { let range = source.range(of: token); if range.location != NSNotFound { attributed.addAttribute(.foregroundColor, value: color(key), range: range) } }
+        }
+        themePreview.attributedStringValue = attributed
+    }
+    @objc private func themeChanged() {
+        guard let value = themePicker.selectedItem?.representedObject as? String else { return }
+        renderThemePreview(value); setTheme(value)
+    }
+    #if INKFLIT_NATIVE_TEST
+    func testSelectCodeTheme(_ id: String) -> String? {
+        guard let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == id }) else { return nil }
+        themePicker.selectItem(at: index)
+        NSApp.sendAction(#selector(themeChanged), to: self, from: themePicker)
+        guard let color = themePreview.attributedStringValue.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor else { return nil }
+        return String(format: "#%02x%02x%02x", Int((color.redComponent*255).rounded()), Int((color.greenComponent*255).rounded()), Int((color.blueComponent*255).rounded()))
+    }
+    func testSetAppearance(_ appearance: WindowAppearance) -> Bool {
+        guard let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) else { return false }
+        uiThemePicker.selectItem(at: index); opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
+        return NSApp.sendAction(#selector(appearanceChanged), to: self, from: uiThemePicker)
+    }
+    func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
+    func testSelectLanguage(_ id: String) -> Bool {
+        guard let index = languagePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == id }) else { return false }
+        languagePicker.selectItem(at: index)
+        return NSApp.sendAction(#selector(changeLanguage), to: self, from: languagePicker)
+    }
+    #endif
     @objc private func chooseStoragePressed() {
         guard let window else { return }
-        let panel = NSOpenPanel(); panel.title = "选择笔记保存文件夹"; panel.message = "Inkflit 会将当前笔记复制为 notes.json，原文件会保留。"
+        let panel = NSOpenPanel(); panel.title = L("选择笔记保存文件夹"); panel.message = L("Inkflit 会将当前笔记复制为 notes.json，原文件会保留。")
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false; panel.canCreateDirectories = true
         panel.directoryURL = URL(fileURLWithPath: getStorage()).deletingLastPathComponent()
         panel.beginSheetModal(for: window) { [weak self] result in
@@ -235,10 +389,11 @@ final class SettingsController: NSWindowController {
         }
     }
     @objc private func openHelp() {
-        guard let url = Bundle.main.url(forResource: "Help", withExtension: "html") else { NSSound.beep(); return }
+        let resource = Localization.current == "zh-Hans" ? "Help" : "Help.\(Localization.current)"
+        guard let url = Bundle.main.url(forResource: resource, withExtension: "html") else { NSSound.beep(); return }
         if helpWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-            window.title = "Inkflit 使用帮助"; window.isReleasedWhenClosed = false; window.center()
+            window.title = L("Inkflit 使用帮助"); window.isReleasedWhenClosed = false; window.center()
             let web = WKWebView(frame: .zero)
             window.contentView = web
             web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -246,5 +401,11 @@ final class SettingsController: NSWindowController {
         }
         helpWindow?.showWindow(nil); helpWindow?.window?.makeKeyAndOrderFront(nil)
     }
-    func show() { refresh(); showWindow(nil); NSApp.activate(ignoringOtherApps: true); window?.makeKeyAndOrderFront(nil) }
+    func show() {
+        refresh()
+        #if INKFLIT_NATIVE_TEST
+        if let value = ProcessInfo.processInfo.environment["INKFLIT_TEST_TAB"], let index = Int(value), index >= 0, index < tabs.numberOfTabViewItems { tabs.selectTabViewItem(at: index) }
+        #endif
+        showWindow(nil); NSApp.activate(ignoringOtherApps: true); window?.makeKeyAndOrderFront(nil)
+    }
 }
