@@ -6,7 +6,7 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
-import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput } from './block-menu.js';
+import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock } from './block-menu.js';
 import { tasks } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
 import { parseTimer, scopeAt } from './features.js';
@@ -106,6 +106,11 @@ $('timer-stop').onclick=()=>applyTimer({command:'s'});
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
   keyStartDoc = editor?.state.doc;
+  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='d') {
+    event.preventDefault(); event.stopPropagation();
+    if(!event.repeat) deleteCurrentBlock(editor);
+    return;
+  }
   if(blockMenuOpen() && handleBlockMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
   if(!blockMenuOpen() && getCM(editor)?.state?.vim?.insertMode && trySlash(event,editor)) {event.preventDefault();event.stopPropagation();return;}
   if (event.key.toLowerCase() === 'x' && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode && scopeAt(editor.state.doc.toString(),editor.state.doc.lineAt(editor.state.selection.main.head).number)?.mode==='list') {

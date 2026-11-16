@@ -1,4 +1,4 @@
-import { blockTypes, scopeAt } from './features.js';
+import { featureScopes, scopeAt } from './features.js';
 const items = [
   ['list','清单','逐行显示复选框'],['math','计算','算式、变量与单位换算'],
   ['sum','求和','汇总块中的数字'],['avg','平均值','计算块内数字平均值'],
@@ -13,17 +13,28 @@ export function initBlockMenu(element, getView) {
 export function blockMenuOpen() { return !!active; }
 export function closeBlockMenu() { active=null; if(menu) menu.hidden=true; }
 function render(query='') {
+  const previousScrollTop=menu.scrollTop;
   const choices=items.filter(x=>(x[0]!=='delete'||active.scope) && (x[0].includes(query.toLowerCase())||x[1].includes(query)));
   active.choices=choices; active.index=Math.min(active.index,Math.max(0,choices.length-1));
   menu.replaceChildren();
   if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent='没有匹配的功能块';menu.append(e); return; }
   choices.forEach(([id,name,description],index)=>{
-    const b=document.createElement('button'); b.type='button';b.className='block-menu-item';b.setAttribute('role','option');b.setAttribute('aria-selected',String(index===active.index));
+    const b=document.createElement('button'); b.type='button';b.className='block-menu-item'+(id==='delete'?' danger':'');b.setAttribute('role','option');b.setAttribute('aria-selected',String(index===active.index));
     const title=document.createElement('span'); title.textContent=name;
     const detail=document.createElement('small');detail.textContent=description;
-    const key=document.createElement('kbd');key.textContent=id;
+    const key=document.createElement('kbd');key.textContent=id==='delete'?'⌘⇧D':id;
     b.append(title,detail,key);b.addEventListener('mousedown',e=>e.preventDefault()); b.addEventListener('click',()=>choose(id)); menu.append(b);
   });
+  // Rebuilding the options can reset scrollTop. Keep the menu in place, then
+  // scroll only this menu enough to expose the keyboard-selected option.
+  menu.scrollTop=previousScrollTop;
+  const selected=menu.querySelector('[aria-selected="true"]');
+  if(selected) {
+    const bounds=menu.getBoundingClientRect(), item=selected.getBoundingClientRect();
+    const top=bounds.top+menu.clientTop, bottom=top+menu.clientHeight;
+    if(item.top<top)menu.scrollTop-=top-item.top;
+    else if(item.bottom>bottom)menu.scrollTop+=item.bottom-bottom;
+  }
 }
 function position(pos) {
   const editor=view(), coords=editor.coordsAtPos(pos), parent=menu.offsetParent.getBoundingClientRect();
@@ -76,6 +87,29 @@ function choose(mode) {
   // Map the previous position after a conversion; insertions use their explicit new offset.
   const selection=current.scope ? changeSet.mapPos(anchor,1) : anchor;
   editor.dispatch({changes:changeSet,selection:{anchor:selection},userEvent:'input.block'});editor.focus();
+}
+export function blockDeletion(state, scope) {
+  if(!scope || scope.kind!=='block' || !scope.closed)return null;
+  const current=featureScopes(state.doc.toString()).find(item=>item.kind==='block' && item.start===scope.start && item.end===scope.end && item.closed);
+  if(!current)return null;
+  const start=state.doc.line(current.start), end=state.doc.line(current.end);
+  return {from:start.from,to:end.to<state.doc.length ? end.to+1 : end.to};
+}
+export function deleteCurrentBlock(editor) {
+  const state=editor.state, selection=state.selection.main;
+  let scope=active?.scope;
+  if(!scope) {
+    const first=scopeAt(state.doc.toString(),state.doc.lineAt(selection.from).number);
+    const last=scopeAt(state.doc.toString(),state.doc.lineAt(selection.to).number);
+    if(!first || !last || first.start!==last.start || first.end!==last.end)return false;
+    scope=first;
+  }
+  const changes=blockDeletion(state,scope);
+  if(!changes)return false;
+  closeBlockMenu();
+  editor.dispatch({changes,selection:{anchor:changes.from},userEvent:'input.block.delete'});
+  editor.focus();
+  return true;
 }
 export function handleBlockMenuKey(event) {
   if(!active)return false;

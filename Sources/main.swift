@@ -1,6 +1,7 @@
 import Cocoa
 import WebKit
 import Carbon
+import ServiceManagement
 
 final class NotePanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -13,14 +14,6 @@ final class DragWebView: WKWebView {
         else { super.mouseDown(with: event) }
     }
 }
-final class ShortcutRecorder: NSWindow {
-    var onKey: ((NSEvent) -> Bool)?
-    override var canBecomeKey: Bool { true }
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 { close(); return }
-        if onKey?(event) == true { close() } else { NSSound.beep() }
-    }
-}
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NotePanel!
     var web: WKWebView!
@@ -28,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var hotKey: EventHotKeyRef?
     var hotKeyID: UInt32 = 0
     var hotKeyItem: NSMenuItem!
-    var recorder: ShortcutRecorder?
+    var settingsController: SettingsController?
     var activationObserver: NSObjectProtocol?
     var timerAlert: Timer?
     let isolatedTest = ProcessInfo.processInfo.environment["QUICKNOTE_ISOLATED_TEST"] == "1"
@@ -37,6 +30,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var forcedInputSourceID: String?
     var hotKeyCode: UInt32 = 49
     var hotKeyModifiers: UInt32 = UInt32(controlKey | optionKey)
+    var hotKeyDisabled = false
+    var testLoginStatus: SMAppService.Status = .notRegistered
     let storageURL = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Quicknote/notes.json")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -71,6 +66,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         let url = Bundle.main.resourceURL!.appendingPathComponent("web/index.html")
         web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: "hotKeyCode") != nil { hotKeyCode = UInt32(defaults.integer(forKey: "hotKeyCode")); hotKeyModifiers = UInt32(defaults.integer(forKey: "hotKeyModifiers")) }
+        hotKeyDisabled = defaults.bool(forKey: "hotKeyDisabled")
         if !isolatedTest {
             status = NSStatusBar.system.statusItem(withLength: 24)
             if let button = status.button {
@@ -79,7 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             let menu = NSMenu()
             menu.addItem(withTitle: "打开 Inkflit", action: #selector(showWindow), keyEquivalent: "")
-            hotKeyItem = menu.addItem(withTitle: "设置全局快捷键…", action: #selector(recordShortcut), keyEquivalent: "")
+            hotKeyItem = menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: "")
             menu.addItem(.separator()); menu.addItem(withTitle: "退出 Inkflit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
@@ -88,11 +86,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 Unmanaged<AppDelegate>.fromOpaque(data).takeUnretainedValue().toggleWindow()
                 return noErr
             }, 1, &eventType, Unmanaged.passUnretained(self).toOpaque(), nil)
-            let defaults = UserDefaults.standard
-            if defaults.object(forKey: "hotKeyCode") != nil { hotKeyCode = UInt32(defaults.integer(forKey: "hotKeyCode")); hotKeyModifiers = UInt32(defaults.integer(forKey: "hotKeyModifiers")) }
-            if handlerStatus != noErr || !registerHotKey(code: hotKeyCode, modifiers: hotKeyModifiers) { reportHotKeyFailure() }
+            if hotKeyDisabled { updateHotKeyLabel() }
+            else if handlerStatus != noErr || !registerHotKey(code: hotKeyCode, modifiers: hotKeyModifiers) { reportHotKeyFailure() }
         }
         showWindow()
+        if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_SETTINGS"] == "1" { showSettings() }
     }
     func makeStatusIcon() -> NSImage {
         let icon = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
@@ -122,39 +120,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if hotKeyModifiers & UInt32(optionKey) != 0 { text += "⌥" }
         if hotKeyModifiers & UInt32(shiftKey) != 0 { text += "⇧" }
         if hotKeyModifiers & UInt32(cmdKey) != 0 { text += "⌘" }
-        let keys: [UInt32: String] = [49:"Space",0:"A",1:"S",2:"D",3:"F",4:"H",5:"G",6:"Z",7:"X",8:"C",9:"V",11:"B",12:"Q",13:"W",14:"E",15:"R",16:"Y",17:"T",31:"O",32:"U",34:"I",35:"P",37:"L",38:"J",40:"K",45:"N",46:"M"]
+        let keys: [UInt32: String] = [0:"A",1:"S",2:"D",3:"F",4:"H",5:"G",6:"Z",7:"X",8:"C",9:"V",11:"B",12:"Q",13:"W",14:"E",15:"R",16:"Y",17:"T",18:"1",19:"2",20:"3",21:"4",22:"6",23:"5",24:"=",25:"9",26:"7",27:"-",28:"8",29:"0",30:"]",31:"O",32:"U",33:"[",34:"I",35:"P",36:"Return",37:"L",38:"J",39:"'",40:"K",41:";",42:"\\",43:",",44:"/",45:"N",46:"M",47:".",48:"Tab",49:"Space",50:"`",51:"Delete",53:"Esc",96:"F5",97:"F6",98:"F7",99:"F3",100:"F8",101:"F9",103:"F11",109:"F10",111:"F12",118:"F4",120:"F2",122:"F1",123:"←",124:"→",125:"↓",126:"↑"]
         return text + (keys[hotKeyCode] ?? "Key \(hotKeyCode)")
     }
     func updateHotKeyLabel() {
-        let label = shortcutLabel()
-        status.button?.toolTip = "全局快捷键 \(label)"
-        hotKeyItem.title = "设置全局快捷键…（\(label)）"
+        let label = hotKeyDisabled ? "未设置" : shortcutLabel()
+        status?.button?.toolTip = hotKeyDisabled ? "全局快捷键未设置" : "全局快捷键 \(label)"
+        hotKeyItem?.title = "设置…"
         if let data = try? JSONSerialization.data(withJSONObject: [label]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func reportHotKeyFailure() {
-        status.button?.toolTip = "全局快捷键不可用，请在菜单中重新设置"
-        hotKeyItem.title = "设置全局快捷键…（不可用）"
+        status?.button?.toolTip = "全局快捷键不可用，请在设置中重新设置"
+        hotKeyItem?.title = "设置…（快捷键不可用）"
         web.evaluateJavaScript("window.setShortcutLabel?.('快捷键不可用')", completionHandler: nil)
     }
-    @objc func recordShortcut() {
-        let panel = ShortcutRecorder(contentRect: NSRect(x: 0, y: 0, width: 360, height: 145), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        panel.title = "设置全局快捷键"; panel.center(); panel.level = .floating
-        let label = NSTextField(labelWithString: "按下新的快捷键，需包含 ⌘、⌥ 或 ⌃。\n按 Esc 取消。")
-        label.frame = NSRect(x: 24, y: 55, width: 312, height: 55); label.lineBreakMode = .byWordWrapping
-        panel.contentView?.addSubview(label)
-        panel.onKey = { [weak self] event in
-            guard let self else { return false }
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            var mods: UInt32 = 0
-            if flags.contains(.control) { mods |= UInt32(controlKey) }; if flags.contains(.option) { mods |= UInt32(optionKey) }
-            if flags.contains(.shift) { mods |= UInt32(shiftKey) }; if flags.contains(.command) { mods |= UInt32(cmdKey) }
-            guard mods & UInt32(controlKey | optionKey | cmdKey) != 0 else { label.stringValue = "请包含 ⌘、⌥ 或 ⌃。"; return false }
-            if UInt32(event.keyCode) == self.hotKeyCode && mods == self.hotKeyModifiers && self.hotKey != nil { return true }
-            guard self.registerHotKey(code: UInt32(event.keyCode), modifiers: mods) else { label.stringValue = "这个快捷键不可用，请换一个。"; return false }
-            UserDefaults.standard.set(Int(self.hotKeyCode), forKey: "hotKeyCode"); UserDefaults.standard.set(Int(self.hotKeyModifiers), forKey: "hotKeyModifiers")
-            return true
+    func saveShortcut(code: UInt32, modifiers: UInt32) -> String? {
+        if code == hotKeyCode && modifiers == hotKeyModifiers && hotKey != nil { return nil }
+        guard registerHotKey(code: code, modifiers: modifiers) else { return "这个快捷键不可用，请换一个。" }
+        hotKeyDisabled = false
+        let defaults = UserDefaults.standard
+        defaults.set(Int(code), forKey: "hotKeyCode"); defaults.set(Int(modifiers), forKey: "hotKeyModifiers"); defaults.set(false, forKey: "hotKeyDisabled")
+        updateHotKeyLabel(); return nil
+    }
+    func clearShortcut() {
+        if let hotKey { UnregisterEventHotKey(hotKey) }
+        hotKey = nil; hotKeyDisabled = true
+        UserDefaults.standard.set(true, forKey: "hotKeyDisabled")
+        updateHotKeyLabel()
+    }
+    @objc func showSettings() {
+        hideWindow()
+        if settingsController == nil {
+            settingsController = SettingsController(
+                getShortcut: { [weak self] in guard let self else { return "" }; return self.hotKeyDisabled ? "" : self.shortcutLabel() },
+                saveShortcut: { [weak self] code, modifiers in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: code, modifiers: modifiers) },
+                clearShortcut: { [weak self] in self?.clearShortcut() },
+                resetShortcut: { [weak self] in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
+                loginStatus: { [weak self] in guard let self else { return .notFound }; return self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? self.testLoginStatus : SMAppService.mainApp.status },
+                setLogin: { [weak self] enabled in
+                    guard let self else { return "设置窗口不可用。" }
+                    if self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" { self.testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
+                    do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
+                    catch { return "无法更改开机启动：\(error.localizedDescription)" }
+                })
         }
-        recorder = panel; NSApp.activate(ignoringOtherApps: true); panel.makeKeyAndOrderFront(nil)
+        settingsController?.show()
     }
     @objc func showWindow() { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil) }
     func toggleWindow() { if window.isVisible && window.isKeyWindow { hideWindow() } else { showWindow() } }
@@ -192,7 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 let data = try Data(contentsOf: storageURL); let base64 = data.base64EncodedString()
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
-            if !isolatedTest { if hotKey != nil { updateHotKeyLabel() } else { reportHotKeyFailure() } }
+            if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
         } catch { showError("无法读取笔记：\(error.localizedDescription)") }
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

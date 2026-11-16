@@ -128,3 +128,21 @@ test('moving upward into a block lands on the last grapheme',async()=>{
  const state=EditorState.create({doc});const marker=doc.indexOf(':::end');
  assert.equal(nearestEditablePosition(state.doc,marker,doc.length,false),doc.indexOf('👩'));
 });
+
+test('delete block shortcut targets one complete block and can be undone',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {history,undo}=await import('@codemirror/commands');
+ const {blockProtection}=await import('../web/block-protection.js');
+ const {deleteCurrentBlock}=await import('../web/block-menu.js');
+ const doc='before\n:::quicknote list\napple\n:::end\n:::quicknote math\n2+3=\n:::end\nafter';
+ let state=EditorState.create({doc,selection:{anchor:doc.indexOf('apple')},extensions:[history(),blockProtection]});
+ const view={get state(){return state},dispatch:spec=>{state=state.update(spec).state},focus(){}};
+ assert.equal(deleteCurrentBlock(view),true);
+ assert.equal(state.doc.toString(),'before\n:::quicknote math\n2+3=\n:::end\nafter');
+ let restored=state;assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true);assert.equal(restored.doc.toString(),doc);
+ state=EditorState.create({doc,selection:{anchor:0},extensions:[history(),blockProtection]});
+ assert.equal(deleteCurrentBlock(view),false);assert.equal(state.doc.toString(),doc);
+ const broken=':::quicknote list\nunfinished';
+ state=EditorState.create({doc:broken,selection:{anchor:broken.length},extensions:[history(),blockProtection]});
+ assert.equal(deleteCurrentBlock(view),false);assert.equal(state.doc.toString(),broken);
+});
