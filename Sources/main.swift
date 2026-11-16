@@ -403,6 +403,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TYPOGRAPHY_VIM_TEST"] == "1" {
             NativeCodeEditingTest.startTypographyVim(self)
         }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMENT_VIM_TEST"] == "1" {
+            NativeCodeEditingTest.startCommentVim(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" {
             NativeCodeEditingTest.startFileStorage(self)
         }

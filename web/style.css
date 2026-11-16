@@ -22,8 +22,8 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .cm-line.cm-note-comment,.cm-line.cm-note-comment span{color:var(--ui-muted,#89796e)!important}.insights{background:var(--ui-active,#fff5ec);border-color:var(--ui-border,#f0dbc9);color:var(--ui-button,#8c5b39)}.calculation-result{color:var(--ui-accent,#b95c1d)}
 
 /* Body comments are annotations, while comments inside blocks keep their own styling. */
-.editor .cm-editor .cm-line.cm-note-comment-body{background:rgba(var(--ui-bar-rgb,255,240,226),calc(var(--ui-opacity,1)*.65))!important;border-radius:6px;box-shadow:inset 3px 0 0 var(--ui-accent,#b95c1d)}
-.editor .cm-editor .cm-line.cm-note-comment-body.cm-activeLine{background:rgba(var(--ui-active-rgb,255,245,236),var(--ui-opacity,1))!important}
+.editor .cm-editor .cm-line.cm-note-comment-body{background:rgba(var(--ui-bar-rgb,255,240,226),calc(var(--ui-opacity,1)*.65))!important;border-radius:6px;padding-top:4px;padding-bottom:4px}
+.editor .cm-editor .cm-line.cm-note-comment-body.cm-activeLine{background:rgba(var(--ui-bar-rgb,255,240,226),calc(var(--ui-opacity,1)*.9))!important}
 .cm-line.cm-note-comment-body,.cm-line.cm-note-comment-body span{font-style:normal!important}
 .cm-line.cm-note-comment-body .cm-note-comment-marker{color:var(--ui-accent,#b95c1d)!important;font-weight:700}
 .editor .cm-editor .cm-line.cm-note-heading{line-height:1.5;padding-top:4px;color:var(--ui-ink,#302921)}

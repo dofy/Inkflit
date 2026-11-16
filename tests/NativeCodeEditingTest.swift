@@ -112,9 +112,17 @@ final class NativeCodeEditingTest {
               for(const theme of ['orange','blue','green']) {
                 window.setUIAppearance(theme,100);
                 const root=getComputedStyle(document.documentElement), probe=document.createElement('span'); document.body.append(probe);
-                probe.style.color=root.getPropertyValue('--ui-accent'); const accent=getComputedStyle(probe).color; probe.remove();
+                probe.style.color=root.getPropertyValue('--ui-accent'); const accent=getComputedStyle(probe).color;
                 if(getComputedStyle(body.querySelector('.cm-note-comment-marker')).color!==accent) errors.push(theme+': comment marker color');
-                if(getComputedStyle(body).boxShadow==='none') errors.push(theme+': comment stripe missing');
+                const active=body.classList.contains('cm-activeLine');
+                for(const selected of [false,true]) {
+                  body.classList.toggle('cm-activeLine',selected);
+                  probe.style.backgroundColor=`rgba(${root.getPropertyValue('--ui-bar-rgb')}, ${selected ? .9 : .65})`;
+                  const style=getComputedStyle(body);
+                  if(style.backgroundColor!==getComputedStyle(probe).backgroundColor) errors.push(theme+': comment background');
+                  if(style.boxShadow!=='none' || parseFloat(style.paddingTop)<4 || parseFloat(style.paddingBottom)<4) errors.push(theme+': comment spacing or stripe');
+                }
+                body.classList.toggle('cm-activeLine',active); probe.remove();
               }
               return errors;
             })()
@@ -131,6 +139,53 @@ final class NativeCodeEditingTest {
     static func startTypographyVim(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testTypographyVim(0) }
+    }
+    static func startCommentVim(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        let theme = ProcessInfo.processInfo.environment["INKFLIT_TEST_UI_THEME"] ?? "orange"
+        app.web.evaluateJavaScript("window.setUIAppearance('\(theme)',100)") { _, _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testCommentVim() }
+        }
+    }
+    private func checkCommentCursor(_ mode: String, completion: @escaping () -> Void) {
+        let script = """
+        (() => {
+          const root=getComputedStyle(document.documentElement), probe=document.createElement('span'); document.body.append(probe);
+          probe.style.color=root.getPropertyValue('--ui-cursor'); const expected=getComputedStyle(probe).color; probe.remove();
+          const normal='\(mode)'==='normal', line=document.querySelector('.cm-note-comment-body.cm-activeLine');
+          const cursor=document.querySelector(normal ? '.cm-fat-cursor' : '.cm-cursorLayer:not(.cm-vimCursorLayer) .cm-cursor-primary');
+          if(!line || !cursor || !document.querySelector('.cm-editor.cm-focused')) return false;
+          const style=getComputedStyle(cursor), box=cursor.getBoundingClientRect();
+          return box.height>0 && (normal ? style.backgroundColor : style.borderLeftColor)===expected;
+        })()
+        """
+        app.web.evaluateJavaScript(script) { [self] result, error in
+            guard error == nil, result as? Bool == true else { fail("comment cursor mismatch in \(mode): \(String(describing: error))") }
+            completion()
+        }
+    }
+    private func testCommentVim() {
+        checkCommentCursor("normal") { [self] in
+            key(0, "A", "a", .shift); later { [self] in
+                checkCommentCursor("insert") { [self] in
+                    sequence([{ self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
+                        content { [self] text in
+                            expect(text, "// body notex", "comment insert")
+                            checkCommentCursor("normal") { [self] in
+                                key(32, "u"); later { [self] in content { [self] text in
+                                    expect(text, "// body note", "comment undo")
+                                    key(15, "\u{12}", "r", .control); later { [self] in content { [self] text in
+                                        expect(text, "// body notex", "comment redo")
+                                        print("PASS comment Vim cursors, edit, undo and redo")
+                                        app.restoreInputSource(); exit(0)
+                                    } }
+                                } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     static func startFileStorage(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
