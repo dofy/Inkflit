@@ -71,6 +71,33 @@ export function evaluateExpression(expression, scope = {}, rates = null) {
   return null;
 }
 export function formatNumber(n) { return Number(n.toPrecision(10)).toLocaleString('en-US', {maximumFractionDigits:10}); }
+// Highlight names in definitions and in later expressions within this block.
+export function mathVariableRanges(lines) {
+  const defined=new Set(), ranges=[];
+  let inFence=false;
+  for(let index=0;index<lines.length;index++) {
+    const line=lines[index], trimmed=line.trim();
+    if (/^(```|~~~)/.test(trimmed)) { inFence=!inFence; continue; }
+    if(!trimmed || trimmed.startsWith('//') || inFence) continue;
+    const definition=/^(\s*)([\p{L}_][\p{L}\p{N}_]*)\s*:\s*(.+)$/u.exec(line);
+    let start=0, end=line.length;
+    if(definition) {
+      const from=definition[1].length;
+      ranges.push({line:index,from,to:from+definition[2].length});
+      start=line.indexOf(':',from+definition[2].length)+1;
+    } else if(trimmed.endsWith('=')) {
+      end=line.lastIndexOf('=');
+    } else continue;
+    const expression=line.slice(start,end);
+    for(const match of expression.matchAll(/[\p{L}_][\p{L}\p{N}_]*/gu)) {
+      const from=start+match.index;
+      if(from>0 && /[\p{L}\p{N}_]/u.test(line[from-1])) continue;
+      if(defined.has(match[0])) ranges.push({line:index,from,to:from+match[0].length});
+    }
+    if(definition) defined.add(definition[2]);
+  }
+  return ranges;
+}
 export function analyze(text, rates = null) {
   const mode = modeOf(text), lines = text.split('\n'), results = [], values = [], scope = {};
   let inFence = false;
@@ -78,15 +105,15 @@ export function analyze(text, rates = null) {
     const line=lines[i].trim();
     if (/^\s*(```|~~~)/.test(line)) { inFence = !inFence; continue; }
     if (!line || /^\/\//.test(line) || inFence) continue;
-    if (mode === 'math' || mode === 'sum' || mode === 'avg') {
-      const assignment = mode === 'math' && /^([\p{L}_][\p{L}\p{N}_]*)\s*:\s*(.+)$/u.exec(line);
+    if (mode === 'math') {
+      const assignment = /^([\p{L}_][\p{L}\p{N}_]*)\s*:\s*(.+)$/u.exec(line);
       if (assignment) { const r=evaluateExpression(assignment[2],scope,rates); if(r) scope[assignment[1]]=r.value; continue; }
       if (line.endsWith('=')) {
         const r=evaluateExpression(line.slice(0,-1),scope,rates);
-        if (r) { results.push({line:i+1,...r}); if(r.value !== undefined) scope.ans=r.value; if(typeof r.value==='number') values.push(r.value); }
-      } else if (mode !== 'math') {
-        for (const match of line.matchAll(/(?<![\p{L}\p{N}_])[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)(?![\p{L}\p{N}_])/gu)) values.push(Number(match[0].replaceAll(',','')));
+        if (r) { results.push({line:i+1,...r}); if(r.value !== undefined) scope.ans=r.value; }
       }
+    } else if (mode === 'sum' || mode === 'avg') {
+      for (const match of line.matchAll(/(?<![\p{L}\p{N}_])[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)(?![\p{L}\p{N}_])/gu)) values.push(Number(match[0].replaceAll(',','')));
     }
   }
   if (mode === 'count') {

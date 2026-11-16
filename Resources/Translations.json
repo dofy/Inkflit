@@ -988,5 +988,23 @@
     "zh-Hans": "无法生成引导笔记",
     "zh-Hant": "無法產生引導筆記",
     "ja": "ガイドノートを作成できません"
+  },
+  "Vim 模式": {
+    "en": "Vim Mode",
+    "zh-Hans": "Vim 模式",
+    "zh-Hant": "Vim 模式",
+    "ja": "Vim モード"
+  },
+  "使用 Vim 按键和模式": {
+    "en": "Use Vim keys and modes",
+    "zh-Hans": "使用 Vim 按键和模式",
+    "zh-Hant": "使用 Vim 按鍵與模式",
+    "ja": "Vim のキーとモードを使う"
+  },
+  "关闭后可直接输入，Esc 收起窗口。": {
+    "en": "When off, type directly; Esc hides the window.",
+    "zh-Hans": "关闭后可直接输入，Esc 收起窗口。",
+    "zh-Hant": "關閉後可直接輸入，Esc 收起視窗。",
+    "ja": "オフの場合は直接入力できます。Esc でウインドウを隠します。"
   }
 }

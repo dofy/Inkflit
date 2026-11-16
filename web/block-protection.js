@@ -61,6 +61,10 @@ export function trimFinalLineDeletion(doc, changes) {
   for(const scope of featureScopes(doc.toString())) {
     if(scope.kind!=='block' || !scope.closed || scope.start+1>=scope.end)continue;
     const first=doc.line(scope.start+1).from, end=doc.line(scope.end).from;
+    // Vim dd on a final empty line includes the separator before the end
+    // marker. Remove the preceding separator instead, retaining one editable
+    // content line and leaving the marker on its own line.
+    if(edit.from===end-1 && edit.to===end && edit.from>first) return {from:edit.from-1,to:edit.from};
     if(edit.from>=first && edit.from<end-1 && edit.to===end) return {from:edit.from,to:end-1};
   }
   return null;

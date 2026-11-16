@@ -1,6 +1,6 @@
 import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
-import { analyzeScopes, scopeAt } from './features.js';
+import { analyzeScopes, scopeAt, mathVariableRanges } from './features.js';
 import { codeLanguage } from './code-languages.js';
 import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
@@ -75,6 +75,14 @@ function decorate(view) {
       decorations.push(Decoration.replace({widget:new BlockHeader(scope)}).range(first.from,first.to));
       if(scope.end<=doc.lines) {const last=doc.line(scope.end);decorations.push(Decoration.line({class:'cm-block-end-line'}).range(last.from));decorations.push(Decoration.replace({widget:new BlockEnd()}).range(last.from,last.to));}
       if(scope.mode==='code') decorateCode(view,scope,decorations);
+    }
+    if(scope.mode==='math') {
+      const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[];
+      for(let n=first;n<=last;n++) lines.push(doc.line(n).text);
+      for(const range of mathVariableRanges(lines)) {
+        const line=doc.line(first+range.line);
+        decorations.push(Decoration.mark({class:'cm-math-variable'}).range(line.from+range.from,line.from+range.to));
+      }
     }
     for (const result of scope.results) { const line=doc.line(result.line); decorations.push(Decoration.widget({widget:new Result(result.text + (result.rateDate ? ` · ${result.rateDate}` : '')),side:1}).range(line.to)); }
     if (!scope.global && scope.summary && scope.end<=doc.lines) { const line=doc.line(scope.end); decorations.push(Decoration.widget({widget:new Result('  '+scope.summary),side:1}).range(line.to)); }

@@ -272,6 +272,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         UserDefaults.standard.set(true, forKey: "hotKeyDisabled")
         updateHotKeyLabel()
     }
+    func vimEnabled() -> Bool {
+        UserDefaults.standard.object(forKey: "vimEnabled") as? Bool ?? true
+    }
+    func updateVimEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "vimEnabled")
+        syncVimEnabled()
+    }
+    func syncVimEnabled() {
+        web.evaluateJavaScript("window.setVimEnabled?.(\(vimEnabled() ? "true" : "false"))", completionHandler: nil)
+    }
     func codeIndentation() -> String {
         let value = UserDefaults.standard.string(forKey: "codeIndentation") ?? "spaces2"
         return ["spaces2", "spaces4", "tabs"].contains(value) ? value : "spaces2"
@@ -335,6 +345,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 resetShortcut: { [weak self] in guard let self else { return L("设置窗口不可用。") }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
                 getStorage: { [weak self] in self?.storageURL.path ?? "" },
                 changeStorage: { [weak self] url, completion in guard let self else { completion(L("设置窗口不可用。")); return }; self.changeStorageDirectory(url, completion: completion) },
+                getVimEnabled: { [weak self] in self?.vimEnabled() ?? true },
+                setVimEnabled: { [weak self] value in self?.updateVimEnabled(value) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
                 setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
                 getTheme: { [weak self] in self?.codeTheme() ?? "amber" },
@@ -435,6 +447,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         syncLanguage()
         syncCodeIndentation()
+        syncVimEnabled()
         syncCodeTheme()
         applyWindowAppearance()
         do {
@@ -510,6 +523,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_COLLISION_TEST"] == "1" {
             NativeCodeEditingTest.testOnboardingCollision(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
+            NativeCodeEditingTest.startBlockCalculation(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_VIM_BOUNDARIES_TEST"] == "1" {
+            NativeCodeEditingTest.startVimBoundaries(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_VIM_TOGGLE_TEST"] == "1" {
+            NativeCodeEditingTest.startVimToggle(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_READING_NAV_TEST"] == "1" {
+            NativeCodeEditingTest.startReadingNavigation(self)
         }
         #endif
     }

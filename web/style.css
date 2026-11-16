@@ -29,9 +29,11 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .editor .cm-editor .cm-line.cm-note-comment-body:has(+ .cm-line.cm-note-comment-body){border-bottom-left-radius:0;border-bottom-right-radius:0;padding-bottom:1px}
 .cm-line.cm-note-comment-body,.cm-line.cm-note-comment-body span{font-style:normal!important}
 .cm-line.cm-note-comment-body .cm-note-comment-marker{color:var(--ui-accent,#b95c1d)!important;font-weight:700}
+.editor .cm-content .inkflit-md-meta,.editor .cm-content .inkflit-md-url{color:var(--ui-button,#8c5b39)}
+.editor .cm-content .cm-math-variable{color:var(--ui-button,#8c5b39);font-weight:700}
 .editor .cm-editor .cm-line.cm-note-heading{line-height:1.5;padding-top:4px;color:var(--ui-ink,#302921)}
 .cm-note-heading .tok-heading{font-weight:inherit!important;text-decoration:none!important;color:inherit!important}
-.cm-note-heading .tok-meta{color:var(--ui-muted,#89796e)!important}
+.cm-note-heading .tok-meta{color:var(--ui-button,#8c5b39)!important}
 .cm-note-heading-1{font-size:24px;font-weight:750}
 .cm-note-heading-2{font-size:20px;font-weight:700}
 .cm-note-heading-3{font-size:18px;font-weight:700}

@@ -1,9 +1,9 @@
 import { t, setLanguage, lang } from './i18n.js';
-import { EditorState, Text, Transaction } from '@codemirror/state';
+import { EditorState, Text, Transaction, Compartment } from '@codemirror/state';
 import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, toggleLineComment } from '@codemirror/commands';
-import { markdown } from '@codemirror/lang-markdown';
-import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
@@ -16,16 +16,23 @@ import { commentChanges, blockCodeCommentChanges, isCodeAt, noteComments, select
 import { noteHeadings } from './typography.js';
 import { planCodeEdit, normalizeIndentation } from './code-editing.js';
 import { planListIndent } from './list-editing.js';
-import { classHighlighter } from '@lezer/highlight';
+import { classHighlighter, tags } from '@lezer/highlight';
 import { applyCodeTheme } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 
 const $ = id => document.getElementById(id);
+const markdownColors=HighlightStyle.define([
+  {tag:tags.meta,class:'inkflit-md-meta'},
+  {tag:tags.url,class:'inkflit-md-url'}
+],{scope:markdownLanguage});
 let state = null, editor = null;
 let saveRevision = 0;
 const saveCallbacks = new Map();
 let keyStartDoc = null, mergeFirstInsert = false;
 let codeIndentation = 'spaces2';
+let vimEnabled = true;
+const vimCompartment = new Compartment();
+const isEditing = () => !vimEnabled || !!getCM(editor)?.state?.vim?.insertMode;
 const editorStates = new Map();
 const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
 const current = () => state.notes.find(n => n.id === state.selected);
@@ -56,20 +63,20 @@ window.setLanguage = value => {
 function refreshNav() {
   const index = state.notes.findIndex(n => n.id === state.selected);
   $('position').textContent = `${index + 1} / ${state.notes.length}`;
-  $('previous').disabled = index === state.notes.length - 1;
-  $('next').disabled = index === 0;
+  $('previous').disabled = index === 0;
+  $('next').disabled = index === state.notes.length - 1;
 }
 function makeState(content) {
   const initial=EditorState.create({doc:content,selection:{anchor:nearestEditablePosition(Text.of(content.split("\n")),0,0,true)},extensions:[
-    vim(), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), EditorState.transactionFilter.of(tr => {
+    vimCompartment.of(vimEnabled ? vim() : []), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), EditorState.transactionFilter.of(tr => {
       if (!mergeFirstInsert || !tr.docChanged || !tr.isUserEvent('input.type')) return tr;
       mergeFirstInsert = false;
       if (tr.annotation(Transaction.userEvent) === 'input.type.compose') return tr;
       return {changes:tr.changes, selection:tr.selection, effects:tr.effects, scrollIntoView:tr.scrollIntoView,
         annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
-    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, noteHeadings, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
+    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, noteHeadings, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
     keymap.of([...defaultKeymap,...historyKeymap]),
-    EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
+    EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(isEditing()) openMenuAfterInput(update); persist(); })
   ]});
   const position=taskContentPosition(initial,initial.selection.main.head);
   return position===initial.selection.main.head ? initial : initial.update({selection:{anchor:position}}).state;
@@ -81,7 +88,17 @@ function changeEditor(id) {
   if (editor) { editorStates.set(state.selected, editor.state); editor.destroy(); }
   state.selected = id;
   editor = new EditorView({parent:$('editor'), state:editorStates.get(id) || makeState(current().content)});
-  getCM(editor).on('vim-mode-change', event => {
+  bindVimMode();
+  refreshNav(); refreshInsights(); editor.focus();
+}
+function bindVimMode() {
+  $('mode').hidden = !vimEnabled;
+  const cm = getCM(editor);
+  if (!vimEnabled || !cm) {
+    if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', 'insert');
+    return;
+  }
+  cm.on('vim-mode-change', event => {
     if (event.mode === 'insert') mergeFirstInsert = !!keyStartDoc && editor.state.doc !== keyStartDoc;
     else mergeFirstInsert = false;
     const mode = event.mode || 'normal';
@@ -92,7 +109,6 @@ function changeEditor(id) {
   });
   $('mode').textContent = 'NORMAL';
   if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', 'normal');
-  refreshNav(); refreshInsights(); editor.focus();
 }
 function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(true); }
 function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(true); }
@@ -111,7 +127,7 @@ function deleteNote() {
 }
 function navigate(direction) { if (!state) return; const index = state.notes.findIndex(n => n.id === state.selected); const next = index + direction; if (next >= 0 && next < state.notes.length) select(state.notes[next].id); }
 function hide() { if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'hide'}); else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1; }
-$('new').onclick = createNote; $('delete').onclick = deleteNote; $('previous').onclick = () => navigate(1); $('next').onclick = () => navigate(-1);
+$('new').onclick = createNote; $('delete').onclick = deleteNote; $('previous').onclick = () => navigate(-1); $('next').onclick = () => navigate(1);
 function refreshInsights() {
   if (!editor) return;
   const info=analyzeCurrent(editor.state.doc.toString());
@@ -153,14 +169,18 @@ document.addEventListener('keydown', event => {
   if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && event.key==='Tab' && !event.metaKey && !event.ctrlKey && !event.altKey) {
     const planned=planListIndent(editor.state,event.shiftKey ? 'Shift-Tab' : 'Tab');
     if(planned) {event.preventDefault();event.stopPropagation();editor.dispatch(planned);return;}
+    const cm=getCM(editor), mode=cm?.state?.vim;
+    if(vimEnabled && mode && !mode.insertMode && !mode.visualMode && !cm.state.dialog) {
+      event.preventDefault(); event.stopPropagation(); return;
+    }
   }
-  if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode) {
+  if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && !event.metaKey && !event.ctrlKey && !event.altKey && isEditing()) {
     const key=event.key==='Tab' && event.shiftKey ? 'Shift-Tab' : event.key;
     const planned=planCodeEdit(editor.state,key,{indentation:codeIndentation});
     if(planned) {event.preventDefault();event.stopPropagation();editor.dispatch(planned);return;}
   }
-  if(!blockMenuOpen() && getCM(editor)?.state?.vim?.insertMode && trySlash(event,editor)) {event.preventDefault();event.stopPropagation();return;}
-  if (event.key.toLowerCase() === 'x' && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode && scopeAt(editor.state.doc.toString(),editor.state.doc.lineAt(editor.state.selection.main.head).number)?.mode==='list') {
+  if(!blockMenuOpen() && isEditing() && trySlash(event,editor)) {event.preventDefault();event.stopPropagation();return;}
+  if (event.key.toLowerCase() === 'x' && !event.metaKey && !event.ctrlKey && !event.altKey && isEditing() && scopeAt(editor.state.doc.toString(),editor.state.doc.lineAt(editor.state.selection.main.head).number)?.mode==='list') {
     const sel=editor.state.selection.main, line=editor.state.doc.lineAt(sel.head);
     if (sel.empty && sel.head===line.to && line.text.endsWith('/') && line.number>1 && !/^\s*(?:\/\/|#)/.test(line.text)) {
       const match=/^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
@@ -170,7 +190,7 @@ document.addEventListener('keydown', event => {
       event.preventDefault(); event.stopPropagation(); editor.dispatch({changes,userEvent:'input.task.toggle'}); return;
     }
   }
-  if (event.key === 'Enter' && !event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode) {
+  if (event.key === 'Enter' && !event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey && isEditing()) {
     const selection=editor.state.selection.main;
     const line=editor.state.doc.lineAt(selection.head), scope=scopeAt(editor.state.doc.toString(),line.number);
     if(selection.empty && scope?.kind==='block' && scope.mode!=='code' && line.number===scope.end-1 && !line.text.trim() && scope.end<=editor.state.doc.lines) {
@@ -209,7 +229,7 @@ document.addEventListener('keydown', event => {
     }
     if (['n','d','[',']','1'].includes(key)) {
       event.preventDefault(); event.stopPropagation();
-      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(1); else if (key === ']') navigate(-1); else select(state.notes[0].id);
+      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(-1); else if (key === ']') navigate(1); else select(state.notes[0].id);
       return;
     }
   }
@@ -227,6 +247,14 @@ registers.pushText=function(name,operator,text,linewise,blockwise) {
 };
 Vim.defineEx('write', 'w', () => { if (state) persist(true); });
 window.focusEditor = () => { if (editor) editor.focus(); };
+window.setVimEnabled = value => {
+  const enabled = !!value;
+  if (enabled === vimEnabled) return;
+  vimEnabled = enabled; mergeFirstInsert = false;
+  closeBlockMenu(); closeLanguageMenu();
+  for (const [id, cached] of editorStates) editorStates.set(id, cached.update({effects:vimCompartment.reconfigure(enabled ? vim() : [])}).state);
+  if (editor) { editor.dispatch({effects:vimCompartment.reconfigure(enabled ? vim() : [])}); bindVimMode(); }
+};
 window.setCodeIndentation = value => { codeIndentation=normalizeIndentation(value); };
 let currentCodeTheme='amber', currentUITheme='orange', currentOpacity=100;
 window.setCodeTheme = value => { currentCodeTheme=value; applyCodeTheme(value); };

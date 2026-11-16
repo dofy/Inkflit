@@ -222,3 +222,20 @@ except subprocess.TimeoutExpired:
 if result.returncode:
     sys.exit(result.returncode)
 PY
+for appearance in light dark; do
+  python3 - "$test_dir/notes.json" <<'PY'
+import json,sys
+content='# Title\nShortcut ⌘[ / ⌘]\n**粗體** and [link](https://example.com)\n:::quicknote code json\n{"name":"value","enabled":true}\n:::end'
+notes=[{'id':'first','content':content,'updated':'1'},{'id':'second','content':'second','updated':'2'},{'id':'third','content':'third','updated':'3'}]
+with open(sys.argv[1],'w',encoding='utf8') as f:json.dump({'notes':notes,'selected':'first'},f,ensure_ascii=False)
+PY
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_READING_NAV_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+import subprocess,sys
+try:
+    result=subprocess.run([sys.argv[1]],timeout=20)
+except subprocess.TimeoutExpired:
+    sys.exit('FAIL: native reading and navigation test timed out')
+if result.returncode:
+    sys.exit(result.returncode)
+PY
+done

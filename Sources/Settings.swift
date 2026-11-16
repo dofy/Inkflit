@@ -130,6 +130,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     var rebuildIndex: (() -> String?)?
     var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
     private let onboardingButton = NSButton(title: L("重新生成引导笔记"), target: nil, action: nil)
+    private let vimSwitch = OrangeSwitch(frame: .zero)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
@@ -147,6 +148,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let setAppearance: (WindowAppearance) -> Void
     private let getTheme: () -> String
     private let setTheme: (String) -> Void
+    private let getVimEnabled: () -> Bool
+    private let setVimEnabled: (Bool) -> Void
     private let getIndentation: () -> String
     private let setIndentation: (String) -> Void
     private let getStorage: () -> String
@@ -159,10 +162,11 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let loginStatus: () -> SMAppService.Status
     private let setLogin: (Bool) -> String?
 
-    init(getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?, clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?, getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void, getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void, getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void, getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void, loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?) {
+    init(getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?, clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?, getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void, getVimEnabled: @escaping () -> Bool, setVimEnabled: @escaping (Bool) -> Void, getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void, getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void, getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void, loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?) {
         self.getShortcut = getShortcut; self.saveShortcut = saveShortcut; self.clearShortcut = clearShortcut
         self.resetShortcut = resetShortcut; self.loginStatus = loginStatus; self.setLogin = setLogin
         self.getStorage = getStorage; self.changeStorage = changeStorage
+        self.getVimEnabled = getVimEnabled; self.setVimEnabled = setVimEnabled
         self.getIndentation = getIndentation; self.setIndentation = setIndentation
         self.getTheme = getTheme; self.setTheme = setTheme
         self.getAppearance = getAppearance; self.setAppearance = setAppearance
@@ -257,6 +261,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let trashSection = section(L("回收站"), icon: "trash", detail: L("删除的笔记保存在本地"), controls: restore, message: NSTextField(wrappingLabelWithString: L("恢复时会创建一篇新笔记，回收站文件仍会保留。")))
         let rebuild = NSButton(title: L("重建索引…"), target: self, action: #selector(rebuildPressed)); rebuild.bezelStyle = .rounded
         let rebuildSection = section(L("索引恢复"), icon: "wrench.and.screwdriver", detail: L("索引损坏时使用"), controls: rebuild, message: NSTextField(wrappingLabelWithString: L("根据笔记文件恢复，顺序可能变化。")))
+        vimSwitch.target = self; vimSwitch.action = #selector(vimChanged); vimSwitch.setAccessibilityLabel(L("Vim 模式"))
+        let vimSection = section(L("Vim 模式"), icon: "keyboard", detail: L("使用 Vim 按键和模式"), controls: vimSwitch, message: NSTextField(wrappingLabelWithString: L("关闭后可直接输入，Esc 收起窗口。")))
         for (title, value) in [(L("2 个空格"), "spaces2"), (L("4 个空格"), "spaces4"), ("Tab", "tabs")] {
             indentation.addItem(withTitle: title); indentation.lastItem?.representedObject = value
         }
@@ -289,7 +295,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage)
         languagePicker.setAccessibilityLabel(L("语言"))
         let languageSection = section(L("语言"), icon: "globe", detail: L("选择应用界面语言"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("默认跟随系统语言。")))
-        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([indentSection, themeGroup])), (L("语言"), page([languageSection])), (L("备份"), page([backupSection, historySection, trashSection, rebuildSection]))] {
+        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([vimSection, indentSection, themeGroup])), (L("语言"), page([languageSection])), (L("备份"), page([backupSection, historySection, trashSection, rebuildSection]))] {
             let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
         }
         tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
@@ -311,6 +317,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     func refresh() {
         if let index = languagePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == Localization.preference }) { languagePicker.selectItem(at: index) }
         shortcut.displayValue = getShortcut()
+        vimSwitch.state = getVimEnabled() ? .on : .off
+        vimSwitch.accentColor = UIThemes.accent(getAppearance().theme)
         if let index = indentation.itemArray.firstIndex(where: { ($0.representedObject as? String) == getIndentation() }) { indentation.selectItem(at: index) }
         if let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == getTheme() }) { themePicker.selectItem(at: index) }
         renderThemePreview(getTheme())
@@ -351,6 +359,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let error { loginMessage.stringValue = error }
     }
     @objc private func openLoginSettings() { SMAppService.openSystemSettingsLoginItems() }
+    @objc private func vimChanged() { setVimEnabled(vimSwitch.state == .on) }
     @objc private func indentationChanged() {
         guard let value = indentation.selectedItem?.representedObject as? String else { return }
         setIndentation(value)
@@ -397,6 +406,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         uiThemePicker.selectItem(at: index); opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         return NSApp.sendAction(#selector(appearanceChanged), to: self, from: uiThemePicker)
     }
+    func testEditingControlsVisible() -> Bool {
+        guard let page = tabs.tabViewItem(at: 2).view else { return false }
+        page.layoutSubtreeIfNeeded()
+        return [vimSwitch, previewBox].allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
+    }
+    func testToggleVim() { vimSwitch.performClick(nil) }
+    func testVimSwitchState() -> Bool { vimSwitch.state == .on }
     func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
     func testGenerateOnboarding() -> Bool {
         guard let root = window?.contentView else { return false }

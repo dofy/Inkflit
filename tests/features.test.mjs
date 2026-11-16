@@ -8,8 +8,15 @@ test('math evaluates variables, percentages, units and currency without executin
  assert.equal(evaluateExpression('10 USD to CNY',{}, {date:'2026-01-01',values:{USD:1,CNY:7}}).text,'70 CNY');
  for(const bad of ['import("x")','a=5','[1,2]','2^100000','constructor.constructor("return 1")()']) assert.equal(evaluateExpression(bad),null);
 });
-test('sum and average ignore comments and use equation results only once',()=>{
- assert.equal(analyze('sum\ncoffee 10\n2+3=\n// 100').summary,'合计 15 · 2 个数');
+test('sum and average extract numbers without evaluating expressions or conversions',()=>{
+ for(const mode of ['sum','avg']) {
+  const result=analyze(`${mode}\nprice: 80\nprice * 2 =\n10 km to mi =\n// 100`);
+  assert.equal(result.results.length,0);
+  assert.equal(result.summary,mode==='sum'?'合计 92 · 3 个数':'平均 30.66666667 · 3 个数');
+ }
+ const expression=analyze('sum\ncoffee 10\n2+3=\n// 100');
+ assert.equal(expression.summary,'合计 15 · 3 个数');
+ assert.equal(expression.results.length,0);
  assert.equal(analyze('avg\n3\n7\n// 500').summary,'平均 5 · 2 个数');
  assert.match(analyze('count\n你好 world\n\n// ignored').summary,/^1 项 · 2 词/);
 });
@@ -29,6 +36,29 @@ test('plain text conversion is offered only when changing an existing block',asy
  assert.ok(existingChoices.includes('text') && existingChoices.includes('delete'));
 });
 
+
+test('math variable highlights cover only definitions and references in this block',async()=>{
+ const {mathVariableRanges}=await import('../web/features.js');
+ const lines=['price * 2 =','price: 80','price * price =','tax: price * 0.1','price and tax are notes','// price =','10 km to mi =','```','price =','```','total: tax + price','total =','other_price ='];
+ const names=mathVariableRanges(lines).map(r=>[r.line,lines[r.line].slice(r.from,r.to)]);
+ assert.deepEqual(names,[[1,'price'],[2,'price'],[2,'price'],[3,'tax'],[3,'price'],[10,'total'],[10,'tax'],[10,'price'],[11,'total']]);
+ assert.deepEqual(mathVariableRanges(['price =']),[]);
+});
+
+test('feature type conversion recalculates from unchanged body',async()=>{
+ const {analyzeScopes}=await import('../web/features.js');
+ const body='price: 80\nprice * 2 =\n10 km to mi =';
+ const doc=mode=>`:::quicknote ${mode}\n${body}\n:::end`;
+ const math=analyzeScopes(doc('math'))[0];
+ assert.equal(math.results.length,2); assert.equal(math.results[0].text,'160');
+ assert.match(math.results[1].text,/^6\.213711922 mi$/);
+ for(const mode of ['sum','avg']) {
+   const result=analyzeScopes(doc(mode))[0];
+   assert.equal(result.results.length,0);
+   assert.equal(result.summary,mode==='sum'?'合计 92 · 3 个数':'平均 30.66666667 · 3 个数');
+ }
+ assert.equal(doc('math').split('\n').slice(1,-1).join('\n'),body);
+});
 
 test('code blocks coexist with features, including unlabeled and unfinished fences',async()=>{
  const {featureScopes,scopeAt,analyzeScopes}=await import('../web/features.js');
@@ -73,6 +103,26 @@ test('Vim line deletion keeps the end marker and remains editable',async()=>{
  const from=doc.indexOf('last'), to=doc.indexOf(':::end');
  const result=state.update({changes:{from,to},annotations:Transaction.userEvent.of('delete')});
  assert.equal(result.state.doc.toString(),':::quicknote list\nfirst\n\n:::end\n');
+});
+
+test('Vim can delete a trailing blank line without removing block markers',async()=>{
+ const {EditorState,Transaction}=await import('@codemirror/state');
+ const {history,undo,redo}=await import('@codemirror/commands');
+ const {blockProtection}=await import('../web/block-protection.js');
+ for(const type of ['list','code json']) {
+  const original=`:::quicknote ${type}\nfirst\n\n:::end`;
+  let state=EditorState.create({doc:original,extensions:[history(),blockProtection]});
+  const end=original.indexOf(':::end');
+  state=state.update({changes:{from:end-1,to:end},annotations:Transaction.userEvent.of('delete')}).state;
+  assert.equal(state.doc.toString(),`:::quicknote ${type}\nfirst\n:::end`);
+  let next=state; assert.equal(undo({state,dispatch:tr=>next=tr.state}),true); state=next;
+  assert.equal(state.doc.toString(),original);
+  assert.equal(redo({state,dispatch:tr=>next=tr.state}),true);
+  assert.equal(next.doc.toString(),`:::quicknote ${type}\nfirst\n:::end`);
+  const sole=`:::quicknote ${type}\n\n:::end`, marker=sole.indexOf(':::end');
+  const empty=EditorState.create({doc:sole,extensions:[blockProtection]});
+  assert.equal(empty.update({changes:{from:marker-1,to:marker},annotations:Transaction.userEvent.of('delete')}).state.doc.toString(),sole);
+ }
 });
 
 test('whole lines before a feature block can be removed and undone without joining its marker',async()=>{

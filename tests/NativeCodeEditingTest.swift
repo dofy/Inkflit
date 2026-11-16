@@ -45,6 +45,168 @@ final class NativeCodeEditingTest {
         running = NativeCodeEditingTest(app)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
     }
+    static func startBlockCalculation(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { running?.testVariableHighlightEditing() }
+    }
+    private func testVariableHighlightEditing() {
+        key(7,"x"); later { [self] in
+            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+                guard error == nil, let markers=value as? [String], markers == ["rice"] else { fail("variable highlighting after editing definition: \(String(describing:value))") }
+                key(32,"u"); later { [self] in
+                    app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+                        guard error == nil, let markers=value as? [String], markers == ["price", "price"] else { fail("variable highlighting after undo: \(String(describing:value))") }
+                        print("PASS variable highlighting updates after edit and undo")
+                        checkCalculation("math")
+                    }
+                }
+            }
+        }
+    }
+    private func checkCalculation(_ mode: String) {
+        let body="price: 80\nprice * 2 =\n10 km to mi ="
+        content { [self] text in
+            expect(text,":::quicknote \(mode)\n\(body)\n:::end","\(mode) preserves block body")
+            let styleCheck="""
+            (()=>{ const markers=[...document.querySelectorAll('.cm-math-variable')]; if ('\(mode)'!=='math') return markers.length===0; if(markers.length!==2 || markers.some(x=>x.textContent!=='price')) return false; const p=document.createElement('span'); document.body.append(p); let ok=true; for(const theme of ['orange','blue','green']) { window.setUIAppearance(theme,100); p.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ui-button'); if(markers.some(marker=>getComputedStyle(marker).color!==getComputedStyle(p).color || Number(getComputedStyle(marker).fontWeight)<600)) ok=false; } p.remove(); return ok; })()
+            """
+            app.web.evaluateJavaScript(styleCheck) { [self] value,error in
+                guard error == nil, value as? Bool == true else { fail("variable definition styling for \(mode)") }
+                self.checkCalculationResults(mode)
+            }
+        }
+    }
+    private func checkCalculationResults(_ mode: String) {
+            app.web.evaluateJavaScript("[...document.querySelectorAll('.calculation-result')].map(x=>x.textContent.trim())") { [self] value,error in
+                guard error == nil, let results=value as? [String] else { fail("cannot read calculation results") }
+                if mode == "math" {
+                    guard results.count == 2, results[0] == "160", results[1].contains("6.213711922 mi") else { fail("math results: \(results)") }
+                    if ProcessInfo.processInfo.environment["INKFLIT_CALC_RETURNED"] == "1" { app.restoreInputSource(); exit(0) }
+                    switchCalculation(to:"sum")
+                } else if mode == "sum" {
+                    guard results.count == 1, results[0].contains("92"), results[0].contains("3") else { fail("sum results: \(results)") }
+                    switchCalculation(to:"avg")
+                } else {
+                    guard results.count == 1, results[0].contains("30.66666667"), results[0].contains("3") else { fail("average results: \(results)") }
+                    switchCalculation(to:"math", finish:true)
+                }
+            }
+    }
+    private func switchCalculation(to mode: String, finish: Bool = false) {
+        let script="""
+        (()=>{ document.querySelector('.block-type')?.click(); const item=[...document.querySelectorAll('.block-menu-item')].find(x=>x.querySelector('kbd')?.textContent==='\(mode)'); if(!item)return false; item.click(); return true; })()
+        """
+        app.web.evaluateJavaScript(script) { [self] value,error in
+            guard error == nil, value as? Bool == true else { fail("cannot switch block to \(mode)") }
+            later { [self] in
+                if finish {
+                    content { [self] text in
+                        expect(text,":::quicknote math\nprice: 80\nprice * 2 =\n10 km to mi =\n:::end","return to math preserves block body")
+                        app.web.evaluateJavaScript("[...document.querySelectorAll('.calculation-result')].map(x=>x.textContent.trim())") { [self] value,error in
+                            guard error == nil, let results=value as? [String], results.count==2, results[0]=="160", results[1].contains("6.213711922 mi") else { fail("math results after switching back: \(String(describing:value))") }
+                            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+                                guard error == nil, let markers=value as? [String], markers == ["price", "price"] else { fail("variable highlighting not restored after switching back: \(String(describing:value))") }
+                                print("PASS native block type switch refreshes results, highlighting and preserves content"); app.restoreInputSource(); exit(0)
+                            }
+                        }
+                    }
+                } else { checkCalculation(mode) }
+            }
+        }
+    }
+    static func startVimBoundaries(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testVimBoundaries() }
+    }
+    private func testVimBoundaries() {
+        key(48, "\t"); later { [self] in
+            app.web.evaluateJavaScript("[document.getElementById('mode').textContent,document.activeElement.classList.contains('cm-content')]") { [self] value,error in
+                guard error == nil, let values=value as? [Any], values.count==2, values[0] as? String == "NORMAL", values[1] as? Bool == true else { fail("Tab changed normal mode or editor focus: \(String(describing:value))") }
+                sequence([{ self.key(34,"i") }, { self.key(7,"x") }, { self.key(53,"\u{1b}") }]) { [self] in content { [self] text in
+                    expect(text,"xabc","normal mode Tab leaves editor usable")
+                    key(32,"u"); later { [self] in content { [self] text in
+                        expect(text,"abc","undo after normal mode Tab")
+                        key(30,"]","]",.command); later { [self] in testTrailingBlank("list") }
+                    } }
+                } }
+            }
+        }
+    }
+    private func testTrailingBlank(_ mode: String) {
+        let original=":::quicknote \(mode)\nfirst\n\n:::end", deleted=":::quicknote \(mode)\nfirst\n:::end"
+        sequence([{ self.key(38,"j") }, { self.key(2,"d") }, { self.key(2,"d") }]) { [self] in content { [self] text in
+            expect(text,deleted,"Vim dd removes trailing empty line in \(mode)")
+            key(32,"u"); later { [self] in content { [self] text in
+                expect(text,original,"Vim undo trailing empty line in \(mode)")
+                key(15,"\u{12}","r",.control); later { [self] in content { [self] text in
+                    expect(text,deleted,"Vim redo trailing empty line in \(mode)")
+                    if mode == "list" { key(30,"]","]",.command); later { [self] in testTrailingBlank("code json") } }
+                    else { print("PASS Vim Tab and block-boundary deletion"); app.restoreInputSource(); exit(0) }
+                } }
+            } }
+        } }
+    }
+    static func startVimToggle(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testVimToggle() }
+    }
+    private func testVimToggle() {
+        if ProcessInfo.processInfo.environment["INKFLIT_VIM_RESTART_TEST"] == "1" {
+            guard !app.vimEnabled() else { fail("disabled Vim preference was not restored") }
+            key(0,"a"); later { [self] in content { [self] text in
+                expect(text,"a","direct input after restarting with Vim disabled")
+                print("PASS Vim preference restored at startup"); app.restoreInputSource(); exit(0)
+            } }
+            return
+        }
+        guard app.vimEnabled() else { fail("Vim must be enabled by default") }
+        app.showSettings()
+        guard let settings=app.settingsController else { fail("settings missing") }
+        settings.testSelectSettingsTab(2)
+        guard settings.testVimSwitchState() else { fail("Vim switch initial state") }
+        guard settings.testEditingControlsVisible() else { fail("editing settings controls clipped") }
+        settings.testToggleVim()
+        guard !app.vimEnabled() && !settings.testVimSwitchState() else { fail("Vim preference not saved") }
+        settings.window?.orderOut(nil); app.showWindow()
+        later { [self] in
+            sequence([{ self.key(0,"a") }, { self.key(11,"b") }]) { [self] in content { [self] text in
+                expect(text,"ab","direct typing with Vim disabled")
+                key(6,"z","z",.command); later { [self] in content { [self] text in
+                    expect(text,"","standard undo with Vim disabled")
+                    key(6,"Z","z",[.command,.shift]); later { [self] in content { [self] text in
+                        expect(text,"ab","standard redo with Vim disabled")
+                        key(30,"]","]",.command); later { [self] in
+                            key(7,"x"); later { [self] in content { [self] text in
+                                expect(text,"x","Vim setting survives note switch")
+                                key(30,"]","]",.command); later { [self] in
+                                    key(33,"{","[",.shift); later { [self] in content { [self] text in
+                                        expect(text,":::quicknote code json\n{}\n:::end","code pairing with Vim disabled")
+                                        key(33,"[","[",.command); later { [self] in
+                                            app.showSettings(); settings.testToggleVim()
+                                            guard app.vimEnabled() else { fail("Vim preference not enabled") }
+                                            settings.window?.orderOut(nil); app.showWindow()
+                                            later { [self] in
+                                                key(34,"i"); key(8,"c"); key(53,"\u{1b}")
+                                                later { [self] in content { [self] text in
+                                                    expect(text,"xc","Vim insert mode after enabling")
+                                                    key(32,"u"); later { [self] in content { [self] text in
+                                                        expect(text,"x","Vim undo after enabling")
+                                                        app.updateVimEnabled(false)
+                                                        print("PASS native Vim settings toggle, editing and undo")
+                                                        app.restoreInputSource(); exit(0)
+                                                    } }
+                                                } }
+                                            }
+                                        }
+                                    } }
+                                }
+                            } }
+                        }
+                    } }
+                } }
+            } }
+        }
+    }
     static func startChecklist(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { running?.testListIndentation(alreadySelected: true) }
@@ -195,7 +357,7 @@ final class NativeCodeEditingTest {
                         expect(text, ":::quicknote sum\n12\n:::end", "undo convert to text")
                         key(15, "\u{12}", "r", .control); later { [self] in content { [self] text in
                             expect(text, "12", "redo convert to text")
-                            sequence([{ self.key(33, "[", "[", .command) }, { self.key(34, "i") }, { self.key(44, "/") }]) { [self] in
+                            sequence([{ self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(44, "/") }]) { [self] in
                                 app.web.evaluateJavaScript("(() => { const menu=document.querySelector('#block-menu'); return {hidden:menu.hidden, ids:[...menu.querySelectorAll('kbd')].map(x=>x.textContent), text:document.querySelector('.cm-activeLine')?.textContent, mode:document.querySelector('#mode')?.textContent}; })()") { [self] value, error in
                                     guard error == nil, let info = value as? [String:Any], let hidden=info["hidden"] as? Bool, !hidden,
                                           let ids=info["ids"] as? [String], ids.contains("sum"), !ids.contains("text") else { fail("slash menu contents: \(String(describing: value))") }
@@ -221,7 +383,7 @@ final class NativeCodeEditingTest {
                 guard !line.contains("cm-block-end-line") && !line.contains("calculation-result") else { fail("arrow up selected the result line") }
                 key(125, "\u{f701}"); later { [self] in activeLine { [self] next in
                     guard next.contains("plain") && !next.contains("cm-block-header-line") else { fail("arrow down did not reach the next block: \(next)") }
-                sequence([{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(0, "A", "a", .shift) }, { self.key(36, "\r") }]) { [self] in
+                sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(0, "A", "a", .shift) }, { self.key(36, "\r") }]) { [self] in
                     content { [self] text in
                         let expected = ":::quicknote sum\n12\n\n:::end"
                         expect(text, expected, "Return after nonempty final block line")
@@ -310,6 +472,67 @@ final class NativeCodeEditingTest {
         running = NativeCodeEditingTest(app); app.showWindow()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { running?.testOnboarding() }
     }
+    static func startReadingNavigation(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { running?.testReadingAndNavigation() }
+    }
+    private func testReadingAndNavigation() {
+        let script = """
+        (() => {
+          const errors=[], root=document.documentElement, lines=[...document.querySelectorAll('.cm-content .cm-line')];
+          const shortcut=lines.find(line=>line.textContent.includes('⌘[ / ⌘]'));
+          const formatting=lines.find(line=>line.textContent.includes('**粗體**'));
+          const markers=[...(shortcut?.querySelectorAll('.tok-meta')||[]),...(formatting?.querySelectorAll('.tok-meta')||[])];
+          const url=formatting?.querySelector('.tok-url');
+          if(markers.length<4 || !url) return ['Markdown markers or link missing'];
+          const color=value=>{const p=document.createElement('span');p.style.color=value;document.body.append(p);const c=getComputedStyle(p).color;p.remove();return c};
+          const luminance=value=>{const v=value.match(/\\d+(?:\\.\\d+)?/g).slice(0,3).map(x=>Number(x)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return v[0]*.2126+v[1]*.7152+v[2]*.0722};
+          for(const theme of ['orange','blue','green']) {
+            window.setUIAppearance(theme,100); const style=getComputedStyle(root), fg=color(style.getPropertyValue('--ui-button')), bg=color(style.getPropertyValue('--ui-paper'));
+            const a=luminance(fg),b=luminance(bg);if((Math.max(a,b)+.05)/(Math.min(a,b)+.05)<4.5) errors.push(theme+': insufficient contrast');
+            for(const marker of [...markers,url]) if(getComputedStyle(marker).color!==fg) errors.push(theme+': unreadable Markdown marker '+marker.textContent);
+            const token=lines.find(line=>line.textContent.includes('"value"'))?.querySelector('.tok-string');
+            if(!token || getComputedStyle(token).color!==color(style.getPropertyValue('--syntax-string'))) errors.push(theme+': code string color changed');
+          }
+          const p=document.getElementById('previous'),n=document.getElementById('next');
+          if(!p.disabled || n.disabled || document.getElementById('position').textContent!=='1 / 3')errors.push('initial navigation');
+          if(!p.title.includes('⌘[') || !n.title.includes('⌘]'))errors.push('navigation shortcuts');
+          return errors;
+        })()
+        """
+        app.web.evaluateJavaScript(script) { [self] value, error in
+            guard error == nil, let errors=value as? [String], errors.isEmpty else { fail("Markdown appearance: \(String(describing: error)) \(String(describing: value))") }
+            print("PASS Markdown marker contrast and code highlighting across themes")
+            key(30, "]", "]", .command); later { [self] in checkNavigation("second", "2 / 3", false, false) { [self] in
+                key(30, "]", "]", .command); later { [self] in checkNavigation("third", "3 / 3", false, true) { [self] in
+                    key(33, "[", "[", .command); later { [self] in checkNavigation("second", "2 / 3", false, false) { [self] in
+                        app.web.evaluateJavaScript("document.getElementById('previous').click()") { [self] _, error in
+                            guard error == nil else { fail("could not click previous") }
+                            later { [self] in checkNavigation("first", "1 / 3", true, false) { [self] in
+                                app.web.evaluateJavaScript("document.getElementById('next').click()") { [self] _, error in
+                                    guard error == nil else { fail("could not click next") }
+                                    later { [self] in checkNavigation("second", "2 / 3", false, false) { [self] in
+                                        key(18, "1", "1", .command); later { [self] in checkNavigation("first", "1 / 3", true, false) { [self] in
+                                            print("PASS arrow buttons and Cmd bracket navigation follow page order")
+                                            app.restoreInputSource(); exit(0)
+                                        } }
+                                    } }
+                                }
+                            } }
+                        }
+                    } }
+                } }
+            } }
+        }
+    }
+    private func checkNavigation(_ selected: String, _ position: String, _ previousDisabled: Bool, _ nextDisabled: Bool, completion: @escaping () -> Void) {
+        let script = "(() => { const s=JSON.parse(window.exportNotesJSON()); return [s.selected,document.getElementById('position').textContent,document.getElementById('previous').disabled,document.getElementById('next').disabled]; })()"
+        app.web.evaluateJavaScript(script) { [self] value, error in
+            guard error == nil, let info=value as? [Any], info.count == 4, info[0] as? String == selected,
+                  info[1] as? String == position, info[2] as? Bool == previousDisabled, info[3] as? Bool == nextDisabled else { fail("navigation state: \(String(describing: value))") }
+            completion()
+        }
+    }
     private func testOnboarding() {
         let systemLanguage = ProcessInfo.processInfo.environment["INKFLIT_TEST_SYSTEM_LANGUAGE"] ?? "en"
         let expected = ProcessInfo.processInfo.environment["INKFLIT_TEST_EXPECT_LANGUAGE"] ?? Localization.resolve([systemLanguage])
@@ -348,7 +571,7 @@ final class NativeCodeEditingTest {
                         do {
                             let snapshot = try NoteFiles.read(app.storageURL.deletingLastPathComponent())
                             guard let user = snapshot.notes.first, user.content == "u", snapshot.notes.count == 5 else { fail("user note missing") }
-                            key(33, "[", "[", .command)
+                            key(30, "]", "]", .command)
                             later { [self] in deleteGuideNotes(4, user: user) }
                         } catch { fail("could not read user note: \(error)") }
                     }
@@ -457,7 +680,7 @@ final class NativeCodeEditingTest {
                 catch { fail("could not read burst save: \(error)") }
                 app.web.evaluateJavaScript("document.querySelector('#save').textContent") { [self] value, error in
                     guard error == nil, value as? String == "" else { fail("successful save status should be hidden") }
-                    sequence([{ self.key(2, "d") }, { self.key(33, "[", "[", .command) }]) { [self] in
+                    sequence([{ self.key(2, "d") }, { self.key(30, "]", "]", .command) }]) { [self] in
                         do { let saved=try NoteFiles.read(directory); guard app.testSuccessfulSaves == 2, saved.notes[0].content == "abcdone", saved.selected == "second" else { fail("switch did not flush the previous note") } }
                         catch { fail("could not read switch save: \(error)") }
                         sequence([{ self.key(34, "i") }, { self.key(7, "x") }]) { [self] in
@@ -674,7 +897,7 @@ final class NativeCodeEditingTest {
         }
     }
     private func testPairDeletionAndTab() {
-        sequence([{ self.key(33, "[", "[", .command) }, { self.key(34, "i") }, { self.key(33, "[") }, { self.key(51, "\u{7f}") }]) { [self] in content { [self] text in
+        sequence([{ self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(33, "[") }, { self.key(51, "\u{7f}") }]) { [self] in content { [self] text in
             expect(text, ":::quicknote code json\n\n:::end", "native paired backspace")
             key(48, "\t")
             later { [self] in content { [self] text in
@@ -684,9 +907,9 @@ final class NativeCodeEditingTest {
                     expect(text, ":::quicknote code json\n\n:::end", "native Shift-Tab outdent")
                     sequence([{ self.key(25, "(", "9", .shift) }, { self.key(29, ")", "0", .shift) }]) { [self] in content { [self] text in
                         expect(text, ":::quicknote code json\n()\n:::end", "native bracket closer skips existing character")
-                        sequence([{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(34, "i") }, { self.key(33, "{", "[", .shift) }]) { [self] in content { [self] text in
+                        sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(33, "{", "[", .shift) }]) { [self] in content { [self] text in
                             expect(text, "{", "ordinary text does not auto-pair")
-                            sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }]) { [self] in
+                            sequence([{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(33, "[", "[", .command) }]) { [self] in
                                 app.showSettings(); testCodeThemes(0)
                             }
                         } }
@@ -830,7 +1053,7 @@ final class NativeCodeEditingTest {
     }
     private func testDeleteBeforeBlock() {
         app.showWindow()
-        sequence([{ self.key(33, "[", "[", .command) }, { self.key(33, "[", "[", .command) }, { self.key(33, "[", "[", .command) }]) { [self] in
+        sequence([{ self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }]) { [self] in
             content { [self] text in
                 let original = "// comment\n\n:::quicknote code json\n{}\n:::end"
                 expect(text, original, "native block spacing fixture")
@@ -849,7 +1072,7 @@ final class NativeCodeEditingTest {
     }
     private func testOpenAroundBlock() {
         let original = ":::quicknote code json\n{}\n:::end"
-        sequence([{ self.key(33, "[", "[", .command) }, { self.key(31, "O", "o", [.command,.shift]) }, { self.key(0, "a") }]) { [self] in content { [self] text in
+        sequence([{ self.key(30, "]", "]", .command) }, { self.key(31, "O", "o", [.command,.shift]) }, { self.key(0, "a") }]) { [self] in content { [self] text in
             expect(text, "a\n" + original, "Cmd Shift O opens editable text above first block")
             sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }]) { [self] in content { [self] text in
                 expect(text, original, "undo opened line above block")
@@ -880,7 +1103,7 @@ final class NativeCodeEditingTest {
     private func testListIndentation(alreadySelected: Bool = false) {
         let original = ":::quicknote list\nroot\n  parent\napple\n[x] done\n- [ ] task\n:::end"
         let indented = ":::quicknote list\nroot\n  parent\n  apple\n[x] done\n- [ ] task\n:::end"
-        let start: [() -> Void] = alreadySelected ? [{ self.key(48, "\t") }] : [{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(48, "\t") }]
+        let start: [() -> Void] = alreadySelected ? [{ self.key(48, "\t") }] : [{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(48, "\t") }]
         sequence(start) { [self] in content { [self] text in
             expect(text, original, "root item cannot indent")
             sequence([{ self.key(38, "j") }, { self.key(38, "j") }, { self.key(48, "\t") }]) { [self] in content { [self] text in
