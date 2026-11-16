@@ -35,7 +35,7 @@ class ListBox extends WidgetType {
   ignoreEvent() { return false; }
 }
 const pendingLanguages=new Set();
-const blockNames={list:'清单',math:'计算',sum:'求和',avg:'平均值',count:'计数',code:'代码',timer:'计时器'};
+const blockNames={list:'清单',math:'计算',sum:'求和',avg:'平均值',count:'计数',code:'代码',timer:'普通文本'};
 class BlockHeader extends WidgetType {
   constructor(scope) {super();this.scope=scope;this.language=lang();}
   eq(other){return this.language===other.language && this.scope.start===other.scope.start && this.scope.mode===other.scope.mode && this.scope.language===other.scope.language && this.scope.end===other.scope.end;}

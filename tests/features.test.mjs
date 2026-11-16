@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analyze, evaluateExpression, modeOf, parseTimer} from '../web/features.js';
-import {timerCommand, timerDisplay, advanceTimer} from '../web/timer.js';
+import {analyze, evaluateExpression, modeOf} from '../web/features.js';
 test('keywords are restricted to the first line and may have titles',()=>{ assert.equal(modeOf('list: Groceries\nmilk'),'list'); assert.equal(modeOf('my list\nsum'),''); });
 test('math evaluates variables, percentages, units and currency without executing arbitrary code',()=>{
  const result=analyze('math\nprice: 80\nprice + 25% =\n50% of 200 =\n10 cm to in =\n// 100 =');
@@ -14,29 +13,25 @@ test('sum and average ignore comments and use equation results only once',()=>{
  assert.equal(analyze('avg\n3\n7\n// 500').summary,'平均 5 · 2 个数');
  assert.match(analyze('count\n你好 world\n\n// ignored').summary,/^1 项 · 2 词/);
 });
-test('timer parses durations, title, clock time and controls',()=>{
- assert.equal(parseTimer('timer 3:30').duration,210);
- assert.equal(parseTimer('timer 5: laundry: later').title,'laundry: later');
- assert.equal(parseTimer('timer pomo').rest,300);
- assert.equal(parseTimer('timer p').command,'p');
- const now=new Date(2026,0,1,20,0); assert.equal(parseTimer('timer 21:15',now).duration,4500);
- assert.equal(parseTimer('timer 5:99'),null);
-});
-test('timer pause, resume, reset and pomodoro maintain wall time',()=>{
- let t=timerCommand(null,parseTimer('timer 1 0.5'),1000);
- t=timerCommand(t,{command:'p'},11000); assert.equal(timerDisplay(t,30000).text,'00:50');
- t=timerCommand(t,{command:'p'},30000); assert.equal(timerDisplay(t,40000).text,'00:40');
- t=advanceTimer(t,80000); assert.equal(t.phase,'rest'); assert.equal(timerDisplay(t,80000).text,'00:30');
- t=timerCommand(t,{command:'r'},81000); assert.equal(t.phase,'work'); assert.equal(timerDisplay(t,81000).text,'01:00');
- assert.equal(timerCommand(t,{command:'s'},81000),null);
-});
-
 test('multiple independent feature blocks share one note without treating ordinary code as a list',async()=>{
  const {featureScopes,scopeAt,analyzeScopes}=await import('../web/features.js');
  const text='Notes\n```math\na: 10\na*2=\n```\n```list\napples\n```\n```sum\n4\n6\n```\n```js\n3+4=\n```';
  assert.deepEqual(featureScopes(text).map(x=>x.mode),['math','list','sum','code']);
  assert.equal(scopeAt(text,7).mode,'list'); assert.equal(scopeAt(text,14).mode,'code');
  const scopes=analyzeScopes(text); assert.equal(scopes[0].results[0].line,4); assert.equal(scopes[0].results[0].text,'20'); assert.equal(scopes[2].summary,'合计 10 · 2 个数');
+});
+
+test('legacy timer blocks keep their text without restoring timer functionality',async()=>{
+ const {featureScopes,analyzeScopes,blockTypes}=await import('../web/features.js');
+ const {currentBlockScope,planAdjacentBlockLine}=await import('../web/block-menu.js');
+ const {EditorState}=await import('@codemirror/state');
+ const doc=':::quicknote timer\ntimer 5: tea\n:::end';
+ const state=EditorState.create({doc,selection:{anchor:doc.indexOf('timer 5')}});
+ assert.equal(blockTypes.includes('timer'),false);
+ assert.equal(featureScopes(doc)[0].mode,'timer');
+ assert.deepEqual(analyzeScopes(doc)[0].results,[]);
+ assert.equal(currentBlockScope(state).mode,'timer');
+ assert.equal(state.update(planAdjacentBlockLine(state,true)).state.doc.toString(),'\n'+doc);
 });
 
 

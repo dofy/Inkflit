@@ -6,7 +6,7 @@ const allowedFunctions = new Set(['sqrt','abs','round','floor','ceil','sin','cos
 const allowedOperators = new Set(['add','subtract','multiply','divide','pow','unaryMinus','unaryPlus','to','percentage']);
 export const modeOf = text => /^(list|math|sum|avg|count)(?:\s*:\s*.*)?\s*$/i.exec(text.split('\n')[0].trim())?.[1].toLowerCase() || '';
 // Feature fences and ordinary Markdown code fences create independent scopes.
-export const blockTypes = ['list','math','sum','avg','count','code','timer'];
+export const blockTypes = ['list','math','sum','avg','count','code'];
 export function featureScopes(text) {
   const lines=text.split('\n'), scopes=[], globalMode=modeOf(text);
   if(globalMode) scopes.push({mode:globalMode,start:1,end:lines.length,global:true});
@@ -18,11 +18,12 @@ export function featureScopes(text) {
       if(close) { scopes.push({...active,start:active.line,end:i+1,global:false,closed:true}); active=null; }
       continue;
     }
+    // Keep recognizing historical timer markers so their note text stays editable.
     const block=/^:::quicknote (list|math|sum|avg|count|code|timer)(?: ([\w+.-]+))?\s*$/.exec(line);
     if(block) { active={kind:'block',mode:block[1],language:block[2]||'',line:i+1}; continue; }
     const open=/^\s*(`{3,}|~{3,})([^`]*)$/.exec(line);
     if(open) {
-      const info=open[2].trim().toLowerCase(), keyword=/^(list|math|sum|avg|count|timer)$/.exec(info);
+      const info=open[2].trim().toLowerCase(), keyword=/^(list|math|sum|avg|count)$/.exec(info);
       active={kind:'fence',marker:open[1],mode:keyword ? keyword[1] : 'code',line:i+1};
     }
   }
@@ -100,22 +101,6 @@ export function analyze(text, rates = null) {
   const summary=mode==='sum' ? t('合计 {total} · {count} 个数') : mode==='avg' ? t('平均 {total} · {count} 个数') : '';
   return {mode,results,summary:summary.replace('{total}',mode==='avg' ? (values.length ? formatNumber(total/values.length) : '—') : formatNumber(total)).replace('{count}',values.length)};
 }
-export function parseTimer(line, now = new Date()) {
-  const match=/^\s*timer(?:\s+([^:]*?(?::\d{1,2})?(?:\s+\d+(?:\.\d+)?)?))?(?:\s*:\s*(.*))?\s*$/i.exec(line);
-  if (!match) return null;
-  const arg=(match[1]||'').trim().toLowerCase(), title=match[2]||'';
-  if (['p','r','s','0'].includes(arg)) return {command:arg};
-  if (!arg) return {command:'start',duration:0,title};
-  if (arg==='pomo') return {command:'start',duration:25*60,rest:5*60,title};
-  const clock=/^(\d{1,2}):(\d{2})$/.exec(arg);
-  if (clock) { const h=Number(clock[1]),m=Number(clock[2]); if(m>=60)return null; if(h>=12 && h<24) { const target=new Date(now); target.setHours(h,m,0,0); if(target<=now)target.setDate(target.getDate()+1); return {command:'start',duration:(target-now)/1000,title}; } const seconds=h*60+m; return seconds>0 ? {command:'start',duration:seconds,title} : null; }
-  const duration=/^(\d+(?:\.\d+)?)(?:\s+(\d+(?:\.\d+)?))?$/.exec(arg);
-  if(duration && Number(duration[1])>0 && Number(duration[1])<=10080 && (!duration[2] || Number(duration[2])<=10080)) return {command:'start',duration:Number(duration[1])*60,rest:Number(duration[2]||0)*60,title};
-  const time=/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/.exec(arg);
-  if(time) { let h=Number(time[1]),m=Number(time[2]||0); if(h<1||h>12||m>59)return null; h=h%12+(time[3]==='pm'?12:0); const target=new Date(now); target.setHours(h,m,0,0); if(target<=now)target.setDate(target.getDate()+1); return {command:'start',duration:(target-now)/1000,title}; }
-  return null;
-}
-
 export function analyzeScopes(text,rates=null) {
   const lines=text.split('\n');
   return featureScopes(text).map(scope=>{

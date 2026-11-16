@@ -44,6 +44,26 @@ final class NativeCodeEditingTest {
         running = NativeCodeEditingTest(app)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
     }
+    static func startChecklist(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { running?.testListIndentation(alreadySelected: true) }
+    }
+    static func testLegacyTimer(_ app: AppDelegate) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            let script = """
+            (() => { const state=JSON.parse(window.exportNotesJSON());
+              return [state.notes[0].content, 'timer' in state, !!document.getElementById('timer'), typeof window.timerFinished, document.querySelector('.block-type')?.textContent || '']; })()
+            """
+            app.web.evaluateJavaScript(script) { value, error in
+                guard error == nil, let values = value as? [Any], values.count == 5,
+                      values[0] as? String == ":::quicknote timer\ntimer 5: tea\n:::end", values[1] as? Bool == false,
+                      values[2] as? Bool == false, values[3] as? String == "undefined", let label=values[4] as? String,
+                      label.hasPrefix(L("普通文本")) else { fputs("FAIL legacy timer notes were not preserved as inert text: \(String(describing: value))\n", stderr); exit(1) }
+                print("PASS legacy timer content remains editable and timer state is inactive")
+                app.restoreInputSource(); exit(0)
+            }
+        }
+    }
     static func testCursorColors(_ app: AppDelegate) {
         let script = """
         (() => {
@@ -74,6 +94,67 @@ final class NativeCodeEditingTest {
                 }
                 print("PASS native cursor colors for all three themes")
                 app.restoreInputSource(); exit(0)
+            }
+        }
+    }
+    static func testTypography(_ app: AppDelegate) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            let script = """
+            (() => {
+              const errors=[], lines=[...document.querySelectorAll('.cm-content .cm-line')];
+              const find=text=>lines.find(line=>line.textContent.trim()===text);
+              const body=find('// body note'), inner=find('// list note'), code=find('// code note');
+              if(!body?.classList.contains('cm-note-comment-body') || !body.querySelector('.cm-note-comment-marker')) errors.push('body annotation missing');
+              if(inner?.classList.contains('cm-note-comment-body') || code?.classList.contains('cm-note-comment-body')) errors.push('block comment styled as body');
+              const sizes=[1,2,3,4,5,6].map(n=>parseFloat(getComputedStyle(document.querySelector('.cm-note-heading-'+n)).fontSize));
+              if(sizes.some((size,i)=>i && size>=sizes[i-1])) errors.push('heading levels do not descend: '+sizes);
+              if(find('# code heading')?.classList.contains('cm-note-heading')) errors.push('code styled as heading');
+              for(const theme of ['orange','blue','green']) {
+                window.setUIAppearance(theme,100);
+                const root=getComputedStyle(document.documentElement), probe=document.createElement('span'); document.body.append(probe);
+                probe.style.color=root.getPropertyValue('--ui-accent'); const accent=getComputedStyle(probe).color; probe.remove();
+                if(getComputedStyle(body.querySelector('.cm-note-comment-marker')).color!==accent) errors.push(theme+': comment marker color');
+                if(getComputedStyle(body).boxShadow==='none') errors.push(theme+': comment stripe missing');
+              }
+              return errors;
+            })()
+            """
+            app.web.evaluateJavaScript(script) { result, error in
+                guard error == nil, let errors = result as? [String], errors.isEmpty else {
+                    fputs("FAIL native typography: \(String(describing: error)) \(String(describing: result))\n", stderr); exit(1)
+                }
+                print("PASS native headings and body comments across themes")
+                app.restoreInputSource(); exit(0)
+            }
+        }
+    }
+    static func startTypographyVim(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testTypographyVim(0) }
+    }
+    private func testTypographyVim(_ index: Int) {
+        let lines = ["// body note", "# One", "## Two", "### Three", "#### Four", "##### Five", "###### Six"]
+        if index == lines.count { print("PASS native Vim edits and undo/redo on comments and all heading levels"); app.restoreInputSource(); exit(0) }
+        let original = lines.joined(separator: "\n")
+        let changed = lines.enumerated().map { $0.offset == index ? $0.element + "x" : $0.element }.joined(separator: "\n")
+        sequence([{ self.key(0, "A", "a", .shift) }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
+            content { [self] text in
+                expect(text, changed, "Vim edit line \(index)")
+                let selector = index == 0 ? ".cm-note-comment-body .cm-note-comment-marker" : ".cm-note-heading-\(index)"
+                app.web.evaluateJavaScript("!!document.querySelector('\(selector)')") { [self] result, error in
+                    guard error == nil, result as? Bool == true else { fail("typography disappeared while editing line \(index)") }
+                    key(32, "u"); later { [self] in content { [self] text in
+                        expect(text, original, "Vim undo line \(index)")
+                        key(15, "\u{12}", "r", .control); later { [self] in content { [self] text in
+                            expect(text, changed, "Vim redo line \(index)")
+                            key(32, "u"); later { [self] in content { [self] text in
+                                expect(text, original, "Vim restore line \(index)")
+                                if index < lines.count - 1 { key(38, "j") }
+                                later { [self] in testTypographyVim(index + 1) }
+                            } }
+                        } }
+                    } }
+                }
             }
         }
     }
@@ -242,9 +323,36 @@ final class NativeCodeEditingTest {
                         guard error == nil, let color = value as? String else { fail("insert cursor was not rendered") }
                         expect(color, colors[0], "insert cursor theme color")
                         key(53, "\u{1b}")
-                        testAppearance(index + 1)
+                        testSearchAppearance(index)
                     }
                 }
+            }
+        }
+    }
+    private func testSearchAppearance(_ index: Int) {
+        sequence([{ self.key(44, "/") }, { self.key(40, "k") }]) { [self] in
+            let script = """
+            (() => {
+              const root=getComputedStyle(document.documentElement), panel=document.querySelector('.cm-panels-bottom'), input=document.querySelector('.cm-vim-panel input'), hint=document.querySelector('.cm-vim-panel span[style*="color"]'), match=document.querySelector('.cm-searchMatch');
+              if(!panel || !input || !hint || !match)return null;
+              const probe=document.createElement('span'); document.body.append(probe);
+              const color = value => { probe.style.color=value; return getComputedStyle(probe).color; };
+              const expected=[color(root.getPropertyValue('--ui-ink')), color(root.getPropertyValue('--ui-cursor')), color(root.getPropertyValue('--ui-muted')), color(root.getPropertyValue('--ui-selection'))];
+              probe.style.backgroundColor=`rgba(${root.getPropertyValue('--ui-bar-rgb')}, ${root.getPropertyValue('--ui-opacity')})`; const expectedBg=getComputedStyle(probe).backgroundColor;
+              probe.remove();
+              const bg=getComputedStyle(panel).backgroundColor;
+              return [getComputedStyle(input).color,getComputedStyle(input).caretColor,getComputedStyle(hint).color,getComputedStyle(match).backgroundColor,...expected,bg,input.value,expectedBg];
+            })()
+            """
+            app.web.evaluateJavaScript(script) { [self] value, error in
+                guard error == nil, let colors = value as? [String], colors.count == 11 else { fail("Vim search panel or match was not rendered") }
+                expect(colors[0], colors[4], "search input text color")
+                expect(colors[1], colors[5], "search input caret color")
+                expect(colors[2], colors[6], "search hint color")
+                expect(colors[3], colors[7], "search match color")
+                expect(colors[8], colors[10], "search panel background color")
+                expect(colors[9], "k", "search input remains editable")
+                key(53, "\u{1b}"); later { [self] in testAppearance(index + 1) }
             }
         }
     }
@@ -308,7 +416,7 @@ final class NativeCodeEditingTest {
                             expect(text, "c\n" + original, "Cmd Shift O works from insert mode")
                             sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }, { self.key(5, "g") }, { self.key(5, "g") }, { self.key(34, "i") }, { self.key(31, "o", "o", .command) }, { self.key(2, "d") }]) { [self] in content { [self] text in
                                 expect(text, original + "\nd", "Cmd O works from insert mode")
-                                testTimerCommand()
+                                testListIndentation()
                             } }
                         } }
                         } }
@@ -318,112 +426,36 @@ final class NativeCodeEditingTest {
             } }
         } }
     }
-    private func testTimerCommand() {
-        let keys: [() -> Void] = [
-            { self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(34, "i") },
-            { self.key(17, "t") }, { self.key(34, "i") }, { self.key(46, "m") }, { self.key(14, "e") }, { self.key(15, "r") },
-            { self.key(49, " ") }, { self.key(29, "0") }, { self.key(47, ".") }, { self.key(18, "1") }, { self.key(36, "\r") }
-        ]
-        sequence(keys) { [self] in
-            later { [self] in
-                guard app.timerAlert?.isValid == true else { fail("timer command did not schedule native timer") }
-                app.web.evaluateJavaScript("document.getElementById('timer-stop').click()") { [self] _, error in
-                    guard error == nil else { fail("timer stop button") }
-                    later { [self] in
-                        guard app.timerAlert == nil else { fail("timer stop did not cancel native timer") }
-                        print("PASS native timer command start and stop")
-                        print("PASS native configuration \(app.codeIndentation())")
-                        app.restoreInputSource(); exit(0)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Exercises the actual WebKit -> AppKit timer bridge in an isolated app process.
-final class NativeTimerTest {
-    private let app: AppDelegate
-    private static var running: NativeTimerTest?
-    init(_ app: AppDelegate) { self.app = app }
-    static func start(_ app: AppDelegate) {
-        running = NativeTimerTest(app)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
-    }
-    private func fail(_ message: String) -> Never { app.restoreInputSource(); fputs("FAIL timer: \(message)\n", stderr); exit(1) }
-    private func later(_ seconds: Double, _ action: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: action) }
-    private func load(_ timer: String, _ completion: @escaping () -> Void) {
-        let script = """
-        (() => { const fixture={notes:[{id:'timer-test',content:':::quicknote timer\\n\\n:::end',updated:'2026-01-01'}],selected:'timer-test',timer:\(timer)};
-        window.loadNotesBase64(btoa(unescape(encodeURIComponent(JSON.stringify(fixture))))); return true; })()
-        """
-        app.web.evaluateJavaScript(script) { [self] _, error in if let error { fail("could not load fixture: \(error)") }; completion() }
-    }
-    private func run() {
-        load("{duration:1.2,rest:0,title:'Native test',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
-            app.hideWindow()
-            later(1.8) { [self] in
-                guard app.testTimerReminderCount == 1, let panel = app.timerReminder, panel.isVisible, !panel.isKeyWindow, !app.window.isVisible else { fail("countdown did not show a nonactivating reminder while note was hidden") }
-                guard app.testTimerReminderHeading == L("计时结束") else { fail("countdown heading") }
-                if ProcessInfo.processInfo.environment["INKFLIT_TIMER_VISUAL_QA"] == "1" {
-                    print("PASS native reminder visible for visual inspection")
-                    later(10) { [self] in app.dismissTimerReminder(); app.restoreInputSource(); exit(0) }
-                    return
-                }
-                app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.done") { [self] value, error in
-                    guard error == nil, (value as? Bool) == true else { fail("countdown was not marked done") }
-                    print("PASS native hidden-window countdown reminder and completion")
-                    guard NSApp.sendAction(#selector(AppDelegate.dismissTimerReminder), to: app, from: nil), app.timerReminder == nil else { fail("reminder close action") }
-                    testPause()
-                }
-            }
-        }
-    }
-    private func testPause() {
-        load("{duration:0.7,rest:0,title:'Paused',phase:'work',startedAt:Date.now(),elapsed:0,paused:true,done:false}") { [self] in
-            later(1.0) { [self] in
-                guard app.testTimerReminderCount == 1 else { fail("paused timer alerted") }
-                app.web.evaluateJavaScript("document.getElementById('timer-pause').click()") { [self] _, error in
-                    guard error == nil else { fail("resume action failed") }
-                    later(1.2) { [self] in
-                        guard app.testTimerReminderCount == 2, app.timerReminder?.isVisible == true else { fail("resumed timer failed to alert") }
-                        print("PASS native pause and resume timer")
-                        app.dismissTimerReminder(); testStop()
-                    }
-                }
-            }
-        }
-    }
-    private func testStop() {
-        load("{duration:0.7,rest:0,title:'Stopped',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
-            app.web.evaluateJavaScript("document.getElementById('timer-stop').click()") { [self] _, error in
-                guard error == nil else { fail("stop action failed") }
-                later(1.0) { [self] in
-                    guard app.testTimerReminderCount == 2, app.timerReminder == nil else { fail("stopped timer alerted") }
-                    print("PASS native stopped timer does not alert")
-                    testPomodoro()
-                }
-            }
-        }
-    }
-    private func testPomodoro() {
-        load("{duration:0.7,rest:3,title:'Focus',phase:'work',startedAt:Date.now(),elapsed:0,paused:false,done:false}") { [self] in
-            later(1.2) { [self] in
-                guard app.testTimerReminderCount == 3, app.timerReminder?.isVisible == true, app.testTimerReminderHeading == L("休息时间到了") else { fail("pomodoro work boundary reminder") }
-                app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.phase") { [self] value, error in
-                    guard error == nil, value as? String == "rest" else { fail("pomodoro did not advance to break") }
-                    print("PASS native pomodoro phase transition reminder")
-                    app.dismissTimerReminder()
-                    later(2.8) { [self] in
-                        guard app.testTimerReminderCount == 4, app.timerReminder?.isVisible == true, app.testTimerReminderHeading == L("专注时间到了") else { fail("pomodoro break boundary reminder") }
-                        app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).timer.phase") { [self] value, error in
-                            guard error == nil, value as? String == "work" else { fail("pomodoro did not advance to work") }
-                            print("PASS native pomodoro break completion reminder")
-                            app.dismissTimerReminder(); app.restoreInputSource(); exit(0)
-                        }
-                    }
-                }
-            }
-        }
+    private func testListIndentation(alreadySelected: Bool = false) {
+        let original = ":::quicknote list\nroot\n  parent\napple\n[x] done\n- [ ] task\n:::end"
+        let indented = ":::quicknote list\nroot\n  parent\n  apple\n[x] done\n- [ ] task\n:::end"
+        let start: [() -> Void] = alreadySelected ? [{ self.key(48, "\t") }] : [{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(48, "\t") }]
+        sequence(start) { [self] in content { [self] text in
+            expect(text, original, "root item cannot indent")
+            sequence([{ self.key(38, "j") }, { self.key(38, "j") }, { self.key(48, "\t") }]) { [self] in content { [self] text in
+                expect(text, indented, "normal mode Tab indents checklist item")
+                sequence([{ self.key(32, "u") }]) { [self] in content { [self] text in
+                    expect(text, original, "undo checklist indentation")
+                    sequence([{ self.key(15, "\u{12}", "r", .control) }]) { [self] in content { [self] text in
+                        expect(text, indented, "redo checklist indentation")
+                        sequence([{ self.key(48, "\u{19}", "\t", .shift) }]) { [self] in content { [self] text in
+                            expect(text, original, "normal mode Shift Tab outdents checklist item")
+                            sequence([{ self.key(34, "i") }, { self.key(48, "\t") }, { self.key(48, "\t") }, { self.key(48, "\t") }]) { [self] in content { [self] text in
+                                expect(text, ":::quicknote list\nroot\n  parent\n    apple\n[x] done\n- [ ] task\n:::end", "nested indentation stops one level below previous item")
+                                app.web.evaluateJavaScript("[...document.querySelectorAll('.task-checkbox')].map(item => item.getBoundingClientRect().left)") { [self] value, error in
+                                    guard error == nil, let positions = value as? [Double], positions.count == 5, positions[2] > positions[1] + 5 else { fail("nested checklist checkbox was not rendered at its indentation") }
+                                    print("PASS nested checklist checkbox indentation")
+                                    sequence([{ self.key(48, "\u{19}", "\t", .shift) }]) { [self] in content { [self] text in
+                                        expect(text, indented, "insert mode Shift Tab outdents checklist item")
+                                        print("PASS native configuration \(app.codeIndentation())")
+                                        app.restoreInputSource(); exit(0)
+                                    } }
+                                }
+                            } }
+                        } }
+                    } }
+                } }
+            } }
+        } }
     }
 }

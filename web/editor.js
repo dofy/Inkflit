@@ -11,10 +11,11 @@ import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu
 import { initLanguageMenu, languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
-import { parseTimer, scopeAt } from './features.js';
-import { timerCommand, timerDisplay, advanceTimer } from './timer.js';
+import { scopeAt } from './features.js';
 import { commentChanges, blockCodeCommentChanges, isCodeAt, noteComments, selectedLines } from './comments.js';
+import { noteHeadings } from './typography.js';
 import { planCodeEdit, normalizeIndentation } from './code-editing.js';
+import { planListIndent } from './list-editing.js';
 import { classHighlighter } from '@lezer/highlight';
 import { applyCodeTheme } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
@@ -40,8 +41,7 @@ window.setLanguage = value => {
   }
   $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
   document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
-  $('timer-reset').textContent=t('重置'); $('timer-stop').textContent=t('停止');
-  if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); renderTimer(); }
+  if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); }
   if(state && !$('save').classList.contains('error')) $('save').textContent=t('已保存');
 };
 function refreshNav() {
@@ -58,7 +58,7 @@ function makeState(content) {
       if (tr.annotation(Transaction.userEvent) === 'input.type.compose') return tr;
       return {changes:tr.changes, selection:tr.selection, effects:tr.effects, scrollIntoView:tr.scrollIntoView,
         annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
-    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
+    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, noteHeadings, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
     keymap.of([...defaultKeymap,...historyKeymap]),
     EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
   ]});
@@ -102,28 +102,6 @@ function refreshInsights() {
   $('insights').textContent=info.summary; $('insights').hidden=!info.summary;
 }
 setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)}); refreshInsights();} });
-function scheduleTimer() {
-  const t=state?.timer; const d=timerDisplay(t);
-  const deadline=t && d && !t.paused && !t.done && d.length ? Date.now()+Math.max(0,d.length-d.elapsed)*1000 : 0;
-  window.webkit?.messageHandlers?.quicknote?.postMessage({type:'timer',deadline,title:t?.title || '',phase:t?.phase || 'work',pomodoro:!!t?.rest});
-}
-function applyTimer(command) { state.timer=timerCommand(state.timer,command); persist(); scheduleTimer(); renderTimer(); }
-function renderTimer(forceAdvance=false) {
-  if (!state) return;
-  let timer=state.timer; const before=timer;
-  if (timer && (forceAdvance || !window.webkit?.messageHandlers?.quicknote)) timer=advanceTimer(timer);
-  if(timer!==before) { state.timer=timer; persist(); scheduleTimer(); }
-  $('timer').hidden=!timer;
-  if(!timer)return;
-  $('timer-label').textContent=(timer.title ? timer.title+' · ' : '')+(timer.rest ? t(timer.phase==='work'?'专注':'休息') : t(timer.duration?'倒计时':'计时'));
-  $('timer-value').textContent=timerDisplay(timer).text+(timer.done?' '+t('完成'):'');
-  $('timer-pause').textContent=t(timer.paused?'继续':'暂停'); $('timer-pause').disabled=!!timer.done;
-}
-window.timerFinished=()=>renderTimer(true);
-setInterval(renderTimer,1000);
-$('timer-pause').onclick=()=>applyTimer({command:'p'});
-$('timer-reset').onclick=()=>applyTimer({command:'r'});
-$('timer-stop').onclick=()=>applyTimer({command:'s'});
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
   keyStartDoc = editor?.state.doc;
@@ -156,6 +134,10 @@ document.addEventListener('keydown', event => {
   }
   if(languageMenuOpen() && handleLanguageMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
   if(blockMenuOpen() && handleBlockMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
+  if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && event.key==='Tab' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    const planned=planListIndent(editor.state,event.shiftKey ? 'Shift-Tab' : 'Tab');
+    if(planned) {event.preventDefault();event.stopPropagation();editor.dispatch(planned);return;}
+  }
   if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode) {
     const key=event.key==='Tab' && event.shiftKey ? 'Shift-Tab' : event.key;
     const planned=planCodeEdit(editor.state,key,{indentation:codeIndentation});
@@ -182,7 +164,6 @@ document.addEventListener('keydown', event => {
       else editor.dispatch({selection:{anchor:end.to+1},scrollIntoView:true});
       return;
     }
-    if (selection.empty) { const line=editor.state.doc.lineAt(selection.head); if(selection.head===line.to && scopeAt(editor.state.doc.toString(),line.number)?.mode === 'timer') { const command=parseTimer(line.text); if(command) applyTimer(command); } }
   }
   if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
     const key = event.key.toLowerCase();
@@ -244,8 +225,8 @@ window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
     if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('笔记文件格式无效'));
-    if (loaded) state = loaded; else { const n = newNote(); state = {notes:[n],selected:n.id}; }
-    changeEditor(state.selected); renderTimer(true); scheduleTimer(); $('save').textContent = loaded ? t('已载入') : t('新笔记');
+    if (loaded) { delete loaded.timer; state = loaded; } else { const n = newNote(); state = {notes:[n],selected:n.id}; }
+    changeEditor(state.selected); $('save').textContent = loaded ? t('已载入') : t('新笔记');
   } catch (error) { $('save').className='error'; $('save').textContent = t('读取失败：')+error.message; }
 };
 window.setLanguage(lang());

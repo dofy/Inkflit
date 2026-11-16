@@ -50,12 +50,19 @@ export function blockCodeCommentChanges(state) {
   });
 }
 const commentLine = Decoration.line({class:'cm-note-comment'});
+const noteCommentLine = Decoration.line({class:'cm-note-comment cm-note-comment-body'});
+const noteCommentMarker = Decoration.mark({class:'cm-note-comment-marker'});
 function decorations(view) {
   const result = [], doc = view.state.doc;
   for (const range of view.visibleRanges) {
     let line = doc.lineAt(range.from);
     while (line.from <= range.to) {
-      if (/^[\t ]*\/\//.test(line.text) && !isCodeAt(view.state, line.from)) result.push(commentLine.range(line.from));
+      const match=/^[\t ]*\/\//.exec(line.text);
+      if (match && !isCodeAt(view.state, line.from)) {
+        const inFeature=!!scopeAt(doc.toString(),line.number);
+        result.push((inFeature ? commentLine : noteCommentLine).range(line.from));
+        if(!inFeature) result.push(noteCommentMarker.range(line.from+match[0].length-2,line.from+match[0].length));
+      }
       if (line.to >= doc.length) break;
       line = doc.lineAt(line.to+1);
     }

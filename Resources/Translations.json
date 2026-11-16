@@ -485,12 +485,6 @@
     "zh-Hant": "程式碼",
     "ja": "コード"
   },
-  "计时器": {
-    "en": "Timer",
-    "zh-Hans": "计时器",
-    "zh-Hant": "計時器",
-    "ja": "タイマー"
-  },
   "普通文本": {
     "en": "Plain text",
     "zh-Hans": "普通文本",
@@ -538,12 +532,6 @@
     "zh-Hans": "保留代码并按语言高亮",
     "zh-Hant": "保留程式碼並依語言突顯",
     "ja": "言語に応じてコードを強調表示"
-  },
-  "在块内输入 timer 命令": {
-    "en": "Enter a timer command in the block",
-    "zh-Hans": "在块内输入 timer 命令",
-    "zh-Hant": "在區塊內輸入 timer 指令",
-    "ja": "ブロック内に timer コマンドを入力"
   },
   "移除功能，保留内容": {
     "en": "Remove function, keep content",
@@ -617,59 +605,11 @@
     "zh-Hant": "刪除此筆記？此操作無法復原。",
     "ja": "このノートを削除しますか？元に戻せません。"
   },
-  "专注": {
-    "en": "Focus",
-    "zh-Hans": "专注",
-    "zh-Hant": "專注",
-    "ja": "集中"
-  },
-  "休息": {
-    "en": "Break",
-    "zh-Hans": "休息",
-    "zh-Hant": "休息",
-    "ja": "休憩"
-  },
-  "倒计时": {
-    "en": "Countdown",
-    "zh-Hans": "倒计时",
-    "zh-Hant": "倒數計時",
-    "ja": "カウントダウン"
-  },
-  "计时": {
-    "en": "Timer",
-    "zh-Hans": "计时",
-    "zh-Hant": "計時",
-    "ja": "タイマー"
-  },
   "完成": {
     "en": "Done",
     "zh-Hans": "完成",
     "zh-Hant": "完成",
     "ja": "完了"
-  },
-  "继续": {
-    "en": "Resume",
-    "zh-Hans": "继续",
-    "zh-Hant": "繼續",
-    "ja": "再開"
-  },
-  "暂停": {
-    "en": "Pause",
-    "zh-Hans": "暂停",
-    "zh-Hant": "暫停",
-    "ja": "一時停止"
-  },
-  "重置": {
-    "en": "Reset",
-    "zh-Hans": "重置",
-    "zh-Hant": "重設",
-    "ja": "リセット"
-  },
-  "停止": {
-    "en": "Stop",
-    "zh-Hans": "停止",
-    "zh-Hant": "停止",
-    "ja": "停止"
   },
   "笔记文件格式无效": {
     "en": "Invalid notes file",
@@ -832,30 +772,6 @@
     "zh-Hans": " 仍使用原位置。",
     "zh-Hant": " 仍使用原位置。",
     "ja": " 元の保存場所を使います。"
-  },
-  "休息时间到了": {
-    "en": "Time for a break",
-    "zh-Hans": "休息时间到了",
-    "zh-Hant": "休息時間到了",
-    "ja": "休憩の時間です"
-  },
-  "专注时间到了": {
-    "en": "Time to focus",
-    "zh-Hans": "专注时间到了",
-    "zh-Hant": "專注時間到了",
-    "ja": "集中の時間です"
-  },
-  "计时结束": {
-    "en": "Timer finished",
-    "zh-Hans": "计时结束",
-    "zh-Hant": "計時結束",
-    "ja": "タイマーが終了しました"
-  },
-  "计时提醒": {
-    "en": "Timer reminder",
-    "zh-Hans": "计时提醒",
-    "zh-Hant": "計時提醒",
-    "ja": "タイマーのお知らせ"
   },
   "关闭": {
     "en": "Close",

@@ -39,13 +39,14 @@ Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and
 
 In insert mode, type `/` on an empty line to choose a block. Use arrow keys and Return or click an item. A note may contain multiple independent blocks; use the block header or `⌘K` to change its type, convert it to plain text or delete it. These actions can be undone. On the last blank line of a non-code block, press Return again to leave the block.
 
-- **list:** Check items by clicking or typing `/x` at the end of a line; checked items are saved as Markdown `[x]`.
+- **list:** Check items by clicking or typing `/x` at the end of a line; checked items are saved as Markdown `[x]`. Use `Tab` / `Shift-Tab` to indent / outdent by two spaces. The first item stays at the root, an item can be at most one level deeper than its predecessor, and children move with their parent.
 - **math:** End an expression with `=` to calculate. Supports arithmetic, percentages, functions, units and per-block variables such as `price: 80`. Currency conversions use uppercase codes, e.g. `10 USD to CNY =`.
 - **sum / avg / count:** Sum or average numbers, or count nonempty items, words and characters. Lines beginning `//` are excluded.
 - **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
-- **timer:** `timer` starts a stopwatch, `timer 5` a five-minute countdown, `timer 3:30` a three-minute-thirty-second countdown and `timer pomo` a 25/5-minute Pomodoro. Add a title with `timer 5: title`. Use `timer p`, `timer r`, `timer s` or the buttons to pause, reset or stop. One timer runs at a time. While the app is running, completion shows a dismissible reminder and plays a sound even when the note window is hidden; alerts do not fire after the app quits.
 
 Blocks use Inkflit text markers such as `:::quicknote math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
+
+The timer feature has been removed. Existing timer blocks remain editable as plain text blocks; their text is preserved and old timer state is not resumed.
 
 ## Notes and storage
 

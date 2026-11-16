@@ -4,7 +4,7 @@ const items = [
   ['list','清单','逐行显示复选框'],['math','计算','算式、变量与单位换算'],
   ['sum','求和','汇总块中的数字'],['avg','平均值','计算块内数字平均值'],
   ['count','计数','统计项目、词和字符'],['code','代码','保留代码并按语言高亮'],
-  ['timer','计时器','在块内输入 timer 命令'],['text','普通文本','移除功能，保留内容'],['delete','删除块','删除当前块及内容']
+  ['text','普通文本','移除功能，保留内容'],['delete','删除块','删除当前块及内容']
 ];
 let menu, view, active=null;
 export function initBlockMenu(element, getView) {
