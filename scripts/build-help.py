@@ -18,7 +18,7 @@ for language in ('en', 'zh-Hant', 'ja'):
     for line in lines:
         if line.startswith('```'):
             output.append('</code></pre>' if code else '<pre><code>'); code = not code; continue
-        if code: output.append(html.escape(line)); continue
+        if code: output.append(html.escape(line) + "\n"); continue
         if re.fullmatch(r'\|[ :|\-]+\|', line): continue
         if line.startswith('|'):
             cells = line.strip('|').split('|')
