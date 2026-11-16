@@ -40,10 +40,10 @@ export function nearestEditablePosition(doc, pos, previous=pos, changed=false) {
     if(pos<marker.from || pos>marker.to)continue;
     const scope=marker.scope;
     if(marker.kind==='start') {
-      if(!changed && previous>marker.to && marker.from>0)return marker.from-1;
+      if(!changed && previous>marker.to && marker.from>0)return nearestEditablePosition(doc,marker.from-1,previous,false);
       return scope.start<doc.lines ? doc.line(scope.start+1).from : marker.to;
     }
-    if(!changed && previous<marker.from && marker.to<doc.length)return marker.to+1;
+    if(!changed && previous<marker.from && marker.to<doc.length)return nearestEditablePosition(doc,marker.to+1,previous,false);
     if(scope.end>1) {
       const line=doc.line(scope.end-1);
       const segments=typeof Intl.Segmenter==='function' ? [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(line.text)] : Array.from(line.text).map(segment=>({segment}));

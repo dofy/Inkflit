@@ -15,6 +15,7 @@ main{position:relative}.block-menu{position:absolute;z-index:10;width:272px;max-
 .cm-editor .tok-propertyName,.cm-editor .tok-attributeName{color:var(--syntax-property)!important}.cm-editor .tok-string,.cm-editor .tok-string2,.cm-editor .tok-character{color:var(--syntax-string)!important}.cm-editor .tok-keyword,.cm-editor .tok-bool,.cm-editor .tok-null,.cm-editor .tok-atom{color:var(--syntax-keyword)!important}.cm-editor .tok-number{color:var(--syntax-number)!important}.cm-editor .tok-comment{color:var(--syntax-comment)!important}.cm-editor .tok-function,.cm-editor .tok-variableName.tok-function{color:var(--syntax-function)!important}.cm-editor .tok-variableName,.cm-editor .tok-typeName{color:var(--syntax-variable)!important}.cm-editor .tok-operator{color:var(--syntax-operator)!important}.cm-editor .tok-punctuation{color:var(--syntax-punctuation)!important}
 .drag-bar{height:10px}header{height:36px}
 :root{--ink:var(--ui-ink,#302921);--muted:var(--ui-muted,#89796e);--accent:var(--ui-accent,#b95c1d);--paper:var(--ui-paper,#fffdfa)}
+#save.error{max-width:calc(100% - 160px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app{background:rgba(var(--ui-paper-rgb,255,253,250),var(--ui-opacity,1))}.drag-bar,header{background:rgba(var(--ui-bar-rgb,255,240,226),var(--ui-opacity,1))}header{border-color:var(--ui-border,#f0dbc9)}
 .nav span,.block-menu-item small{color:var(--ui-muted,#89796e)}button{color:var(--ui-button,#8c5b39)}button:focus-visible{outline-color:var(--ui-accent,#b95c1d)}.nav button:hover,.actions button:hover,button[aria-pressed=true]{background:var(--ui-hover,#f9ddc6);color:var(--ui-accent,#b95c1d)}
 .cm-cursor{border-left-color:var(--ui-cursor,#c66522)!important}.cm-selectionBackground{background:var(--ui-selection,#f8d7bc)!important}.cm-activeLine{background:rgba(var(--ui-active-rgb,255,245,236),var(--ui-opacity,1))!important}
@@ -24,6 +25,8 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 /* Body comments are annotations, while comments inside blocks keep their own styling. */
 .editor .cm-editor .cm-line.cm-note-comment-body{background:rgba(var(--ui-bar-rgb,255,240,226),calc(var(--ui-opacity,1)*.65))!important;border-radius:6px;padding-top:4px;padding-bottom:4px}
 .editor .cm-editor .cm-line.cm-note-comment-body.cm-activeLine{background:rgba(var(--ui-bar-rgb,255,240,226),calc(var(--ui-opacity,1)*.9))!important}
+.editor .cm-editor .cm-line.cm-note-comment-body + .cm-line.cm-note-comment-body{border-top-left-radius:0;border-top-right-radius:0;padding-top:1px}
+.editor .cm-editor .cm-line.cm-note-comment-body:has(+ .cm-line.cm-note-comment-body){border-bottom-left-radius:0;border-bottom-right-radius:0;padding-bottom:1px}
 .cm-line.cm-note-comment-body,.cm-line.cm-note-comment-body span{font-style:normal!important}
 .cm-line.cm-note-comment-body .cm-note-comment-marker{color:var(--ui-accent,#b95c1d)!important;font-weight:700}
 .editor .cm-editor .cm-line.cm-note-heading{line-height:1.5;padding-top:4px;color:var(--ui-ink,#302921)}

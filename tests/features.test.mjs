@@ -21,17 +21,12 @@ test('multiple independent feature blocks share one note without treating ordina
  const scopes=analyzeScopes(text); assert.equal(scopes[0].results[0].line,4); assert.equal(scopes[0].results[0].text,'20'); assert.equal(scopes[2].summary,'合计 10 · 2 个数');
 });
 
-test('legacy timer blocks keep their text without restoring timer functionality',async()=>{
- const {featureScopes,analyzeScopes,blockTypes}=await import('../web/features.js');
- const {currentBlockScope,planAdjacentBlockLine}=await import('../web/block-menu.js');
- const {EditorState}=await import('@codemirror/state');
- const doc=':::quicknote timer\ntimer 5: tea\n:::end';
- const state=EditorState.create({doc,selection:{anchor:doc.indexOf('timer 5')}});
- assert.equal(blockTypes.includes('timer'),false);
- assert.equal(featureScopes(doc)[0].mode,'timer');
- assert.deepEqual(analyzeScopes(doc)[0].results,[]);
- assert.equal(currentBlockScope(state).mode,'timer');
- assert.equal(state.update(planAdjacentBlockLine(state,true)).state.doc.toString(),'\n'+doc);
+test('plain text conversion is offered only when changing an existing block',async()=>{
+ const {blockMenuChoices}=await import('../web/block-menu.js');
+ const newChoices=blockMenuChoices(null).map(([id])=>id);
+ const existingChoices=blockMenuChoices({kind:'block'}).map(([id])=>id);
+ assert.ok(!newChoices.includes('text') && !newChoices.includes('delete'));
+ assert.ok(existingChoices.includes('text') && existingChoices.includes('delete'));
 });
 
 
@@ -140,6 +135,16 @@ test('moving upward into a block lands on the last grapheme',async()=>{
  const doc=':::quicknote list\n梨👩‍💻\n:::end\n段落';
  const state=EditorState.create({doc});const marker=doc.indexOf(':::end');
  assert.equal(nearestEditablePosition(state.doc,marker,doc.length,false),doc.indexOf('👩'));
+});
+
+test('cursor crosses adjacent block markers without landing on a marker',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {nearestEditablePosition}=await import('../web/block-protection.js');
+ const doc=':::quicknote sum\n12\n\n:::end\n:::quicknote list\nfirst\n:::end';
+ const state=EditorState.create({doc});
+ const second=doc.indexOf(':::quicknote list'), firstEnd=doc.indexOf(':::end');
+ assert.equal(nearestEditablePosition(state.doc,second,doc.indexOf('first'),false),doc.indexOf('\n\n')+1);
+ assert.equal(nearestEditablePosition(state.doc,firstEnd,doc.indexOf('12'),false),doc.indexOf('first'));
 });
 
 test('delete block shortcut targets one complete block and can be undone',async()=>{

@@ -18,8 +18,7 @@ export function featureScopes(text) {
       if(close) { scopes.push({...active,start:active.line,end:i+1,global:false,closed:true}); active=null; }
       continue;
     }
-    // Keep recognizing historical timer markers so their note text stays editable.
-    const block=/^:::quicknote (list|math|sum|avg|count|code|timer)(?: ([\w+.-]+))?\s*$/.exec(line);
+    const block=/^:::quicknote (list|math|sum|avg|count|code)(?: ([\w+.-]+))?\s*$/.exec(line);
     if(block) { active={kind:'block',mode:block[1],language:block[2]||'',line:i+1}; continue; }
     const open=/^\s*(`{3,}|~{3,})([^`]*)$/.exec(line);
     if(open) {
@@ -105,7 +104,7 @@ export function analyzeScopes(text,rates=null) {
   const lines=text.split('\n');
   return featureScopes(text).map(scope=>{
     if(scope.global) return {...scope,...analyze(text,rates)};
-    if(scope.mode==='code' || scope.mode==='timer') return {...scope,results:[],summary:''};
+    if(scope.mode==='code') return {...scope,results:[],summary:''};
     const body=lines.slice(scope.start,Math.min(scope.end-1,lines.length));
     const info=analyze([scope.mode,...body].join('\n'),rates);
     return {...scope,...info,results:info.results.map(r=>({...r,line:scope.start+r.line-1}))};

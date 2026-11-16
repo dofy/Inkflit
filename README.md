@@ -4,6 +4,8 @@ English · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md
 
 A local-first floating note app for macOS, with Markdown, Vim editing, code highlighting, feature blocks and automatic saving.
 
+On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes, using the current app language.
+
 ## Build and run
 
 Requires macOS 13 or later, Xcode Command Line Tools, Node.js and npm.
@@ -46,10 +48,9 @@ In insert mode, type `/` on an empty line to choose a block. Use arrow keys and 
 
 Blocks use Inkflit text markers such as `:::quicknote math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 
-The timer feature has been removed. Existing timer blocks remain editable as plain text blocks; their text is preserved and old timer state is not resumed.
 
 ## Notes and storage
 
-Notes are stored as individual UTF-8 Markdown files in `~/Documents/Inkflit/notes/`, with an `index.json` for ordering and selection. Feature blocks use Inkflit markers. In Settings, select another folder, configure per-note backup retention (off, a count, or unlimited), restore a backup or deleted note, and rebuild a damaged index from note files. A previous version is saved at most once per note every five minutes while editing. Changing retention does not immediately delete existing versions; the limit is applied when a new version is created. Deleted notes remain in `trash/`; restoring creates a new note and keeps the original. Changing folders copies the complete store and keeps the original. Inkflit does not provide cloud sync; regularly back up the whole store separately.
+Notes are stored as individual UTF-8 Markdown files in `~/Documents/Inkflit/notes/`, with an `index.json` for ordering and selection. Feature blocks use Inkflit markers. In Settings, select another folder, configure per-note backup retention (off, a count, or unlimited), restore a backup or deleted note, and rebuild a damaged index from note files. A previous version is saved at most once per note every five minutes while editing. Changing retention does not immediately delete existing versions; the limit is applied when a new version is created. Deleted notes remain in `trash/`; restoring creates a new note and keeps the original. Changing folders copies the complete store and keeps the original. Inkflit does not provide cloud sync; regularly back up the whole store separately. Continuous edits are saved after 0.5 seconds of inactivity, normally at least every 2 seconds while typing. Switching notes, hiding the window, changing storage location or quitting flushes pending changes immediately. Save errors remain visible and a failed save blocks quitting; an unexpected crash can lose unsaved recent edits.
 
 Markdown checkboxes (`[ ]`, `[x]`, `- [ ]`) are clickable in the editor; their source remains Markdown. `//` at the start of a line comments that line. Language-labelled Markdown code fences are highlighted.

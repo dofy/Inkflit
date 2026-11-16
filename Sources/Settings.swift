@@ -128,6 +128,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let backupMessage = NSTextField(wrappingLabelWithString: L("每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。"))
     var restoreNote: ((Data) -> Void)?
     var rebuildIndex: (() -> String?)?
+    var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
+    private let onboardingButton = NSButton(title: L("重新生成引导笔记"), target: nil, action: nil)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
@@ -292,8 +294,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         }
         tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
         let help = NSButton(title: L("打开使用帮助"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
+        onboardingButton.target = self; onboardingButton.action = #selector(onboardingPressed); onboardingButton.bezelStyle = .rounded
         let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
-        let footer = NSStackView(views: [copyright, help]); footer.orientation = .horizontal; footer.alignment = .centerY; footer.distribution = .gravityAreas
+        let footerActions = NSStackView(views: [onboardingButton, help]); footerActions.orientation = .horizontal; footerActions.spacing = 6
+        let footer = NSStackView(views: [copyright, footerActions]); footer.orientation = .horizontal; footer.alignment = .centerY; footer.distribution = .gravityAreas
         let stack = NSStackView(views: [header, tabs, footer]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(stack)
@@ -394,6 +398,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         return NSApp.sendAction(#selector(appearanceChanged), to: self, from: uiThemePicker)
     }
     func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
+    func testGenerateOnboarding() -> Bool {
+        guard let root = window?.contentView else { return false }
+        root.layoutSubtreeIfNeeded()
+        let rect = onboardingButton.convert(onboardingButton.bounds, to: root)
+        guard onboardingButton.isEnabled, root.bounds.contains(rect) else { return false }
+        onboardingButton.performClick(nil); return true
+    }
     func testBackupControls() -> Bool {
         tabs.selectTabViewItem(at: 4); window?.contentView?.layoutSubtreeIfNeeded()
         guard let page = tabs.tabViewItem(at: 4).view else { return false }
@@ -438,6 +449,18 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     }
     @objc private func restorePressed() {
         chooseRecoveryFile(folder: "trash", title: L("恢复已删除笔记…"))
+    }
+    @objc private func onboardingPressed() {
+        guard let generateOnboarding else { return }
+        onboardingButton.isEnabled = false
+        generateOnboarding { [weak self] error in
+            guard let self else { return }
+            self.onboardingButton.isEnabled = true
+            if let error, let window = self.window {
+                let alert = NSAlert(); alert.messageText = L("无法生成引导笔记"); alert.informativeText = error
+                alert.beginSheetModal(for: window)
+            }
+        }
     }
     @objc private func restoreBackupPressed() {
         chooseRecoveryFile(folder: "backups", title: L("恢复历史版本…"))

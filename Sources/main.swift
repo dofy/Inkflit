@@ -41,6 +41,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var testLoginStatus: SMAppService.Status = .notRegistered
     var storageURL: URL!
     var loadedSnapshot: NoteSnapshot?
+    private struct PendingSave { let data: Data; let revision: Int }
+    private var pendingSave: PendingSave?
+    private var saveWork: DispatchWorkItem?
+    private var firstPendingAt: TimeInterval?
+    private var lastSavedRevision = 0
+    private var hideGeneration = 0
+    private var hidePending = false
+    private var terminationPending = false
+    private let saveDelay: TimeInterval = 0.5
+    private let maximumSaveDelay: TimeInterval = 2
+    #if INKFLIT_NATIVE_TEST
+    var testSuccessfulSaves = 0
+    var testSaveTimes: [TimeInterval] = []
+    #endif
     var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -51,6 +65,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest, let value = ProcessInfo.processInfo.environment["INKFLIT_NATIVE_INDENT"] {
             UserDefaults.standard.set(value, forKey: "codeIndentation")
+        }
+        if isolatedTest, let value = ProcessInfo.processInfo.environment["INKFLIT_TEST_UI_LANGUAGE"] {
+            UserDefaults.standard.set(value, forKey: "language")
         }
         #endif
         configureStorage()
@@ -153,6 +170,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let directory = directory.standardizedFileURL
         let destination = NoteFiles.index(directory)
         if destination == storageURL.standardizedFileURL { completion(nil); return }
+        requestFlush { [weak self] success, message in
+            guard let self else { completion(L("设置窗口不可用。")); return }
+            guard success else { completion(message ?? L("保存失败")); return }
+            self.copyStorageDirectory(directory, destination: destination, completion: completion)
+        }
+    }
+    private func copyStorageDirectory(_ directory: URL, destination: URL, completion: @escaping (String?) -> Void) {
         web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
             guard let self else { completion(L("设置窗口不可用。")); return }
             guard error == nil, let json = value as? String, let data = json.data(using: .utf8) else { completion(NoteStorageError.invalidSnapshot.localizedDescription); return }
@@ -169,6 +193,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 if !self.isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
                 completion(nil)
             } catch { completion(error.localizedDescription) }
+        }
+    }
+    func generateOnboarding(completion: @escaping (String?) -> Void) {
+        let data: Data
+        do { data = try JSONEncoder().encode(Onboarding.contents(language: Localization.current)) }
+        catch { completion(error.localizedDescription); return }
+        requestFlush { [weak self] success, message in
+            guard let self else { completion(L("设置窗口不可用。")); return }
+            guard success else { completion(message ?? L("保存失败")); return }
+            do {
+                if let expected = self.loadedSnapshot, try NoteFiles.read(self.storageURL.deletingLastPathComponent()) != expected {
+                    completion(L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")); return
+                }
+            } catch { completion(L("无法读取笔记：") + error.localizedDescription); return }
+            self.web.evaluateJavaScript("window.addOnboardingNotesBase64('\(data.base64EncodedString())')") { [weak self] value, error in
+                guard let self else { completion(L("设置窗口不可用。")); return }
+                guard error == nil, (value as? NSNumber)?.intValue ?? 0 > 0 else {
+                    completion(error?.localizedDescription ?? OnboardingError.unavailable.localizedDescription); return
+                }
+                self.requestFlush { success, message in completion(success ? nil : (message ?? L("保存失败"))) }
+            }
         }
     }
     func makeStatusIcon() -> NSImage {
@@ -310,6 +355,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     else { self?.settingsController?.window?.orderOut(nil); self?.showWindow() }
                 }
             }
+            settingsController?.generateOnboarding = { [weak self] completion in
+                guard let self else { completion(L("设置窗口不可用。")); return }
+                self.generateOnboarding { [weak self] error in
+                    if error == nil { self?.settingsController?.window?.orderOut(nil); self?.showWindow() }
+                    completion(error)
+                }
+            }
             settingsController?.rebuildIndex = { [weak self] in
                 guard let self else { return L("设置窗口不可用。") }
                 do {
@@ -332,8 +384,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
         settingsController?.show()
     }
-    @objc func showWindow() { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil) }
-    func toggleWindow() { if window.isVisible && window.isKeyWindow { hideWindow() } else { showWindow() } }
+    @objc func showWindow() { hideGeneration += 1; hidePending = false; NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil) }
+    func toggleWindow() { if hidePending { showWindow() } else if window.isVisible && window.isKeyWindow { hideWindow() } else { showWindow() } }
     func inputSourceID(_ source: TISInputSource) -> String? {
         guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
         return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
@@ -360,8 +412,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
         restoreInputSource()
     }
-    func hideWindow() { restoreInputSource(); window.orderOut(nil) }
-    func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if terminationPending { return .terminateLater }
+        terminationPending = true
+        requestFlush { [weak self] success, _ in
+            self?.terminationPending = false
+            if !success { self?.showWindow() }
+            sender.reply(toApplicationShouldTerminate: success)
+        }
+        return .terminateLater
+    }
+    func hideWindow() {
+        hideGeneration += 1; hidePending = true; let request = hideGeneration
+        requestFlush { [weak self] success, _ in
+            guard let self, self.hideGeneration == request else { return }
+            self.hidePending = false
+            if success { self.restoreInputSource(); self.window.orderOut(nil) }
+            else { self.showWindow() }
+        }
+    }
+    func windowShouldClose(_ sender: NSWindow) -> Bool { hideWindow(); return false }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         syncLanguage()
         syncCodeIndentation()
@@ -378,6 +448,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
             } else if requireExistingStorage {
                 showError(L("笔记文件不存在或位置不可用，请恢复文件后重新启动。"))
+            } else if usesNoteFiles && (!isolatedTest || ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] == "1") {
+                var languages = Locale.preferredLanguages
+                #if INKFLIT_NATIVE_TEST
+                if let testLanguage = ProcessInfo.processInfo.environment["INKFLIT_TEST_SYSTEM_LANGUAGE"] { languages = [testLanguage] }
+                #endif
+                let snapshot = try Onboarding.snapshot(language: Localization.resolve(languages))
+                try NoteFiles.create(snapshot, in: directory)
+                loadedSnapshot = snapshot; requireExistingStorage = true
+                if !isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
+                let data = try JSONEncoder().encode(snapshot)
+                web.evaluateJavaScript("window.loadNotesBase64('\(data.base64EncodedString())')", completionHandler: nil)
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
         } catch { showError(L("无法读取笔记：") + error.localizedDescription) }
@@ -391,9 +472,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CURSOR_TEST"] == "1" {
             NativeCodeEditingTest.testCursorColors(self)
         }
-        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_LEGACY_TEST"] == "1" {
-            NativeCodeEditingTest.testLegacyTimer(self)
-        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CHECKLIST_TEST"] == "1" {
             NativeCodeEditingTest.startChecklist(self)
         }
@@ -406,8 +484,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMENT_VIM_TEST"] == "1" {
             NativeCodeEditingTest.startCommentVim(self)
         }
-        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" {
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMENT_LAYOUT_TEST"] == "1" {
+            NativeCodeEditingTest.testCommentLayout(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMENT_GROUP_VIM_TEST"] == "1" {
+            NativeCodeEditingTest.startCommentGroupVim(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_BOUNDARY_TEST"] == "1" {
+            NativeCodeEditingTest.startBlockBoundary(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_PLAIN_TEXT_TEST"] == "1" {
+            NativeCodeEditingTest.startPlainText(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] != "1" {
             NativeCodeEditingTest.startFileStorage(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] == "1" {
+            NativeCodeEditingTest.startAutosave(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] == "1" {
+            NativeCodeEditingTest.startAutosaveStream(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_COLLISION_TEST"] != "1" {
+            NativeCodeEditingTest.startOnboarding(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_COLLISION_TEST"] == "1" {
+            NativeCodeEditingTest.testOnboardingCollision(self)
         }
         #endif
     }
@@ -426,6 +528,95 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if prompt == "quicknote-input-mode", let mode = defaultText { setEditorMode(mode); completionHandler(""); return }
         completionHandler(nil)
     }
+    private func queueSave(_ data: Data, revision: Int, force: Bool) {
+        guard revision > lastSavedRevision else {
+            if force { reportSaveResult(true, error: nil, revision: revision) }
+            return
+        }
+        if let pendingSave, revision < pendingSave.revision {
+            if force { let (ok, message) = flushPending(); reportSaveResult(ok, error: message, revision: revision) }
+            return
+        }
+        pendingSave = PendingSave(data: data, revision: revision)
+        let now = ProcessInfo.processInfo.systemUptime
+        if firstPendingAt == nil { firstPendingAt = now }
+        saveWork?.cancel(); saveWork = nil
+        if force { _ = flushPending(); return }
+        let remaining = max(0, maximumSaveDelay - (now - (firstPendingAt ?? now)))
+        let work = DispatchWorkItem { [weak self] in _ = self?.flushPending() }
+        saveWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + min(saveDelay, remaining), execute: work)
+    }
+    @discardableResult private func flushPending() -> (Bool, String?) {
+        saveWork?.cancel(); saveWork = nil
+        guard let pending = pendingSave else { firstPendingAt = nil; return (true, nil) }
+        do {
+            try writeSnapshot(pending.data)
+            #if INKFLIT_NATIVE_TEST
+            testSuccessfulSaves += 1
+            testSaveTimes.append(ProcessInfo.processInfo.systemUptime)
+            #endif
+            lastSavedRevision = pending.revision; pendingSave = nil; firstPendingAt = nil
+            reportSaveResult(true, error: nil, revision: pending.revision)
+            return (true, nil)
+        } catch {
+            let message = L("保存失败：") + error.localizedDescription
+            reportSaveResult(false, error: message, revision: pending.revision)
+            return (false, message)
+        }
+    }
+    private func reportSaveResult(_ ok: Bool, error: String?, revision: Int) {
+        guard let data = try? JSONSerialization.data(withJSONObject: [ok, error as Any? ?? NSNull(), revision]),
+              let json = String(data: data, encoding: .utf8) else { return }
+        web.evaluateJavaScript("window.saveResult(...\(json))", completionHandler: nil)
+    }
+    func requestFlush(_ completion: @escaping (Bool, String?) -> Void) {
+        web.evaluateJavaScript("window.snapshotForFlush?.()") { [weak self] value, error in
+            guard let self else { completion(false, L("设置窗口不可用。")); return }
+            if let error {
+                let message = L("保存失败：") + error.localizedDescription
+                self.showError(message); completion(false, message); return
+            }
+            if let snapshot = value as? [String: Any] {
+                guard let json = snapshot["json"] as? String, let revision = (snapshot["revision"] as? NSNumber)?.intValue,
+                      revision >= 0, let data = json.data(using: .utf8) else {
+                    let message = L("无法读取当前笔记，保存位置未更改。")
+                    self.showError(message); completion(false, message); return
+                }
+                if revision > self.lastSavedRevision && (self.pendingSave == nil || revision >= self.pendingSave!.revision) {
+                    self.pendingSave = PendingSave(data: data, revision: revision)
+                    if self.firstPendingAt == nil { self.firstPendingAt = ProcessInfo.processInfo.systemUptime }
+                }
+            } else if value != nil && !(value is NSNull) {
+                let message = L("无法读取当前笔记，保存位置未更改。")
+                self.showError(message); completion(false, message); return
+            }
+            let (success, message) = self.flushPending(); completion(success, message)
+        }
+    }
+    private func writeSnapshot(_ data: Data) throws {
+        if usesNoteFiles {
+            let directory = storageURL.deletingLastPathComponent(), snapshot = try NoteFiles.decode(data)
+            if FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
+                guard let expected = loadedSnapshot, try NoteFiles.read(directory) == expected else {
+                    throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")])
+                }
+                let defaults = UserDefaults.standard
+                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+                try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
+            } else if requireExistingStorage {
+                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+            } else { try NoteFiles.create(snapshot, in: directory) }
+            loadedSnapshot = snapshot
+            if !isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
+            requireExistingStorage = true; return
+        }
+        if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
+            throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+        }
+        try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try data.write(to: storageURL, options: .atomic)
+    }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
         if type == "hide" { hideWindow(); return }
@@ -438,31 +629,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             setEditorMode(mode)
             return
         }
-        guard type == "save", let json = body["json"] as? String, let data = json.data(using: .utf8) else { return }
-        do {
-            if usesNoteFiles {
-                let directory = storageURL.deletingLastPathComponent(), snapshot = try NoteFiles.decode(data)
-                if FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
-                    guard let expected = loadedSnapshot, try NoteFiles.read(directory) == expected else {
-                        throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")])
-                    }
-                    let defaults = UserDefaults.standard
-                    let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
-                    try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
-                } else if requireExistingStorage {
-                    throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
-                } else { try NoteFiles.create(snapshot, in: directory) }
-                loadedSnapshot = snapshot
-                web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
-                if !isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
-                requireExistingStorage = true; return
-            }
-            if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
-                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
-            }
-            try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            try data.write(to: storageURL, options: .atomic); web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
-        } catch { showError(L("保存失败：") + error.localizedDescription) }
+        guard type == "save", let json = body["json"] as? String, let data = json.data(using: .utf8),
+              let revision = (body["revision"] as? NSNumber)?.intValue, revision > 0 else { return }
+        queueSave(data, revision: revision, force: body["force"] as? Bool == true)
     }
     func showError(_ message: String) {
         if let data = try? JSONSerialization.data(withJSONObject: [message]), let text = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }

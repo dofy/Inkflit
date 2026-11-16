@@ -4,7 +4,7 @@ const items = [
   ['list','清单','逐行显示复选框'],['math','计算','算式、变量与单位换算'],
   ['sum','求和','汇总块中的数字'],['avg','平均值','计算块内数字平均值'],
   ['count','计数','统计项目、词和字符'],['code','代码','保留代码并按语言高亮'],
-  ['text','普通文本','移除功能，保留内容'],['delete','删除块','删除当前块及内容']
+  ['text','转为正文','移除功能，保留内容'],['delete','删除块','删除当前块及内容']
 ];
 let menu, view, active=null;
 export function initBlockMenu(element, getView) {
@@ -13,9 +13,12 @@ export function initBlockMenu(element, getView) {
 }
 export function blockMenuOpen() { return !!active; }
 export function closeBlockMenu() { active=null; if(menu) menu.hidden=true; }
+export function blockMenuChoices(scope, query='') {
+  return items.map(([id,name,detail])=>[id,t(name),t(detail)]).filter(x=>(!['text','delete'].includes(x[0])||scope) && (x[0].includes(query.toLowerCase())||x[1].toLowerCase().includes(query.toLowerCase())));
+}
 function render(query='') {
   const previousScrollTop=menu.scrollTop;
-  const choices=items.map(([id,name,detail])=>[id,t(name),t(detail)]).filter(x=>(x[0]!=='delete'||active.scope) && (x[0].includes(query.toLowerCase())||x[1].toLowerCase().includes(query.toLowerCase())));
+  const choices=blockMenuChoices(active.scope,query);
   active.choices=choices; active.index=Math.min(active.index,Math.max(0,choices.length-1));
   menu.replaceChildren();
   if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent=t('没有匹配的功能块');menu.append(e); return; }
@@ -102,9 +105,6 @@ function choose(mode) {
       if(current.trigger) changes.push({from:current.from,to:triggerTo});
       anchor=doc.line(scope.start+1).from;
     }
-  } else if(mode==='text') {
-    if(current.trigger) changes.push({from:current.from,to:triggerTo});
-    anchor=current.from;
   } else {
     const insert=`:::quicknote ${mode}\n\n:::end\n`;
     changes.push({from:current.from,to:triggerTo,insert});anchor=current.from+`:::quicknote ${mode}\n`.length;

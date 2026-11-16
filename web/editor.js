@@ -22,17 +22,27 @@ import { applyUIAppearance } from './ui-themes.js';
 
 const $ = id => document.getElementById(id);
 let state = null, editor = null;
+let saveRevision = 0;
+const saveCallbacks = new Map();
 let keyStartDoc = null, mergeFirstInsert = false;
 let codeIndentation = 'spaces2';
 const editorStates = new Map();
 const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
 const current = () => state.notes.find(n => n.id === state.selected);
-function persist() {
-  $('save').textContent = t('保存中…'); $('save').className = '';
-  if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'save', json:JSON.stringify(state)});
-  else { localStorage.setItem('quicknote-test', JSON.stringify(state)); window.saveResult(true); }
+function persist(force=false, onResult=null) {
+  const revision=++saveRevision, json=JSON.stringify(state);
+  if(onResult) saveCallbacks.set(revision,onResult);
+  if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'save', json, revision, force});
+  else { try { localStorage.setItem('quicknote-test', json); window.saveResult(true, null, revision); } catch(error) { window.saveResult(false, error.message, revision); } }
 }
-window.saveResult = (ok, error) => { $('save').textContent = ok ? t('已保存') : (error || t('保存失败')); $('save').className = ok ? '' : 'error'; };
+window.saveResult = (ok, error, revision) => {
+  const callback=saveCallbacks.get(revision);
+  if(callback) { saveCallbacks.delete(revision); callback(ok,revision); }
+  if(Number.isInteger(revision) && revision<saveRevision)return;
+  const message=ok ? '' : (error || t('保存失败'));
+  $('save').textContent = message; $('save').title=message; $('save').className = ok ? '' : 'error';
+};
+window.snapshotForFlush = () => state ? {json:JSON.stringify(state), revision:saveRevision} : null;
 window.setShortcutLabel = label => { $('shortcut').textContent = label; };
 window.setLanguage = value => {
   setLanguage(value); document.documentElement.lang=lang();
@@ -42,7 +52,6 @@ window.setLanguage = value => {
   $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
   document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
   if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); }
-  if(state && !$('save').classList.contains('error')) $('save').textContent=t('已保存');
 };
 function refreshNav() {
   const index = state.notes.findIndex(n => n.id === state.selected);
@@ -85,13 +94,20 @@ function changeEditor(id) {
   if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', 'normal');
   refreshNav(); refreshInsights(); editor.focus();
 }
-function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(); }
-function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(); }
+function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(true); }
+function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(true); }
 function deleteNote() {
   if (!state || !confirm(t('删除这条笔记？可在设置中的回收站恢复。'))) return;
-  const deleted = state.selected; const index = state.notes.findIndex(n => n.id === deleted);
-  state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
-  changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist();
+  const deleted = state.selected;
+  const saveBeforeDelete=()=>persist(true,(ok,revision)=>{
+    if(!ok || !state || state.selected!==deleted)return;
+    if(revision<saveRevision) { saveBeforeDelete(); return; }
+    const index=state.notes.findIndex(n=>n.id===deleted);
+    if(index<0)return;
+    state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
+    changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist(true);
+  });
+  saveBeforeDelete();
 }
 function navigate(direction) { if (!state) return; const index = state.notes.findIndex(n => n.id === state.selected); const next = index + direction; if (next >= 0 && next < state.notes.length) select(state.notes[next].id); }
 function hide() { if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'hide'}); else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1; }
@@ -209,7 +225,7 @@ registers.pushText=function(name,operator,text,linewise,blockwise) {
   if(editor && typeof text==='string') text=visibleCopiedText(text,editor.state);
   return originalPushText.call(this,name,operator,text,linewise,blockwise);
 };
-Vim.defineEx('write', 'w', () => { if (state) persist(); });
+Vim.defineEx('write', 'w', () => { if (state) persist(true); });
 window.focusEditor = () => { if (editor) editor.focus(); };
 window.setCodeIndentation = value => { codeIndentation=normalizeIndentation(value); };
 let currentCodeTheme='amber', currentUITheme='orange', currentOpacity=100;
@@ -224,15 +240,23 @@ window.exportNotesJSON = () => state ? JSON.stringify(state) : null;
 window.restoreNoteBase64 = value => {
   if (!state) throw new Error('No note state');
   const content = new TextDecoder('utf-8', {fatal:true}).decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)));
-  const note = newNote(); note.content = content; state.notes.unshift(note); changeEditor(note.id); persist();
+  const note = newNote(); note.content = content; state.notes.unshift(note); changeEditor(note.id); persist(true);
+};
+window.addOnboardingNotesBase64 = value => {
+  if (!state) throw new Error('No note state');
+  const contents=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(atob(value),c=>c.charCodeAt(0))));
+  if(!Array.isArray(contents) || !contents.length || !contents.every(value=>typeof value==='string' && value.trim())) throw new Error('Invalid guide notes');
+  const notes=contents.map(content=>({...newNote(),content}));
+  state.notes.unshift(...notes); changeEditor(notes[0].id); persist(true);
+  return notes.length;
 };
 window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
     if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('笔记文件格式无效'));
     if (loaded) { delete loaded.timer; state = loaded; } else { const n = newNote(); state = {notes:[n],selected:n.id}; }
-    changeEditor(state.selected); $('save').textContent = loaded ? t('已载入') : t('新笔记');
-  } catch (error) { $('save').className='error'; $('save').textContent = t('读取失败：')+error.message; }
+    changeEditor(state.selected); $('save').textContent = ''; $('save').title = ''; $('save').className = '';
+  } catch (error) { $('save').className='error'; $('save').textContent = t('读取失败：')+error.message; $('save').title=$('save').textContent; }
 };
 window.setLanguage(lang());
 if (!window.webkit?.messageHandlers?.quicknote) { const saved = localStorage.getItem('quicknote-test'); window.loadNotesBase64(saved ? btoa(unescape(encodeURIComponent(saved))) : null); }

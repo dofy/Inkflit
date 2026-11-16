@@ -75,6 +75,15 @@ import Foundation
         check(try Data(contentsOf: deleted[0]) == Data(contentsOf: copiedTrash.appendingPathComponent(deleted[0].lastPathComponent)))
         check(try files.contentsOfDirectory(atPath: custom.path).contains(where: { $0.hasPrefix("index-before-rebuild-") }))
         do { try NoteFiles.copy(changed, from: directory, to: custom); fatalError("existing target must not be overwritten") } catch NoteStorageError.destinationExists {}
+        for language in Localization.supported {
+            let resource = URL(fileURLWithPath: "Resources/Onboarding.\(language).json")
+            let contents = try Onboarding.contents(data: Data(contentsOf: resource))
+            let onboarding = try Onboarding.snapshot(data: Data(contentsOf: resource))
+            check(onboarding.notes.map(\.content) == contents)
+            check(onboarding.selected == onboarding.notes.first?.id)
+            check(Set(onboarding.notes.map(\.id)).count == onboarding.notes.count)
+        }
+        do { _ = try Onboarding.snapshot(data: Data("[]".utf8)); fatalError("empty guide file must be rejected") } catch OnboardingError.unavailable {}
         print("Storage creation, copy, per-note writes, backup retention and trash passed")
     }
 }
