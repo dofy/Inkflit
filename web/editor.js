@@ -88,7 +88,7 @@ function changeEditor(id) {
 function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(); }
 function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(); }
 function deleteNote() {
-  if (!state || !confirm(t('删除这条笔记？此操作无法撤销。'))) return;
+  if (!state || !confirm(t('删除这条笔记？可在设置中的回收站恢复。'))) return;
   const deleted = state.selected; const index = state.notes.findIndex(n => n.id === deleted);
   state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
   changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist();
@@ -221,6 +221,11 @@ globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change
 });
 applyUIAppearance('orange',100);
 window.exportNotesJSON = () => state ? JSON.stringify(state) : null;
+window.restoreNoteBase64 = value => {
+  if (!state) throw new Error('No note state');
+  const content = new TextDecoder('utf-8', {fatal:true}).decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)));
+  const note = newNote(); note.content = content; state.notes.unshift(note); changeEditor(note.id); persist();
+};
 window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;

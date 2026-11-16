@@ -25,7 +25,7 @@ Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide 
 | `⌘N` | New note |
 | `⌘[` / `⌘]` | Previous / next note |
 | `⌘1` | Latest note |
-| `⌘D` | Delete the current note after confirmation; cannot be undone |
+| `⌘D` | Delete the current note after confirmation; restore it from Trash in Settings |
 | `⌘⇧D` | Delete the current feature block; undo with Vim `u` |
 | `⌘K` | Change the current block type |
 | `⌘L` | Choose a code block language |
@@ -50,6 +50,6 @@ The timer feature has been removed. Existing timer blocks remain editable as pla
 
 ## Notes and storage
 
-Notes are saved automatically to `~/Documents/Inkflit/notes.json` by default, or to a folder selected in Settings. The JSON contains multiple notes; each `content` is Markdown with Inkflit block markers. Changing folders copies the current notes and preserves the original; an existing destination `notes.json` is never overwritten. Legacy notes are copied when safe. Inkflit does not provide cloud sync, although the chosen folder may be synced by another service. Back up the file regularly.
+Notes are stored as individual UTF-8 Markdown files in `~/Documents/Inkflit/notes/`, with an `index.json` for ordering and selection. Feature blocks use Inkflit markers. In Settings, select another folder, configure per-note backup retention (off, a count, or unlimited), restore a backup or deleted note, and rebuild a damaged index from note files. A previous version is saved at most once per note every five minutes while editing. Changing retention does not immediately delete existing versions; the limit is applied when a new version is created. Deleted notes remain in `trash/`; restoring creates a new note and keeps the original. Changing folders copies the complete store and keeps the original. Inkflit does not provide cloud sync; regularly back up the whole store separately.
 
 Markdown checkboxes (`[ ]`, `[x]`, `- [ ]`) are clickable in the editor; their source remains Markdown. `//` at the start of a line comments that line. Language-labelled Markdown code fences are highlighted.

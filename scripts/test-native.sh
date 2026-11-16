@@ -71,3 +71,17 @@ except subprocess.TimeoutExpired:
 if result.returncode:
     sys.exit(result.returncode)
 PY
+mkdir -p "$test_dir/file-storage"
+mkdir -p "$test_dir/file-storage/notes" "$test_dir/file-storage/backups" "$test_dir/file-storage/trash"
+printf '%s' first > "$test_dir/file-storage/notes/Zmlyc3Q.md"
+printf '%s' second > "$test_dir/file-storage/notes/c2Vjb25k.md"
+printf '%s' '{"version":1,"notes":[{"id":"first","updated":"1"},{"id":"second","updated":"2"}],"selected":"first"}' > "$test_dir/file-storage/index.json"
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/file-storage/index.json" INKFLIT_FILE_STORAGE_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+import subprocess, sys
+try:
+    result=subprocess.run([sys.argv[1]], timeout=20)
+except subprocess.TimeoutExpired:
+    sys.exit('FAIL: native file storage test timed out')
+if result.returncode:
+    sys.exit(result.returncode)
+PY

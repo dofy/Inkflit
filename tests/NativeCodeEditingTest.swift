@@ -132,6 +132,84 @@ final class NativeCodeEditingTest {
         running = NativeCodeEditingTest(app); app.showWindow()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testTypographyVim(0) }
     }
+    static func startFileStorage(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testFileStorage() }
+    }
+    private func testFileStorage() {
+        let directory = app.storageURL.deletingLastPathComponent()
+        sequence([{ self.key(0, "A", "a", .shift) }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
+            content { [self] text in
+                expect(text, "firstx", "native per-note edit")
+                do {
+                    let stored = try NoteFiles.read(directory)
+                    guard stored.notes.first?.content == "firstx", stored.notes.last?.content == "second" else { fail("native storage damaged another note") }
+                } catch { fail("native storage read: \(error)") }
+                app.web.evaluateJavaScript("window.confirm=()=>true; document.getElementById('delete').click()") { [self] _, error in
+                    if let error { fail("native delete: \(error)") }
+                    later { [self] in
+                        do {
+                            let folder = directory.appendingPathComponent("trash").appendingPathComponent(String(NoteFiles.filename("first").dropLast(3)))
+                            let items = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+                            guard items.count == 1, let value = try? Data(contentsOf: items[0]), String(data: value, encoding: .utf8) == "firstx" else { fail("deleted note missing from trash") }
+                            app.web.evaluateJavaScript("window.restoreNoteBase64('\(value.base64EncodedString())')") { [self] _, error in
+                                if let error { fail("native restore: \(error)") }
+                                later { [self] in content { [self] text in
+                                    expect(text, "firstx", "native trash restore")
+                                    do { guard try NoteFiles.read(directory).notes.first?.content == "firstx", FileManager.default.fileExists(atPath: items[0].path) else { fail("restore not saved or removed trash") } }
+                                    catch { fail("restored storage: \(error)") }
+                                    testStorageLocation(directory)
+                                } }
+                            }
+                        } catch { fail("native trash: \(error)") }
+                    }
+                }
+            }
+        }
+    }
+    private func testStorageLocation(_ source: URL) {
+        let files = FileManager.default, parent = source.deletingLastPathComponent()
+        let destination = parent.appendingPathComponent("moved"), conflict = parent.appendingPathComponent("conflict")
+        do {
+            try files.createDirectory(at: conflict, withIntermediateDirectories: true)
+            try Data("do not overwrite".utf8).write(to: NoteFiles.index(conflict))
+        } catch { fail("could not create conflict fixture: \(error)") }
+        app.changeStorageDirectory(conflict) { [self] error in
+            guard error != nil, app.storageURL.deletingLastPathComponent() == source,
+                  (try? Data(contentsOf: NoteFiles.index(conflict))) == Data("do not overwrite".utf8) else { fail("conflicting location was overwritten or selected") }
+            let index = NoteFiles.index(source), missing = source.appendingPathComponent("index.temporarily-removed")
+            do { try files.moveItem(at: index, to: missing) } catch { fail("could not simulate unavailable index") }
+            app.changeStorageDirectory(destination) { [self] error in
+                do { try files.moveItem(at: missing, to: index) } catch { fail("could not restore test index") }
+                guard error != nil, app.storageURL.deletingLastPathComponent() == source,
+                      !files.fileExists(atPath: NoteFiles.index(destination).path) else { fail("missing source index accepted") }
+                app.changeStorageDirectory(destination) { [self] error in
+                    guard error == nil, app.storageURL.deletingLastPathComponent().standardizedFileURL.path == destination.standardizedFileURL.path else { fail("could not move storage: \(String(describing: error))") }
+                    do {
+                        let old = try NoteFiles.read(source), new = try NoteFiles.read(destination)
+                        guard old == new,
+                              try files.contentsOfDirectory(atPath: destination.appendingPathComponent("backups").path).count > 0,
+                              try files.contentsOfDirectory(atPath: destination.appendingPathComponent("trash").path).count > 0 else { fail("location copy lost notes, backups or trash") }
+                    } catch { fail("location verification: \(error)") }
+                    sequence([{ self.key(0, "A", "a", .shift) }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
+                        content { [self] text in
+                            expect(text, "firstxx", "native edit after changing location")
+                            do {
+                                guard try NoteFiles.read(source).notes.first?.content == "firstx",
+                                      try NoteFiles.read(destination).notes.first?.content == "firstxx" else { fail("edit went to wrong location") }
+                            } catch { fail("could not read moved notes: \(error)") }
+                            app.showSettings()
+                            guard let settings = app.settingsController, settings.testBackupControls() else { fail("backup settings or recovery controls") }
+                            print("PASS native location switch, conflict and missing source protection")
+                            print("PASS native backup settings and recovery control layout")
+                            print("PASS native edit, delete and restore")
+                            app.restoreInputSource(); exit(0)
+                        }
+                    }
+                }
+            }
+        }
+    }
     private func testTypographyVim(_ index: Int) {
         let lines = ["// body note", "# One", "## Two", "### Three", "#### Four", "##### Five", "###### Six"]
         if index == lines.count { print("PASS native Vim edits and undo/redo on comments and all heading levels"); app.restoreInputSource(); exit(0) }

@@ -25,6 +25,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var reopenLanguageSettings = false
     var activationObserver: NSObjectProtocol?
     let isolatedTest = ProcessInfo.processInfo.environment["QUICKNOTE_ISOLATED_TEST"] == "1"
+    var usesNoteFiles: Bool {
+        #if INKFLIT_NATIVE_TEST
+        return !isolatedTest || ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1"
+        #else
+        return true
+        #endif
+    }
     var insertMode = false
     var savedInputSource: TISInputSource?
     var forcedInputSourceID: String?
@@ -32,9 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var hotKeyModifiers: UInt32 = UInt32(controlKey | optionKey)
     var hotKeyDisabled = false
     var testLoginStatus: SMAppService.Status = .notRegistered
-    let legacyStorageURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Quicknote/notes.json")
     var storageURL: URL!
-    var storageWarning: String?
+    var loadedSnapshot: NoteSnapshot?
     var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -132,32 +138,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_SETTINGS"] == "1" { showSettings() }
     }
     func configureStorage() {
-        if let override = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"] { storageURL = URL(fileURLWithPath: override); return }
+        if let override = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"] {
+            storageURL = URL(fileURLWithPath: override)
+            requireExistingStorage = usesNoteFiles && FileManager.default.fileExists(atPath: storageURL.path)
+            return
+        }
         let defaults = UserDefaults.standard
-        if let path = defaults.string(forKey: "notesStoragePath") {
-            storageURL = URL(fileURLWithPath: path); requireExistingStorage = true; return
-        }
-        let destination = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Inkflit/notes.json")
-        do {
-            storageURL = try NoteStorage.migrateIfNeeded(legacy: legacyStorageURL, destination: destination)
-            if FileManager.default.fileExists(atPath: storageURL.path) {
-                defaults.set(storageURL.path, forKey: "notesStoragePath"); requireExistingStorage = true
-            }
-        } catch {
-            storageURL = legacyStorageURL; requireExistingStorage = true
-            storageWarning = L("未迁移笔记：") + error.localizedDescription + L(" 仍使用原位置。")
-        }
+        let directory = defaults.string(forKey: "notesDirectory").map { URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Inkflit", isDirectory: true)
+        storageURL = NoteFiles.index(directory)
+        requireExistingStorage = defaults.string(forKey: "notesDirectory") != nil || FileManager.default.fileExists(atPath: storageURL.path)
     }
     func changeStorageDirectory(_ directory: URL, completion: @escaping (String?) -> Void) {
-        let destination = directory.appendingPathComponent("notes.json").standardizedFileURL
+        let directory = directory.standardizedFileURL
+        let destination = NoteFiles.index(directory)
         if destination == storageURL.standardizedFileURL { completion(nil); return }
         web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
             guard let self else { completion(L("设置窗口不可用。")); return }
             guard error == nil, let json = value as? String, let data = json.data(using: .utf8) else { completion(NoteStorageError.invalidSnapshot.localizedDescription); return }
             do {
-                try NoteStorage.saveCopy(data, to: destination)
-                self.storageURL = destination; self.requireExistingStorage = true; self.storageWarning = nil
-                if !self.isolatedTest { UserDefaults.standard.set(destination.path, forKey: "notesStoragePath") }
+                let snapshot = try NoteFiles.decode(data)
+                let source = self.storageURL.deletingLastPathComponent()
+                if FileManager.default.fileExists(atPath: NoteFiles.index(source).path) {
+                    try NoteFiles.copy(snapshot, from: source, to: directory)
+                } else if self.requireExistingStorage {
+                    throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+                } else { try NoteFiles.create(snapshot, in: directory) }
+                self.storageURL = destination; self.requireExistingStorage = true
+                self.loadedSnapshot = snapshot
+                if !self.isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
                 completion(nil)
             } catch { completion(error.localizedDescription) }
         }
@@ -294,6 +303,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
                     catch { return L("无法更改开机启动：") + error.localizedDescription }
                 })
+            settingsController?.restoreNote = { [weak self] data in
+                guard let self else { return }
+                self.web.evaluateJavaScript("window.restoreNoteBase64('\(data.base64EncodedString())')") { [weak self] _, error in
+                    if let error { self?.showError(L("恢复失败：") + error.localizedDescription) }
+                    else { self?.settingsController?.window?.orderOut(nil); self?.showWindow() }
+                }
+            }
+            settingsController?.rebuildIndex = { [weak self] in
+                guard let self else { return L("设置窗口不可用。") }
+                do {
+                    let snapshot = try NoteFiles.rebuildIndex(self.storageURL.deletingLastPathComponent())
+                    let data = try JSONEncoder().encode(snapshot)
+                    self.loadedSnapshot = snapshot; self.requireExistingStorage = true
+                    self.web.evaluateJavaScript("window.loadNotesBase64('\(data.base64EncodedString())')", completionHandler: nil)
+                    if !self.isolatedTest { UserDefaults.standard.set(self.storageURL.deletingLastPathComponent().path, forKey: "notesDirectory") }
+                    return nil
+                } catch { return L("恢复失败：") + error.localizedDescription }
+            }
             settingsController?.languageChanged = { [weak self] in
                 guard let self else { return }
                 self.syncLanguage()
@@ -341,13 +368,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         syncCodeTheme()
         applyWindowAppearance()
         do {
-            if FileManager.default.fileExists(atPath: storageURL.path) {
+            let directory = storageURL.deletingLastPathComponent()
+            if usesNoteFiles && FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
+                let snapshot = try NoteFiles.read(directory); loadedSnapshot = snapshot
+                let data = try JSONEncoder().encode(snapshot); let base64 = data.base64EncodedString()
+                web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
+            } else if !usesNoteFiles && FileManager.default.fileExists(atPath: storageURL.path) {
                 let data = try Data(contentsOf: storageURL); let base64 = data.base64EncodedString()
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
             } else if requireExistingStorage {
                 showError(L("笔记文件不存在或位置不可用，请恢复文件后重新启动。"))
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
-            if let storageWarning { showError(storageWarning) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
         } catch { showError(L("无法读取笔记：") + error.localizedDescription) }
         #if INKFLIT_NATIVE_TEST
@@ -371,6 +402,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TYPOGRAPHY_VIM_TEST"] == "1" {
             NativeCodeEditingTest.startTypographyVim(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" {
+            NativeCodeEditingTest.startFileStorage(self)
         }
         #endif
     }
@@ -403,14 +437,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         guard type == "save", let json = body["json"] as? String, let data = json.data(using: .utf8) else { return }
         do {
+            if usesNoteFiles {
+                let directory = storageURL.deletingLastPathComponent(), snapshot = try NoteFiles.decode(data)
+                if FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
+                    guard let expected = loadedSnapshot, try NoteFiles.read(directory) == expected else {
+                        throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")])
+                    }
+                    let defaults = UserDefaults.standard
+                    let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+                    try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
+                } else if requireExistingStorage {
+                    throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+                } else { try NoteFiles.create(snapshot, in: directory) }
+                loadedSnapshot = snapshot
+                web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
+                if !isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
+                requireExistingStorage = true; return
+            }
             if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
                 throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
             }
             try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try data.write(to: storageURL, options: .atomic); web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
-            if !isolatedTest && UserDefaults.standard.string(forKey: "notesStoragePath") == nil && storageWarning == nil {
-                UserDefaults.standard.set(storageURL.path, forKey: "notesStoragePath"); requireExistingStorage = true
-            }
         } catch { showError(L("保存失败：") + error.localizedDescription) }
     }
     func showError(_ message: String) {

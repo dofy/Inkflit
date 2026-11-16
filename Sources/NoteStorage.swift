@@ -5,28 +5,156 @@ enum NoteStorageError: LocalizedError {
     case invalidSnapshot
     var errorDescription: String? {
         switch self {
-        case .destinationExists: return L("目标文件夹已有 notes.json，未覆盖。请选择其他文件夹。")
+        case .destinationExists: return L("目标位置已有笔记数据或内容不一致，未覆盖。")
         case .invalidSnapshot: return L("无法读取当前笔记，保存位置未更改。")
         }
     }
 }
 
-enum NoteStorage {
-    static func migrateIfNeeded(legacy: URL, destination: URL, files: FileManager = .default) throws -> URL {
-        guard files.fileExists(atPath: legacy.path) else { return destination }
-        guard !files.fileExists(atPath: destination.path) else { throw NoteStorageError.destinationExists }
-        try files.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        try files.copyItem(at: legacy, to: destination)
-        return destination
+// Each note is a UTF-8 Markdown file. The index holds only ordering and metadata.
+struct StoredNote: Codable, Equatable {
+    var id: String
+    var content: String
+    var updated: String
+}
+struct NoteSnapshot: Codable, Equatable {
+    var notes: [StoredNote]
+    var selected: String
+    func validate() throws {
+        let ids = notes.map(\.id)
+        guard !notes.isEmpty, ids.allSatisfy({ !$0.isEmpty }), Set(ids).count == ids.count, ids.contains(selected) else { throw NoteStorageError.invalidSnapshot }
     }
+}
+private struct NoteIndex: Codable {
+    struct Entry: Codable { var id: String; var updated: String }
+    var version = 1
+    var notes: [Entry]
+    var selected: String
+}
 
-    static func saveCopy(_ data: Data, to destination: URL, files: FileManager = .default) throws {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let notes = object["notes"] as? [[String: Any]], !notes.isEmpty,
-              let selected = object["selected"] as? String,
-              notes.allSatisfy({ $0["id"] is String && $0["content"] is String && $0["updated"] is String }),
-              notes.contains(where: { ($0["id"] as? String) == selected }) else { throw NoteStorageError.invalidSnapshot }
-        guard !files.fileExists(atPath: destination.path) else { throw NoteStorageError.destinationExists }
-        try data.write(to: destination, options: .withoutOverwriting)
+enum NoteFiles {
+    static let backupInterval: TimeInterval = 300
+    static var lastBackup: [String: Date] = [:]
+    static let files = FileManager.default
+    static func index(_ directory: URL) -> URL { directory.appendingPathComponent("index.json") }
+    static func filename(_ id: String) -> String {
+        // UUID ids are normal, but encode arbitrary ids without allowing path traversal.
+        Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "=", with: "") + ".md"
+    }
+    static func noteURL(_ directory: URL, _ id: String) -> URL { directory.appendingPathComponent("notes", isDirectory: true).appendingPathComponent(filename(id)) }
+    static func decode(_ data: Data) throws -> NoteSnapshot {
+        let snapshot = try JSONDecoder().decode(NoteSnapshot.self, from: data)
+        try snapshot.validate(); return snapshot
+    }
+    static func read(_ directory: URL) throws -> NoteSnapshot {
+        let index = try JSONDecoder().decode(NoteIndex.self, from: Data(contentsOf: index(directory)))
+        guard index.version == 1 else { throw NoteStorageError.invalidSnapshot }
+        let notes = try index.notes.map { entry in
+            StoredNote(id: entry.id, content: try String(contentsOf: noteURL(directory, entry.id), encoding: .utf8), updated: entry.updated)
+        }
+        let snapshot = NoteSnapshot(notes: notes, selected: index.selected)
+        try snapshot.validate(); return snapshot
+    }
+    static func prepare(_ root: URL) throws {
+        try files.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        for name in ["notes", "backups", "trash"] { try files.createDirectory(at: root.appendingPathComponent(name), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]) }
+    }
+    static func writeIndex(_ snapshot: NoteSnapshot, root: URL) throws {
+        let index = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, updated: $0.updated) }, selected: snapshot.selected)
+        try JSONEncoder().encode(index).write(to: root.appendingPathComponent("index.json"), options: .atomic)
+    }
+    // Install into an existing user-selected directory without replacing unrelated files.
+    static func install(_ stage: URL, in directory: URL) throws {
+        let archives = try files.contentsOfDirectory(atPath: stage.path).filter { $0.hasPrefix("index-before-rebuild-") && $0.hasSuffix(".json") }
+        let names = ["notes", "backups", "trash"] + archives + ["index.json"]
+        for name in names where files.fileExists(atPath: directory.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
+        for name in names { try files.moveItem(at: stage.appendingPathComponent(name), to: directory.appendingPathComponent(name)) }
+        try files.removeItem(at: stage)
+    }
+    static func create(_ snapshot: NoteSnapshot, in directory: URL) throws {
+        try snapshot.validate()
+        try files.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        for name in ["notes", "backups", "trash", "index.json"] where files.fileExists(atPath: directory.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
+        let stage = directory.appendingPathComponent(".inkflit-prepare-\(UUID().uuidString)", isDirectory: true)
+        try prepare(stage)
+        for note in snapshot.notes { try Data(note.content.utf8).write(to: stage.appendingPathComponent("notes").appendingPathComponent(filename(note.id)), options: .withoutOverwriting) }
+        try writeIndex(snapshot, root: stage)
+        guard try read(stage) == snapshot else { throw NoteStorageError.invalidSnapshot }
+        try install(stage, in: directory)
+    }
+    static func copy(_ snapshot: NoteSnapshot, from source: URL, to destination: URL) throws {
+        guard try read(source) == snapshot else { throw NoteStorageError.invalidSnapshot }
+        try files.createDirectory(at: destination, withIntermediateDirectories: true)
+        for name in ["notes", "backups", "trash", "index.json"] where files.fileExists(atPath: destination.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
+        let stage = destination.appendingPathComponent(".inkflit-copy-\(UUID().uuidString)", isDirectory: true)
+        try files.createDirectory(at: stage, withIntermediateDirectories: true)
+        for name in ["notes", "backups", "trash", "index.json"] { try files.copyItem(at: source.appendingPathComponent(name), to: stage.appendingPathComponent(name)) }
+        for name in try files.contentsOfDirectory(atPath: source.path) where name.hasPrefix("index-before-rebuild-") && name.hasSuffix(".json") {
+            try files.copyItem(at: source.appendingPathComponent(name), to: stage.appendingPathComponent(name))
+        }
+        guard try read(stage) == snapshot else { throw NoteStorageError.invalidSnapshot }
+        try install(stage, in: destination)
+    }
+    static func rebuildIndex(_ directory: URL) throws -> NoteSnapshot {
+        let root = directory, folder = root.appendingPathComponent("notes", isDirectory: true)
+        let entries = try files.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey], options: [.skipsHiddenFiles]).filter { $0.pathExtension == "md" }
+        let dated = try entries.map { url -> (StoredNote, Date) in
+            let values = try url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
+            guard values.isRegularFile == true else { throw NoteStorageError.invalidSnapshot }
+            var encoded = url.deletingPathExtension().lastPathComponent.replacingOccurrences(of: "_", with: "/").replacingOccurrences(of: "-", with: "+")
+            encoded += String(repeating: "=", count: (4 - encoded.count % 4) % 4)
+            guard let data = Data(base64Encoded: encoded), let id = String(data: data, encoding: .utf8), filename(id) == url.lastPathComponent else { throw NoteStorageError.invalidSnapshot }
+            let date = values.contentModificationDate ?? Date(timeIntervalSince1970: 0)
+            return (StoredNote(id: id, content: try String(contentsOf: url, encoding: .utf8), updated: ISO8601DateFormatter().string(from: date)), date)
+        }.sorted { $0.1 > $1.1 }
+        guard let first = dated.first else { throw NoteStorageError.invalidSnapshot }
+        let snapshot = NoteSnapshot(notes: dated.map(\.0), selected: first.0.id)
+        try snapshot.validate()
+        let original = index(directory)
+        if files.fileExists(atPath: original.path) {
+            let copy = root.appendingPathComponent("index-before-rebuild-\(UUID().uuidString).json")
+            try files.copyItem(at: original, to: copy)
+        }
+        try writeIndex(snapshot, root: root)
+        guard try read(directory) == snapshot else { throw NoteStorageError.invalidSnapshot }
+        return snapshot
+    }
+    static func uniqueName(_ date: Date = Date()) -> String { "\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(UUID().uuidString).md" }
+    static func save(_ snapshot: NoteSnapshot, directory: URL, backupLimit: Int, now: Date = Date()) throws {
+        try snapshot.validate()
+        let root = directory, old = try read(directory)
+        let oldByID = Dictionary(uniqueKeysWithValues: old.notes.map { ($0.id, $0) })
+        let newIDs = Set(snapshot.notes.map(\.id))
+        // Archive before publishing the new index; a failed archive cannot delete a note.
+        for note in old.notes where !newIDs.contains(note.id) {
+            let folder = root.appendingPathComponent("trash").appendingPathComponent(filename(note.id).dropLast(3).description)
+            try files.createDirectory(at: folder, withIntermediateDirectories: true)
+            try Data(note.content.utf8).write(to: folder.appendingPathComponent(uniqueName()), options: .withoutOverwriting)
+        }
+        for note in snapshot.notes {
+            let url = noteURL(directory, note.id)
+            guard let previous = oldByID[note.id] else {
+                if files.fileExists(atPath: url.path) {
+                    guard try Data(contentsOf: url) == Data(note.content.utf8) else { throw NoteStorageError.destinationExists }
+                    continue
+                }
+                try Data(note.content.utf8).write(to: url, options: .withoutOverwriting); continue
+            }
+            guard previous.content != note.content else { continue }
+            let key = root.path + "/" + note.id
+            if backupLimit != 0 && now.timeIntervalSince(lastBackup[key] ?? .distantPast) >= backupInterval {
+                let folder = root.appendingPathComponent("backups").appendingPathComponent(filename(note.id).dropLast(3).description)
+                try files.createDirectory(at: folder, withIntermediateDirectories: true)
+                try Data(previous.content.utf8).write(to: folder.appendingPathComponent(uniqueName(now)), options: .withoutOverwriting)
+                lastBackup[key] = now
+                if backupLimit > 0 {
+                    let versions = try files.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil).filter { $0.pathExtension == "md" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
+                    for version in versions.dropFirst(backupLimit) { try files.removeItem(at: version) }
+                }
+            }
+            try Data(note.content.utf8).write(to: url, options: .atomic)
+        }
+        try writeIndex(snapshot, root: root)
+        for note in old.notes where !newIDs.contains(note.id) { try? files.removeItem(at: noteURL(directory, note.id)) }
     }
 }

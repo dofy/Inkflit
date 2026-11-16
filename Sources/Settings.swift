@@ -116,13 +116,18 @@ final class SettingsWindow: NSWindow {
         return super.performKeyEquivalent(with: event)
     }
 }
-final class SettingsController: NSWindowController {
+final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let shortcut = ShortcutField(frame: .zero)
     private let shortcutMessage = NSTextField(wrappingLabelWithString: L("点击快捷键，然后按下新的组合键。"))
     private let loginSwitch = OrangeSwitch(frame: .zero)
     private let loginMessage = NSTextField(wrappingLabelWithString: L("当前为手动启动。"))
     private let loginSettings = NSButton(title: L("打开系统设置"), target: nil, action: nil)
     private let storageMessage = NSTextField(wrappingLabelWithString: "")
+    private let backupMode = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let backupCount = NSTextField(string: "20")
+    private let backupMessage = NSTextField(wrappingLabelWithString: L("每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。"))
+    var restoreNote: ((Data) -> Void)?
+    var rebuildIndex: (() -> String?)?
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
@@ -235,6 +240,21 @@ final class SettingsController: NSWindowController {
         let chooseStorage = NSButton(title: L("选择文件夹…"), target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
         storageMessage.lineBreakMode = .byTruncatingMiddle; storageMessage.maximumNumberOfLines = 1
         let storageSection = section(L("笔记保存位置"), icon: "folder", detail: L("更改时保留原文件"), controls: chooseStorage, message: storageMessage)
+        for (title, value) in [(L("关闭"), "off"), (L("保留数量"), "limited"), (L("无限保留"), "unlimited")] { backupMode.addItem(withTitle: title); backupMode.lastItem?.representedObject = value }
+        backupMode.target = self; backupMode.action = #selector(backupChanged)
+        backupCount.widthAnchor.constraint(equalToConstant: 56).isActive = true
+        let countFormatter = NumberFormatter(); countFormatter.numberStyle = .decimal; countFormatter.minimum = 1; countFormatter.maximum = 1000000; countFormatter.allowsFloats = false
+        backupCount.formatter = countFormatter; backupCount.target = self; backupCount.action = #selector(backupChanged)
+        backupCount.delegate = self
+        backupCount.setAccessibilityLabel(L("保留版本数"))
+        let backupControls = NSStackView(views: [backupMode, backupCount]); backupControls.orientation = .horizontal; backupControls.spacing = 6
+        let backupSection = section(L("自动备份"), icon: "clock.arrow.circlepath", detail: L("每篇笔记的历史版本"), controls: backupControls, message: backupMessage)
+        let restoreBackup = NSButton(title: L("恢复历史版本…"), target: self, action: #selector(restoreBackupPressed)); restoreBackup.bezelStyle = .rounded
+        let historySection = section(L("历史版本"), icon: "clock", detail: L("从备份恢复笔记"), controls: restoreBackup, message: NSTextField(wrappingLabelWithString: L("恢复时会创建一篇新笔记，原版本仍会保留。")))
+        let restore = NSButton(title: L("恢复已删除笔记…"), target: self, action: #selector(restorePressed)); restore.bezelStyle = .rounded
+        let trashSection = section(L("回收站"), icon: "trash", detail: L("删除的笔记保存在本地"), controls: restore, message: NSTextField(wrappingLabelWithString: L("恢复时会创建一篇新笔记，回收站文件仍会保留。")))
+        let rebuild = NSButton(title: L("重建索引…"), target: self, action: #selector(rebuildPressed)); rebuild.bezelStyle = .rounded
+        let rebuildSection = section(L("索引恢复"), icon: "wrench.and.screwdriver", detail: L("索引损坏时使用"), controls: rebuild, message: NSTextField(wrappingLabelWithString: L("根据笔记文件恢复，顺序可能变化。")))
         for (title, value) in [(L("2 个空格"), "spaces2"), (L("4 个空格"), "spaces4"), ("Tab", "tabs")] {
             indentation.addItem(withTitle: title); indentation.lastItem?.representedObject = value
         }
@@ -267,7 +287,7 @@ final class SettingsController: NSWindowController {
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage)
         languagePicker.setAccessibilityLabel(L("语言"))
         let languageSection = section(L("语言"), icon: "globe", detail: L("选择应用界面语言"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("默认跟随系统语言。")))
-        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([indentSection, themeGroup])), (L("语言"), page([languageSection]))] {
+        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([indentSection, themeGroup])), (L("语言"), page([languageSection])), (L("备份"), page([backupSection, historySection, trashSection, rebuildSection]))] {
             let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
         }
         tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
@@ -295,7 +315,13 @@ final class SettingsController: NSWindowController {
         opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         let accent = UIThemes.accent(appearance.theme); symbols.forEach { $0.contentTintColor = accent }; loginSwitch.accentColor = accent
-        storageMessage.stringValue = getStorage(); storageMessage.toolTip = getStorage()
+        let storagePath = URL(fileURLWithPath: getStorage()).deletingLastPathComponent().path
+        storageMessage.stringValue = storagePath; storageMessage.toolTip = storagePath
+        let defaults = UserDefaults.standard, limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+        let mode = limit == 0 ? "off" : limit < 0 ? "unlimited" : "limited"
+        if let index = backupMode.itemArray.firstIndex(where: { ($0.representedObject as? String) == mode }) { backupMode.selectItem(at: index) }
+        backupCount.integerValue = limit > 0 ? limit : max(1, defaults.integer(forKey: "backupPreviousLimit"))
+        backupCount.isEnabled = mode == "limited"
         let status = loginStatus()
         loginSwitch.state = status == .enabled || status == .requiresApproval ? .on : .off
         loginSwitch.setAccessibilityValue(loginSwitch.state == .on ? 1 : 0); loginSwitch.needsDisplay = true
@@ -368,6 +394,18 @@ final class SettingsController: NSWindowController {
         return NSApp.sendAction(#selector(appearanceChanged), to: self, from: uiThemePicker)
     }
     func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
+    func testBackupControls() -> Bool {
+        tabs.selectTabViewItem(at: 4); window?.contentView?.layoutSubtreeIfNeeded()
+        guard let page = tabs.tabViewItem(at: 4).view else { return false }
+        for (mode, expected) in [("off", 0), ("unlimited", -1), ("limited", 7)] {
+            guard let index = backupMode.itemArray.firstIndex(where: { ($0.representedObject as? String) == mode }) else { return false }
+            backupMode.selectItem(at: index); backupCount.integerValue = 7; backupChanged()
+            guard UserDefaults.standard.integer(forKey: "backupVersionLimit") == expected else { return false }
+        }
+        func buttons(_ view: NSView) -> [NSButton] { (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap(buttons) }
+        let controls = buttons(page).filter { [L("恢复历史版本…"), L("恢复已删除笔记…"), L("重建索引…")].contains($0.title) }
+        return controls.count == 3 && controls.allSatisfy { page.bounds.contains($0.convert($0.bounds, to: page)) }
+    }
     func testSelectLanguage(_ id: String) -> Bool {
         guard let index = languagePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == id }) else { return false }
         languagePicker.selectItem(at: index)
@@ -376,7 +414,7 @@ final class SettingsController: NSWindowController {
     #endif
     @objc private func chooseStoragePressed() {
         guard let window else { return }
-        let panel = NSOpenPanel(); panel.title = L("选择笔记保存文件夹"); panel.message = L("Inkflit 会将当前笔记复制为 notes.json，原文件会保留。")
+        let panel = NSOpenPanel(); panel.title = L("选择笔记保存文件夹"); panel.message = L("Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。")
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false; panel.canCreateDirectories = true
         panel.directoryURL = URL(fileURLWithPath: getStorage()).deletingLastPathComponent()
         panel.beginSheetModal(for: window) { [weak self] result in
@@ -386,6 +424,48 @@ final class SettingsController: NSWindowController {
                 self.refresh()
                 if let error { self.storageMessage.stringValue = error; self.storageMessage.toolTip = error }
             }
+        }
+    }
+    @objc private func backupChanged() {
+        let defaults = UserDefaults.standard, mode = backupMode.selectedItem?.representedObject as? String ?? "limited"
+        let count = max(1, min(1_000_000, backupCount.integerValue))
+        if mode == "limited" { defaults.set(count, forKey: "backupPreviousLimit") }
+        defaults.set(mode == "off" ? 0 : mode == "unlimited" ? -1 : count, forKey: "backupVersionLimit")
+        refresh()
+    }
+    func controlTextDidEndEditing(_ notification: Notification) {
+        if let field = notification.object as? NSTextField, field === backupCount { backupChanged() }
+    }
+    @objc private func restorePressed() {
+        chooseRecoveryFile(folder: "trash", title: L("恢复已删除笔记…"))
+    }
+    @objc private func restoreBackupPressed() {
+        chooseRecoveryFile(folder: "backups", title: L("恢复历史版本…"))
+    }
+    @objc private func rebuildPressed() {
+        guard let window else { return }
+        let alert = NSAlert(); alert.messageText = L("重建笔记索引？")
+        alert.informativeText = L("将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。")
+        alert.addButton(withTitle: L("重建索引")); alert.addButton(withTitle: L("取消"))
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn, let self else { return }
+            if let error = self.rebuildIndex?() { self.backupMessage.stringValue = error }
+            else { self.backupMessage.stringValue = L("索引已重建。") }
+        }
+    }
+    private func chooseRecoveryFile(folder: String, title: String) {
+        guard let window else { return }
+        let recovery = URL(fileURLWithPath: getStorage()).deletingLastPathComponent().appendingPathComponent(folder, isDirectory: true)
+        let panel = NSOpenPanel(); panel.title = title; panel.directoryURL = recovery
+        panel.canChooseFiles = true; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+        panel.beginSheetModal(for: window) { [weak self] result in
+            guard result == .OK, let self, let file = panel.url else { return }
+            let path = file.resolvingSymlinksInPath().standardizedFileURL.path
+            let root = recovery.resolvingSymlinksInPath().standardizedFileURL.path + "/"
+            guard path.hasPrefix(root), file.pathExtension.lowercased() == "md", let data = try? Data(contentsOf: file), String(data: data, encoding: .utf8) != nil else {
+                self.backupMessage.stringValue = L("请选择备份或回收站中的 Markdown 文件。"); return
+            }
+            self.restoreNote?(data)
         }
     }
     @objc private func openHelp() {

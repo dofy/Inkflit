@@ -774,9 +774,195 @@
     "ja": " 元の保存場所を使います。"
   },
   "关闭": {
-    "en": "Close",
+    "en": "Off",
     "zh-Hans": "关闭",
     "zh-Hant": "關閉",
-    "ja": "閉じる"
+    "ja": "オフ"
+  },
+  "删除这条笔记？可在设置中的回收站恢复。": {
+    "en": "Delete this note? You can restore it from Trash in Settings.",
+    "zh-Hans": "删除这条笔记？可在设置中的回收站恢复。",
+    "zh-Hant": "刪除這則筆記？可在設定的回收站還原。",
+    "ja": "このノートを削除しますか？設定のゴミ箱から復元できます。"
+  },
+  "保留数量": {
+    "en": "Limited",
+    "zh-Hans": "保留数量",
+    "zh-Hant": "保留數量",
+    "ja": "件数を指定"
+  },
+  "无限保留": {
+    "en": "Unlimited",
+    "zh-Hans": "无限保留",
+    "zh-Hant": "無限保留",
+    "ja": "無制限"
+  },
+  "保留版本数": {
+    "en": "Versions to keep",
+    "zh-Hans": "保留版本数",
+    "zh-Hant": "保留版本數",
+    "ja": "保持するバージョン数"
+  },
+  "自动备份": {
+    "en": "Automatic backups",
+    "zh-Hans": "自动备份",
+    "zh-Hant": "自動備份",
+    "ja": "自動バックアップ"
+  },
+  "每篇笔记的历史版本": {
+    "en": "Version history per note",
+    "zh-Hans": "每篇笔记的历史版本",
+    "zh-Hant": "每則筆記的歷史版本",
+    "ja": "ノートごとの履歴"
+  },
+  "每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。": {
+    "en": "At most one version per note every five minutes. Turning this off keeps existing backups.",
+    "zh-Hans": "每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。",
+    "zh-Hant": "每則筆記最多每五分鐘備份一次；關閉不會刪除既有備份。",
+    "ja": "各ノートは最大5分に1回バックアップ。オフにしても既存のバックアップは残ります。"
+  },
+  "恢复已删除笔记…": {
+    "en": "Restore deleted note…",
+    "zh-Hans": "恢复已删除笔记…",
+    "zh-Hant": "還原已刪除筆記…",
+    "ja": "削除したノートを復元…"
+  },
+  "回收站": {
+    "en": "Trash",
+    "zh-Hans": "回收站",
+    "zh-Hant": "回收站",
+    "ja": "ゴミ箱"
+  },
+  "删除的笔记保存在本地": {
+    "en": "Deleted notes are kept locally",
+    "zh-Hans": "删除的笔记保存在本地",
+    "zh-Hant": "刪除的筆記保存在本機",
+    "ja": "削除したノートをローカルに保存"
+  },
+  "恢复时会创建一篇新笔记，回收站文件仍会保留。": {
+    "en": "Restoring creates a new note and keeps the trash file.",
+    "zh-Hans": "恢复时会创建一篇新笔记，回收站文件仍会保留。",
+    "zh-Hant": "還原時會建立新筆記，回收站檔案仍會保留。",
+    "ja": "復元すると新しいノートが作成され、ゴミ箱のファイルは残ります。"
+  },
+  "请选择回收站中的 Markdown 文件。": {
+    "en": "Choose a Markdown file from the Trash folder.",
+    "zh-Hans": "请选择回收站中的 Markdown 文件。",
+    "zh-Hant": "請選擇回收站中的 Markdown 檔案。",
+    "ja": "ゴミ箱の Markdown ファイルを選択してください。"
+  },
+  "备份": {
+    "en": "Backups",
+    "zh-Hans": "备份",
+    "zh-Hant": "備份",
+    "ja": "バックアップ"
+  },
+  "恢复失败：": {
+    "en": "Restore failed: ",
+    "zh-Hans": "恢复失败：",
+    "zh-Hant": "還原失敗：",
+    "ja": "復元に失敗："
+  },
+  "笔记文件已在外部更改，请先保存当前内容并重新启动应用。": {
+    "en": "Notes changed outside Inkflit. Copy the current text elsewhere and restart the app.",
+    "zh-Hans": "笔记文件已在外部更改，请先保存当前内容并重新启动应用。",
+    "zh-Hant": "筆記檔案已在外部更改，請先將目前內容複製到別處，再重新啟動應用程式。",
+    "ja": "ノートが外部で変更されました。現在の内容を別の場所にコピーしてからアプリを再起動してください。"
+  },
+  "Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。": {
+    "en": "Inkflit copies notes, backups and Trash to the new folder and keeps the originals.",
+    "zh-Hans": "Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。",
+    "zh-Hant": "Inkflit 會將筆記、備份和回收站複製到新資料夾，並保留原檔。",
+    "ja": "ノート、バックアップ、ゴミ箱を新しいフォルダにコピーし、元のファイルは保持します。"
+  },
+  "恢复历史版本…": {
+    "en": "Restore a previous version…",
+    "zh-Hans": "恢复历史版本…",
+    "zh-Hant": "還原歷史版本…",
+    "ja": "以前のバージョンを復元…"
+  },
+  "历史版本": {
+    "en": "Previous versions",
+    "zh-Hans": "历史版本",
+    "zh-Hant": "歷史版本",
+    "ja": "履歴"
+  },
+  "从备份恢复笔记": {
+    "en": "Restore a note from backup",
+    "zh-Hans": "从备份恢复笔记",
+    "zh-Hant": "從備份還原筆記",
+    "ja": "バックアップからノートを復元"
+  },
+  "恢复时会创建一篇新笔记，原版本仍会保留。": {
+    "en": "Restoring creates a new note and keeps the original version.",
+    "zh-Hans": "恢复时会创建一篇新笔记，原版本仍会保留。",
+    "zh-Hant": "還原時會建立新筆記，原版本仍會保留。",
+    "ja": "復元すると新しいノートが作成され、元のバージョンは残ります。"
+  },
+  "请选择备份或回收站中的 Markdown 文件。": {
+    "en": "Choose a Markdown file from the backup or Trash folder.",
+    "zh-Hans": "请选择备份或回收站中的 Markdown 文件。",
+    "zh-Hant": "請選擇備份或回收站中的 Markdown 檔案。",
+    "ja": "バックアップまたはゴミ箱の Markdown ファイルを選択してください。"
+  },
+  "重建索引…": {
+    "en": "Rebuild index…",
+    "zh-Hans": "重建索引…",
+    "zh-Hant": "重建索引…",
+    "ja": "インデックスを再構築…"
+  },
+  "索引恢复": {
+    "en": "Index recovery",
+    "zh-Hans": "索引恢复",
+    "zh-Hant": "索引還原",
+    "ja": "インデックス復旧"
+  },
+  "索引损坏时使用": {
+    "en": "Use if the index is damaged",
+    "zh-Hans": "索引损坏时使用",
+    "zh-Hant": "索引損壞時使用",
+    "ja": "インデックス破損時に使用"
+  },
+  "根据笔记文件恢复，顺序可能变化。": {
+    "en": "Rebuild from note files; the order may change.",
+    "zh-Hans": "根据笔记文件恢复，顺序可能变化。",
+    "zh-Hant": "根據筆記檔案還原，順序可能變更。",
+    "ja": "ノートファイルから復元します。順序が変わる場合があります。"
+  },
+  "重建笔记索引？": {
+    "en": "Rebuild the note index?",
+    "zh-Hans": "重建笔记索引？",
+    "zh-Hant": "重建筆記索引？",
+    "ja": "ノートのインデックスを再構築しますか？"
+  },
+  "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。": {
+    "en": "The index will be rebuilt from note files. Order may change and leftover files may reappear. The old index is kept.",
+    "zh-Hans": "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。",
+    "zh-Hant": "將依照現有筆記檔案重建索引，順序可能變更，遺留檔案也可能重新出現。原索引會保留。",
+    "ja": "ノートファイルからインデックスを再構築します。順序が変わり、残存ファイルが再表示される場合があります。古いインデックスは保持されます。"
+  },
+  "重建索引": {
+    "en": "Rebuild index",
+    "zh-Hans": "重建索引",
+    "zh-Hant": "重建索引",
+    "ja": "インデックスを再構築"
+  },
+  "索引已重建。": {
+    "en": "Index rebuilt.",
+    "zh-Hans": "索引已重建。",
+    "zh-Hant": "索引已重建。",
+    "ja": "インデックスを再構築しました。"
+  },
+  "目标位置已有笔记数据或内容不一致，未覆盖。": {
+    "en": "The destination already has note data or its contents differ; nothing was overwritten.",
+    "zh-Hans": "目标位置已有笔记数据或内容不一致，未覆盖。",
+    "zh-Hant": "目標位置已有筆記資料或內容不一致，未覆蓋。",
+    "ja": "保存先にノートデータがあるか内容が一致しません。上書きしていません。"
+  },
+  "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。": {
+    "en": "The index will be rebuilt from note files. Order may change and leftover files may reappear. The original index is kept. Copy any unsaved changes first.",
+    "zh-Hans": "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。",
+    "zh-Hant": "將依照現有筆記檔案重建索引，順序可能變更，遺留檔案也可能重新出現。原索引會保留。請先複製未儲存的內容。",
+    "ja": "ノートファイルからインデックスを再構築します。順序が変わり、残存ファイルが再表示される場合があります。元のインデックスは保持されます。未保存の内容は先にコピーしてください。"
   }
 }
