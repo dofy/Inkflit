@@ -6,16 +6,19 @@ import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
-import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock } from './block-menu.js';
-import { tasks } from './tasks.js';
+import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock, openCurrentBlockMenu } from './block-menu.js';
+import { initLanguageMenu, languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
+import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
 import { parseTimer, scopeAt } from './features.js';
 import { timerCommand, timerDisplay, advanceTimer } from './timer.js';
 import { commentChanges, blockCodeCommentChanges, isCodeAt, noteComments, selectedLines } from './comments.js';
+import { planCodeEdit, normalizeIndentation } from './code-editing.js';
 
 const $ = id => document.getElementById(id);
 let state = null, editor = null;
 let keyStartDoc = null, mergeFirstInsert = false;
+let codeIndentation = 'spaces2';
 const editorStates = new Map();
 const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
 const current = () => state.notes.find(n => n.id === state.selected);
@@ -33,7 +36,7 @@ function refreshNav() {
   $('next').disabled = index === 0;
 }
 function makeState(content) {
-  return EditorState.create({doc:content,selection:{anchor:nearestEditablePosition(Text.of(content.split("\n")),0,0,true)},extensions:[
+  const initial=EditorState.create({doc:content,selection:{anchor:nearestEditablePosition(Text.of(content.split("\n")),0,0,true)},extensions:[
     vim(), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), EditorState.transactionFilter.of(tr => {
       if (!mergeFirstInsert || !tr.docChanged || !tr.isUserEvent('input.type')) return tr;
       mergeFirstInsert = false;
@@ -42,12 +45,15 @@ function makeState(content) {
         annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
     }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, syntaxHighlighting(defaultHighlightStyle), EditorView.lineWrapping,
     keymap.of([...defaultKeymap,...historyKeymap]),
-    EditorView.updateListener.of(update => { if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
+    EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
   ]});
+  const position=taskContentPosition(initial,initial.selection.main.head);
+  return position===initial.selection.main.head ? initial : initial.update({selection:{anchor:position}}).state;
 }
 initBlockMenu($('block-menu'),()=>editor);
+initLanguageMenu($('language-menu'),()=>editor);
 function changeEditor(id) {
-  closeBlockMenu();
+  closeBlockMenu(); closeLanguageMenu();
   if (editor) { editorStates.set(state.selected, editor.state); editor.destroy(); }
   state.selected = id;
   editor = new EditorView({parent:$('editor'), state:editorStates.get(id) || makeState(current().content)});
@@ -106,12 +112,26 @@ $('timer-stop').onclick=()=>applyTimer({command:'s'});
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
   keyStartDoc = editor?.state.doc;
+  if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='l' && editor?.hasFocus) {
+    if(!event.repeat && openCurrentLanguageMenu(editor)) {event.preventDefault();event.stopPropagation();}
+    return;
+  }
+  if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='k' && editor?.hasFocus) {
+    if(!event.repeat && openCurrentBlockMenu(editor)) {closeLanguageMenu();event.preventDefault(); event.stopPropagation();}
+    return;
+  }
   if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='d') {
     event.preventDefault(); event.stopPropagation();
     if(!event.repeat) deleteCurrentBlock(editor);
     return;
   }
+  if(languageMenuOpen() && handleLanguageMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
   if(blockMenuOpen() && handleBlockMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
+  if(!languageMenuOpen() && !blockMenuOpen() && editor?.hasFocus && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode) {
+    const key=event.key==='Tab' && event.shiftKey ? 'Shift-Tab' : event.key;
+    const planned=planCodeEdit(editor.state,key,{indentation:codeIndentation});
+    if(planned) {event.preventDefault();event.stopPropagation();editor.dispatch(planned);return;}
+  }
   if(!blockMenuOpen() && getCM(editor)?.state?.vim?.insertMode && trySlash(event,editor)) {event.preventDefault();event.stopPropagation();return;}
   if (event.key.toLowerCase() === 'x' && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode && scopeAt(editor.state.doc.toString(),editor.state.doc.lineAt(editor.state.selection.main.head).number)?.mode==='list') {
     const sel=editor.state.selection.main, line=editor.state.doc.lineAt(sel.head);
@@ -181,6 +201,8 @@ registers.pushText=function(name,operator,text,linewise,blockwise) {
 };
 Vim.defineEx('write', 'w', () => { if (state) persist(); });
 window.focusEditor = () => { if (editor) editor.focus(); };
+window.setCodeIndentation = value => { codeIndentation=normalizeIndentation(value); };
+window.exportNotesJSON = () => state ? JSON.stringify(state) : null;
 window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;

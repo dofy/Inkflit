@@ -32,19 +32,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var hotKeyModifiers: UInt32 = UInt32(controlKey | optionKey)
     var hotKeyDisabled = false
     var testLoginStatus: SMAppService.Status = .notRegistered
-    let storageURL = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Quicknote/notes.json")
+    let legacyStorageURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Quicknote/notes.json")
+    var storageURL: URL!
+    var storageWarning: String?
+    var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        #if INKFLIT_NATIVE_TEST
+        if isolatedTest, let value = ProcessInfo.processInfo.environment["INKFLIT_NATIVE_INDENT"] {
+            UserDefaults.standard.set(value, forKey: "codeIndentation")
+        }
+        #endif
+        configureStorage()
         // Accessory apps still need the standard edit responder actions for WKWebView.
         let mainMenu = NSMenu()
+        let appRoot = NSMenuItem(title: "Inkflit", action: nil, keyEquivalent: "")
+        let appMenu = NSMenu(title: "Inkflit")
+        let settingsItem = appMenu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "退出 Inkflit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appRoot.submenu = appMenu; mainMenu.addItem(appRoot)
         let editRoot = NSMenuItem(title: "编辑", action: nil, keyEquivalent: "")
         let editMenu = NSMenu(title: "编辑")
         editMenu.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
         editMenu.addItem(withTitle: "复制", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         editMenu.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         editMenu.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
-        editRoot.submenu = editMenu; mainMenu.addItem(editRoot); NSApp.mainMenu = mainMenu
+        editRoot.submenu = editMenu; mainMenu.addItem(editRoot)
+        let windowRoot = NSMenuItem(title: "窗口", action: nil, keyEquivalent: "")
+        let windowMenu = NSMenu(title: "窗口")
+        windowMenu.addItem(withTitle: "关闭窗口", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowRoot.submenu = windowMenu; mainMenu.addItem(windowRoot); NSApp.mainMenu = mainMenu
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "quicknote")
         web = DragWebView(frame: .zero, configuration: config)
@@ -53,7 +73,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         web.wantsLayer = true; web.layer?.cornerRadius = 12; web.layer?.masksToBounds = true
         window = NotePanel(contentRect: NSRect(x: 0, y: 0, width: 580, height: 560), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
         window.title = "Inkflit"; window.minSize = NSSize(width: 380, height: 320)
-        window.isFloatingPanel = true; window.level = .floating; window.hidesOnDeactivate = false
+        // Keep the note below system overlays such as macOS screenshot selection.
+        window.isFloatingPanel = false; window.level = .normal; window.hidesOnDeactivate = false
         window.isOpaque = false; window.backgroundColor = .clear; window.hasShadow = true
         window.contentView = web; window.delegate = self; window.center()
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -77,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             let menu = NSMenu()
             menu.addItem(withTitle: "打开 Inkflit", action: #selector(showWindow), keyEquivalent: "")
-            hotKeyItem = menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: "")
+            hotKeyItem = menu.addItem(withTitle: "设置…", action: #selector(showSettings), keyEquivalent: ",")
             menu.addItem(.separator()); menu.addItem(withTitle: "退出 Inkflit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
@@ -91,6 +112,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         showWindow()
         if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_SETTINGS"] == "1" { showSettings() }
+    }
+    func configureStorage() {
+        if let override = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"] { storageURL = URL(fileURLWithPath: override); return }
+        let defaults = UserDefaults.standard
+        if let path = defaults.string(forKey: "notesStoragePath") {
+            storageURL = URL(fileURLWithPath: path); requireExistingStorage = true; return
+        }
+        let destination = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Inkflit/notes.json")
+        do {
+            storageURL = try NoteStorage.migrateIfNeeded(legacy: legacyStorageURL, destination: destination)
+            if FileManager.default.fileExists(atPath: storageURL.path) {
+                defaults.set(storageURL.path, forKey: "notesStoragePath"); requireExistingStorage = true
+            }
+        } catch {
+            storageURL = legacyStorageURL; requireExistingStorage = true
+            storageWarning = "未迁移笔记：\(error.localizedDescription) 仍使用原位置。"
+        }
+    }
+    func changeStorageDirectory(_ directory: URL, completion: @escaping (String?) -> Void) {
+        let destination = directory.appendingPathComponent("notes.json").standardizedFileURL
+        if destination == storageURL.standardizedFileURL { completion(nil); return }
+        web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
+            guard let self else { completion("设置窗口不可用。"); return }
+            guard error == nil, let json = value as? String, let data = json.data(using: .utf8) else { completion(NoteStorageError.invalidSnapshot.localizedDescription); return }
+            do {
+                try NoteStorage.saveCopy(data, to: destination)
+                self.storageURL = destination; self.requireExistingStorage = true; self.storageWarning = nil
+                if !self.isolatedTest { UserDefaults.standard.set(destination.path, forKey: "notesStoragePath") }
+                completion(nil)
+            } catch { completion(error.localizedDescription) }
+        }
     }
     func makeStatusIcon() -> NSImage {
         let icon = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
@@ -148,6 +200,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         UserDefaults.standard.set(true, forKey: "hotKeyDisabled")
         updateHotKeyLabel()
     }
+    func codeIndentation() -> String {
+        let value = UserDefaults.standard.string(forKey: "codeIndentation") ?? "spaces2"
+        return ["spaces2", "spaces4", "tabs"].contains(value) ? value : "spaces2"
+    }
+    func updateCodeIndentation(_ value: String) {
+        guard ["spaces2", "spaces4", "tabs"].contains(value) else { return }
+        UserDefaults.standard.set(value, forKey: "codeIndentation")
+        syncCodeIndentation()
+    }
+    func syncCodeIndentation() {
+        let value = codeIndentation()
+        web.evaluateJavaScript("window.setCodeIndentation?.('\(value)')", completionHandler: nil)
+    }
     @objc func showSettings() {
         hideWindow()
         if settingsController == nil {
@@ -156,6 +221,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 saveShortcut: { [weak self] code, modifiers in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: code, modifiers: modifiers) },
                 clearShortcut: { [weak self] in self?.clearShortcut() },
                 resetShortcut: { [weak self] in guard let self else { return "设置窗口不可用。" }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
+                getStorage: { [weak self] in self?.storageURL.path ?? "" },
+                changeStorage: { [weak self] url, completion in guard let self else { completion("设置窗口不可用。"); return }; self.changeStorageDirectory(url, completion: completion) },
+                getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
+                setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
                 loginStatus: { [weak self] in guard let self else { return .notFound }; return self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? self.testLoginStatus : SMAppService.mainApp.status },
                 setLogin: { [weak self] enabled in
                     guard let self else { return "设置窗口不可用。" }
@@ -197,13 +266,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func hideWindow() { restoreInputSource(); window.orderOut(nil) }
     func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        syncCodeIndentation()
         do {
             if FileManager.default.fileExists(atPath: storageURL.path) {
                 let data = try Data(contentsOf: storageURL); let base64 = data.base64EncodedString()
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
+            } else if requireExistingStorage {
+                showError("笔记文件不存在或位置不可用，请恢复文件后重新启动。")
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
+            if let storageWarning { showError(storageWarning) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
         } catch { showError("无法读取笔记：\(error.localizedDescription)") }
+        #if INKFLIT_NATIVE_TEST
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_NATIVE_TEST"] == "1" {
+            NativeCodeEditingTest.start(self)
+        }
+        #endif
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if action.navigationType == .linkActivated { if let url = action.request.url, ["https", "http"].contains(url.scheme?.lowercased() ?? "") { NSWorkspace.shared.open(url) }; decisionHandler(.cancel); return }; decisionHandler(.allow)
@@ -245,8 +323,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         guard type == "save", let json = body["json"] as? String, let data = json.data(using: .utf8) else { return }
         do {
+            if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
+                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: "笔记文件不存在或位置不可用，请恢复文件后重试。"])
+            }
             try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try data.write(to: storageURL, options: .atomic); web.evaluateJavaScript("window.saveResult(true)", completionHandler: nil)
+            if !isolatedTest && UserDefaults.standard.string(forKey: "notesStoragePath") == nil && storageWarning == nil {
+                UserDefaults.standard.set(storageURL.path, forKey: "notesStoragePath"); requireExistingStorage = true
+            }
         } catch { showError("保存失败：\(error.localizedDescription)") }
     }
     func showError(_ message: String) {

@@ -43,9 +43,22 @@ function position(pos) {
   const top=Math.max(8,Math.min(coords.bottom-parent.top+4,parent.height-240));
   menu.style.left=`${left}px`;menu.style.top=`${top}px`;
 }
-export function openBlockMenu({from, scope=null, trigger=false}) {
+export function openBlockMenu({from, scope=null, trigger=false, preserveSelection=false}) {
   const editor=view(); if(!editor)return;
-  active={from,scope,trigger,index:0,choices:[]};menu.hidden=false;render();position(from);
+  active={from,scope,trigger,preserveSelection,index:0,choices:[]};menu.hidden=false;render();position(from);
+}
+export function currentBlockScope(state) {
+  const selection=state.selection.main, text=state.doc.toString();
+  const first=scopeAt(text,state.doc.lineAt(selection.from).number);
+  const last=scopeAt(text,state.doc.lineAt(selection.to).number);
+  if(!first || first.kind!=='block' || !first.closed || !last || first.start!==last.start || first.end!==last.end)return null;
+  return first;
+}
+export function openCurrentBlockMenu(editor) {
+  const scope=currentBlockScope(editor.state);
+  if(!scope)return false;
+  openBlockMenu({from:editor.state.selection.main.head,scope,preserveSelection:true});
+  return true;
 }
 export function updateBlockMenu() {
   if(!active?.trigger)return;
@@ -85,8 +98,8 @@ function choose(mode) {
   closeBlockMenu();
   const changeSet=editor.state.changes(changes);
   // Map the previous position after a conversion; insertions use their explicit new offset.
-  const selection=current.scope ? changeSet.mapPos(anchor,1) : anchor;
-  editor.dispatch({changes:changeSet,selection:{anchor:selection},userEvent:'input.block'});editor.focus();
+  const selection=current.preserveSelection ? editor.state.selection.map(changeSet) : current.scope ? changeSet.mapPos(anchor,1) : anchor;
+  editor.dispatch({changes:changeSet,selection:current.preserveSelection ? selection : {anchor:selection},userEvent:'input.block'});editor.focus();
 }
 export function blockDeletion(state, scope) {
   if(!scope || scope.kind!=='block' || !scope.closed)return null;

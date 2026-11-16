@@ -4,6 +4,7 @@ import { codeLanguage } from './code-languages.js';
 import { defaultHighlightStyle } from '@codemirror/language';
 import { highlightTree } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
+import { openLanguageMenu } from './language-menu.js';
 let rates = null, onRates = () => {}, requestedAt = 0;
 export function setRateListener(fn) { onRates = fn; }
 export async function refreshRates() {
@@ -43,12 +44,10 @@ class BlockHeader extends WidgetType {
     const button=document.createElement('button');button.type='button';button.className='block-type';button.textContent=blockNames[this.scope.mode]+' ▾';button.setAttribute('aria-label',`更改${blockNames[this.scope.mode]}块类型`);
     button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',e=>{e.preventDefault();openBlockMenu({from:view.state.doc.line(this.scope.start).from,scope:this.scope});});wrap.append(button);
     if(this.scope.mode==='code') {
-      const select=document.createElement('select');select.className='block-language';select.setAttribute('aria-label','代码语言');
-      for(const [value,label] of [['','纯文本'],['javascript','JavaScript'],['typescript','TypeScript'],['python','Python'],['swift','Swift'],['json','JSON'],['html','HTML'],['css','CSS'],['sql','SQL'],['shell','Shell'],['markdown','Markdown']]) {
-        const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);
-      }
-      if(this.scope.language && ![...select.options].some(o=>o.value===this.scope.language)) { const o=document.createElement('option');o.value=this.scope.language;o.textContent=this.scope.language;select.append(o); }
-      select.value=this.scope.language;select.addEventListener('change',()=>{const line=view.state.doc.line(this.scope.start);view.dispatch({changes:{from:line.from,to:line.to,insert:':::quicknote code'+(select.value?' '+select.value:'')},userEvent:'input.block.language'});view.focus();});wrap.append(select);
+      const language=document.createElement('button');language.type='button';language.className='block-language';language.tabIndex=-1;
+      const names={'':'纯文本',javascript:'JavaScript',typescript:'TypeScript',python:'Python',swift:'Swift',json:'JSON',html:'HTML',css:'CSS',sql:'SQL',shell:'Shell',markdown:'Markdown'};
+      language.textContent=names[this.scope.language||''] || this.scope.language;language.setAttribute('aria-label','代码语言');language.setAttribute('aria-haspopup','listbox');language.setAttribute('aria-expanded','false');language.setAttribute('aria-controls','language-menu');language.title='选择代码语言 ⌘L';
+      language.addEventListener('mousedown',event=>event.preventDefault());language.addEventListener('click',event=>{event.preventDefault();openLanguageMenu(view,this.scope,language);});wrap.append(language);
     }
     return wrap;
   }
@@ -72,8 +71,9 @@ function decorate(view) {
   for (const scope of scopes) {
     if(scope.kind==='block') {
       const first=doc.line(scope.start);
+      decorations.push(Decoration.line({class:'cm-block-header-line'}).range(first.from));
       decorations.push(Decoration.replace({widget:new BlockHeader(scope)}).range(first.from,first.to));
-      if(scope.end<=doc.lines) {const last=doc.line(scope.end);decorations.push(Decoration.replace({widget:new BlockEnd()}).range(last.from,last.to));}
+      if(scope.end<=doc.lines) {const last=doc.line(scope.end);decorations.push(Decoration.line({class:'cm-block-end-line'}).range(last.from));decorations.push(Decoration.replace({widget:new BlockEnd()}).range(last.from,last.to));}
       if(scope.mode==='code') decorateCode(view,scope,decorations);
     }
     for (const result of scope.results) { const line=doc.line(result.line); decorations.push(Decoration.widget({widget:new Result(result.text + (result.rateDate ? ` · ${result.rateDate}` : '')),side:1}).range(line.to)); }

@@ -1,5 +1,6 @@
 import { EditorState, Transaction } from '@codemirror/state';
 import { featureScopes } from './features.js';
+import { taskContentPosition } from './tasks.js';
 
 export function markerRanges(doc) {
   const ranges=[];
@@ -103,6 +104,7 @@ export const blockProtection=EditorState.transactionFilter.of(tr=>{
   }
   const sel=tr.newSelection.main;
   if(!sel.empty)return tr;
-  const safe=nearestEditablePosition(tr.newDoc,sel.head,tr.startState.selection.main.head,tr.docChanged);
+  let safe=nearestEditablePosition(tr.newDoc,sel.head,tr.startState.selection.main.head,tr.docChanged);
+  if(!tr.docChanged)safe=taskContentPosition(tr.state,safe);
   return safe===sel.head ? tr : [tr,{selection:{anchor:safe},sequential:true}];
 });

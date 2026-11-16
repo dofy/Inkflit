@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inkflit 使用帮助</title>
+  <style>
+    :root{color-scheme:light dark;font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#24363a;background:#f4f8f7}
+    body{max-width:760px;margin:0 auto;padding:48px 24px 72px}h1{font-size:2.2rem;line-height:1.2;margin:0}h2{margin-top:2.4em;font-size:1.25rem}p,li{color:#405358}a{color:#2b737e}kbd,code{font:0.9em ui-monospace,monospace;background:#e4efed;border-radius:4px;padding:2px 5px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #d8e4e2;vertical-align:top}th{color:#41676b}td:first-child{white-space:nowrap}footer{margin-top:48px;color:#708487;font-size:.85rem}
+    @media(prefers-color-scheme:dark){:root{background:#172123;color:#edf5f3}p,li{color:#c5d6d3}kbd,code{background:#2a3b3d}th{color:#9ec4c2}th,td{border-color:#3a4d4d}a{color:#8dcbd2}footer{color:#9cb0ae}}
+  </style>
+</head>
+<body>
+  <h1>Inkflit 使用帮助</h1>
+  <p>随时记下一点想法。笔记自动保存在本机，支持 Markdown、Vim 和独立的功能块。</p>
+  <h2>开始使用</h2>
+  <p>默认按 <kbd>⌃⌥Space</kbd> 唤起或收起笔记。切换到其他应用时浮窗会自动收起。点击菜单栏图标，或在 Inkflit 中按 <kbd>⌘,</kbd> 打开设置，可更改全局快捷键和开机启动选项。设置窗口中按 <kbd>⌘W</kbd> 关闭。</p>
+  <h2>快捷键</h2>
+  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody>
+    <tr><td><kbd>⌘N</kbd></td><td>新建笔记</td></tr>
+    <tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr>
+    <tr><td><kbd>⌘1</kbd></td><td>回到最新笔记</td></tr>
+    <tr><td><kbd>⌘D</kbd></td><td>删除当前笔记；确认后无法撤销</td></tr>
+    <tr><td><kbd>⌘K</kbd></td><td>打开当前功能块的类型切换菜单</td></tr>
+    <tr><td><kbd>⌘L</kbd></td><td>在代码块内打开语言菜单，用方向键和回车选择</td></tr>
+    <tr><td><kbd>⌘⇧D</kbd></td><td>删除当前功能块及其内容，可撤销</td></tr>
+    <tr><td><kbd>⌘/</kbd></td><td>切换当前行或选中行的注释</td></tr>
+  </tbody></table>
+  <h2>编辑与 Vim</h2>
+  <p>普通模式下按 <kbd>i</kbd> 插入、<kbd>u</kbd> 撤销、<kbd>⌃R</kbd> 重做。<kbd>Esc</kbd> 先退出插入等编辑模式，在普通模式下再按一次收起窗口。拼音候选未上屏时，Esc 会先取消候选。编辑器提供 Vim 模拟，不读取 vimrc；撤销历史在应用退出后不会保留。</p>
+  <p>正文支持 Markdown，例如标题、列表和 <code>- [ ]</code> 待办。点击复选框可以切换状态。普通笔记中行首的 <code>//</code> 表示注释；代码块按所选语言处理注释和高亮。</p>
+  <h2>功能块</h2>
+  <p>在插入模式的空行输入 <code>/</code> 打开菜单，用方向键和回车选择。每个块只处理自己的内容，一条笔记可以包含多个不同功能的块。点击块头或在块内按 <kbd>⌘K</kbd>，可切换类型、转为普通文本或删除块。在非代码块的最后一个空行再按回车可以退出块。</p>
+  <ul>
+    <li><strong>清单：</strong>逐行显示复选框；点击或在行末输入 <code>/x</code> 切换。</li>
+    <li><strong>计算：</strong>在表达式末尾输入 <code>=</code>；支持变量、百分比、常见单位和货币换算，例如 <code>10 USD to CNY =</code>。货币换算需要获取公开汇率，不发送笔记内容。</li>
+    <li><strong>求和、平均值、计数：</strong>统计当前块内的内容。</li>
+    <li><strong>代码：</strong>在块头选择语言；插入模式下自动配对括号和引号，回车自动缩进；<kbd>Tab</kbd> 插入缩进，<kbd>⇧Tab</kbd> 减少缩进。在设置中可以选择 2 个空格、4 个空格或 Tab。无选区时 <kbd>⌘C</kbd> 复制整个代码块，有选区时复制选中的文本。</li>
+    <li><strong>计时器：</strong>输入 <code>timer 5</code> 并回车开始 5 分钟倒计时；<code>timer</code> 正计时，<code>timer pomo</code> 番茄钟，<code>timer p</code> 暂停或继续，<code>timer r</code> 重置，<code>timer s</code> 停止。退出应用后不会后台提醒。</li>
+  </ul>
+  <h2>数据保存</h2>
+  <p>笔记默认自动保存到 <code>~/Documents/Inkflit/notes.json</code>，也可在设置中选择其他文件夹。文件为 JSON，包含所有笔记及 Markdown 正文；功能块使用 Inkflit 标记。更改保存位置时会保留原文件，不会覆盖目标文件夹已有的 <code>notes.json</code>。旧版数据会复制到默认位置并保留原文件；若目标已有同名文件，仍使用旧位置。Inkflit 不提供云同步，但保存目录可能由 iCloud 等服务同步。建议定期备份。</p>
+  <footer>© 2026 phpz.org · Inkflit</footer>
+</body>
+</html>

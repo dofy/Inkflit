@@ -4,8 +4,9 @@ cd "$(dirname "$0")/.."
 npm run build:web
 APP="$PWD/build/Inkflit.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
-swiftc -O -whole-module-optimization Sources/main.swift Sources/Settings.swift -o "$APP/Contents/MacOS/Quicknote" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -O -whole-module-optimization Sources/main.swift Sources/Settings.swift Sources/NoteStorage.swift -o "$APP/Contents/MacOS/Quicknote" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 cp Resources/Quicknote.icns "$APP/Contents/Resources/Quicknote.icns"
+cp Resources/Help.html "$APP/Contents/Resources/Help.html"
 cp web/index.html web/style.css "$APP/Contents/Resources/web/"
 cp web/dist/editor.js "$APP/Contents/Resources/web/editor.js"
 cat > "$APP/Contents/Info.plist" <<'PLIST'

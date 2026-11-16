@@ -146,3 +146,33 @@ test('delete block shortcut targets one complete block and can be undone',async(
  state=EditorState.create({doc:broken,selection:{anchor:broken.length},extensions:[history(),blockProtection]});
  assert.equal(deleteCurrentBlock(view),false);assert.equal(state.doc.toString(),broken);
 });
+
+test('block switch shortcut only targets one complete feature block',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {currentBlockScope}=await import('../web/block-menu.js');
+ const doc='plain\n:::quicknote code javascript\nconst a=1;\n:::end\n:::quicknote list\nitem\n:::end\nafter';
+ let state=EditorState.create({doc,selection:{anchor:doc.indexOf('const')}});
+ assert.equal(currentBlockScope(state).mode,'code');
+ state=EditorState.create({doc,selection:{anchor:doc.indexOf('item')}});
+ assert.equal(currentBlockScope(state).mode,'list');
+ state=EditorState.create({doc,selection:{anchor:doc.indexOf('plain')}});
+ assert.equal(currentBlockScope(state),null);
+ state=EditorState.create({doc,selection:{anchor:doc.indexOf('const'),head:doc.indexOf('item')+2}});
+ assert.equal(currentBlockScope(state),null);
+ const unfinished=':::quicknote code\nunfinished';
+ state=EditorState.create({doc:unfinished,selection:{anchor:unfinished.length}});
+ assert.equal(currentBlockScope(state),null);
+});
+
+test('task cursor skips checkbox marker while preserving code and plain text',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {markdown}=await import('@codemirror/lang-markdown');
+ const {taskContentPosition}=await import('../web/tasks.js');
+ const doc=':::quicknote list\n[x] finished\n[ ] open\n:::end\n```\n[x] code\n```';
+ const state=EditorState.create({doc,extensions:[markdown()]});
+ const finished=doc.indexOf('[x]'), open=doc.indexOf('[ ]'), code=doc.lastIndexOf('[x]');
+ assert.equal(taskContentPosition(state,finished),finished+4);
+ assert.equal(taskContentPosition(state,open+1),open+4);
+ assert.equal(taskContentPosition(state,finished+4),finished+4);
+ assert.equal(taskContentPosition(state,code),code);
+});

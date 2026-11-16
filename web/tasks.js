@@ -28,6 +28,17 @@ function isInCode(tree, offset) {
   }
   return false;
 }
+// In normal mode a task marker is represented by a widget, so put the Vim
+// cursor on its text rather than drawing a source character over the checkbox.
+export function taskContentPosition(state, pos) {
+  const line=state.doc.lineAt(pos);
+  const match=/^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
+  if(!match)return pos;
+  const from=line.from+match[1].length, end=from+3;
+  if(pos<from || pos>=end)return pos;
+  if(isInCode(syntaxTree(state),from) && scopeAt(state.doc.toString(),line.number)?.mode!=='list')return pos;
+  return Math.min(line.to,end+(line.text[end-line.from]===' '?1:0));
+}
 function taskDecorations(view) {
   const decorations = [], doc = view.state.doc, tree = syntaxTree(view.state);
   for (const range of view.visibleRanges) {
@@ -37,8 +48,7 @@ function taskDecorations(view) {
       if (match) {
         const from = line.from + match[1].length, to = from + 3;
         const inCode = isInCode(tree, from) && scopeAt(doc.toString(),line.number)?.mode !== 'list';
-        const touches = view.state.selection.ranges.some(selection => selection.from < to && selection.to > from || selection.empty && selection.from >= from && selection.from < to);
-        if (!inCode && !touches) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
+        if (!inCode) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
       }
       if (line.to >= doc.length) break;
       line = doc.lineAt(line.to + 1);

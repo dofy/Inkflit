@@ -6,7 +6,8 @@
   "scripts": {
     "build:web": "esbuild web/editor.js --bundle --format=iife --target=safari16 --outfile=web/dist/editor.js",
     "build": "bash scripts/build.sh",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "test:native": "bash scripts/test-native.sh"
   },
   "keywords": [],
   "author": "",
