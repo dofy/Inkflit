@@ -1,0 +1,52 @@
+import { syntaxTree } from '@codemirror/language';
+import { scopeAt } from './features.js';
+import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
+
+class TaskCheckbox extends WidgetType {
+  constructor(position, checked) { super(); this.position = position; this.checked = checked; }
+  eq(other) { return this.position === other.position && this.checked === other.checked; }
+  toDOM(view) {
+    const button = document.createElement('button');
+    button.className = 'task-checkbox'; button.type = 'button'; button.tabIndex = -1;
+    button.setAttribute('aria-label', this.checked ? '标记为未完成' : '标记为已完成');
+    button.setAttribute('aria-checked', String(this.checked)); button.setAttribute('role', 'checkbox');
+    button.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
+    button.addEventListener('click', event => {
+      event.preventDefault(); event.stopPropagation();
+      const text = view.state.sliceDoc(this.position, this.position + 3);
+      if (!/^\[[ xX]\]$/.test(text)) return;
+      view.dispatch({changes:{from:this.position + 1, to:this.position + 2, insert:/[xX]/.test(text[1]) ? ' ' : 'x'}, userEvent:'input.task.toggle'});
+      view.focus();
+    });
+    return button;
+  }
+  ignoreEvent() { return false; }
+}
+function isInCode(tree, offset) {
+  for (let node = tree.resolveInner(offset, 1); node; node = node.parent) {
+    if (['FencedCode','CodeBlock','InlineCode'].includes(node.name)) return true;
+  }
+  return false;
+}
+function taskDecorations(view) {
+  const decorations = [], doc = view.state.doc, tree = syntaxTree(view.state);
+  for (const range of view.visibleRanges) {
+    let line = doc.lineAt(range.from);
+    while (line.from <= range.to) {
+      const match = /^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
+      if (match) {
+        const from = line.from + match[1].length, to = from + 3;
+        const inCode = isInCode(tree, from) && scopeAt(doc.toString(),line.number)?.mode !== 'list';
+        const touches = view.state.selection.ranges.some(selection => selection.from < to && selection.to > from || selection.empty && selection.from >= from && selection.from < to);
+        if (!inCode && !touches) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
+      }
+      if (line.to >= doc.length) break;
+      line = doc.lineAt(line.to + 1);
+    }
+  }
+  return Decoration.set(decorations, true);
+}
+export const tasks = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = taskDecorations(view); }
+  update(update) { if (update.docChanged || update.viewportChanged || update.selectionSet || update.geometryChanged) this.decorations = taskDecorations(update.view); }
+}, {decorations: value => value.decorations});

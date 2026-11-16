@@ -1,0 +1,187 @@
+import { EditorState, Text, Transaction } from '@codemirror/state';
+import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap, toggleLineComment } from '@codemirror/commands';
+import { markdown } from '@codemirror/lang-markdown';
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { vim, Vim, getCM } from '@replit/codemirror-vim';
+import { codeLanguage } from './code-languages.js';
+import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
+import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput } from './block-menu.js';
+import { tasks } from './tasks.js';
+import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
+import { parseTimer, scopeAt } from './features.js';
+import { timerCommand, timerDisplay, advanceTimer } from './timer.js';
+import { commentChanges, blockCodeCommentChanges, isCodeAt, noteComments, selectedLines } from './comments.js';
+
+const $ = id => document.getElementById(id);
+let state = null, editor = null;
+let keyStartDoc = null, mergeFirstInsert = false;
+const editorStates = new Map();
+const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
+const current = () => state.notes.find(n => n.id === state.selected);
+function persist() {
+  $('save').textContent = '保存中…'; $('save').className = '';
+  if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'save', json:JSON.stringify(state)});
+  else { localStorage.setItem('quicknote-test', JSON.stringify(state)); window.saveResult(true); }
+}
+window.saveResult = (ok, error) => { $('save').textContent = ok ? '已保存' : (error || '保存失败'); $('save').className = ok ? '' : 'error'; };
+window.setShortcutLabel = label => { $('shortcut').textContent = label; };
+function refreshNav() {
+  const index = state.notes.findIndex(n => n.id === state.selected);
+  $('position').textContent = `${index + 1} / ${state.notes.length}`;
+  $('previous').disabled = index === state.notes.length - 1;
+  $('next').disabled = index === 0;
+}
+function makeState(content) {
+  return EditorState.create({doc:content,selection:{anchor:nearestEditablePosition(Text.of(content.split("\n")),0,0,true)},extensions:[
+    vim(), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), EditorState.transactionFilter.of(tr => {
+      if (!mergeFirstInsert || !tr.docChanged || !tr.isUserEvent('input.type')) return tr;
+      mergeFirstInsert = false;
+      if (tr.annotation(Transaction.userEvent) === 'input.type.compose') return tr;
+      return {changes:tr.changes, selection:tr.selection, effects:tr.effects, scrollIntoView:tr.scrollIntoView,
+        annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
+    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, syntaxHighlighting(defaultHighlightStyle), EditorView.lineWrapping,
+    keymap.of([...defaultKeymap,...historyKeymap]),
+    EditorView.updateListener.of(update => { if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(getCM(update.view)?.state?.vim?.insertMode) openMenuAfterInput(update); persist(); })
+  ]});
+}
+initBlockMenu($('block-menu'),()=>editor);
+function changeEditor(id) {
+  closeBlockMenu();
+  if (editor) { editorStates.set(state.selected, editor.state); editor.destroy(); }
+  state.selected = id;
+  editor = new EditorView({parent:$('editor'), state:editorStates.get(id) || makeState(current().content)});
+  getCM(editor).on('vim-mode-change', event => {
+    if (event.mode === 'insert') mergeFirstInsert = !!keyStartDoc && editor.state.doc !== keyStartDoc;
+    else mergeFirstInsert = false;
+    const mode = event.mode || 'normal';
+    $('mode').textContent = String(mode).toUpperCase();
+    // Wait for the native input source switch before the next keystroke can
+    // reach the IME; a queued message can race with fast Vim/pinyin input.
+    if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', mode);
+  });
+  $('mode').textContent = 'NORMAL';
+  if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', 'normal');
+  refreshNav(); refreshInsights(); editor.focus();
+}
+function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(); }
+function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(); }
+function deleteNote() {
+  if (!state || !confirm('删除这条笔记？此操作无法撤销。')) return;
+  const deleted = state.selected; const index = state.notes.findIndex(n => n.id === deleted);
+  state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
+  changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist();
+}
+function navigate(direction) { if (!state) return; const index = state.notes.findIndex(n => n.id === state.selected); const next = index + direction; if (next >= 0 && next < state.notes.length) select(state.notes[next].id); }
+function hide() { if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'hide'}); else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1; }
+$('new').onclick = createNote; $('delete').onclick = deleteNote; $('previous').onclick = () => navigate(1); $('next').onclick = () => navigate(-1);
+function refreshInsights() {
+  if (!editor) return;
+  const info=analyzeCurrent(editor.state.doc.toString());
+  $('insights').textContent=info.summary; $('insights').hidden=!info.summary;
+}
+setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)}); refreshInsights();} });
+function scheduleTimer() {
+  const t=state?.timer; const d=timerDisplay(t);
+  const deadline=t && d && !t.paused && !t.done && d.length ? Date.now()+Math.max(0,d.length-d.elapsed)*1000 : 0;
+  window.webkit?.messageHandlers?.quicknote?.postMessage({type:'timer',deadline});
+}
+function applyTimer(command) { state.timer=timerCommand(state.timer,command); persist(); scheduleTimer(); renderTimer(); }
+function renderTimer(forceAdvance=false) {
+  if (!state) return;
+  let t=state.timer; const before=t;
+  if (t && (forceAdvance || !window.webkit?.messageHandlers?.quicknote)) t=advanceTimer(t);
+  if(t!==before) { state.timer=t; persist(); scheduleTimer(); }
+  $('timer').hidden=!t;
+  if(!t)return;
+  $('timer-label').textContent=(t.title ? t.title+' · ' : '')+(t.rest ? (t.phase==='work'?'专注':'休息') : t.duration?'倒计时':'计时');
+  $('timer-value').textContent=timerDisplay(t).text+(t.done?' 完成':'');
+  $('timer-pause').textContent=t.paused?'继续':'暂停'; $('timer-pause').disabled=!!t.done;
+}
+window.timerFinished=()=>renderTimer(true);
+setInterval(renderTimer,1000);
+$('timer-pause').onclick=()=>applyTimer({command:'p'});
+$('timer-reset').onclick=()=>applyTimer({command:'r'});
+$('timer-stop').onclick=()=>applyTimer({command:'s'});
+document.addEventListener('keydown', event => {
+  if (!state || event.isComposing || event.keyCode === 229) return;
+  keyStartDoc = editor?.state.doc;
+  if(blockMenuOpen() && handleBlockMenuKey(event)) {event.preventDefault();event.stopPropagation();return;}
+  if(!blockMenuOpen() && getCM(editor)?.state?.vim?.insertMode && trySlash(event,editor)) {event.preventDefault();event.stopPropagation();return;}
+  if (event.key.toLowerCase() === 'x' && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode && scopeAt(editor.state.doc.toString(),editor.state.doc.lineAt(editor.state.selection.main.head).number)?.mode==='list') {
+    const sel=editor.state.selection.main, line=editor.state.doc.lineAt(sel.head);
+    if (sel.empty && sel.head===line.to && line.text.endsWith('/') && line.number>1 && !/^\s*(?:\/\/|#)/.test(line.text)) {
+      const match=/^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
+      const changes=[{from:line.to-1,to:line.to}];
+      if(match) changes.push({from:line.from+match[1].length+1,to:line.from+match[1].length+2,insert:/[xX]/.test(match[2])?' ':'x'});
+      else changes.push({from:line.from+/^\s*/.exec(line.text)[0].length,insert:'[x] '});
+      event.preventDefault(); event.stopPropagation(); editor.dispatch({changes,userEvent:'input.task.toggle'}); return;
+    }
+  }
+  if (event.key === 'Enter' && !event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey && getCM(editor)?.state?.vim?.insertMode) {
+    const selection=editor.state.selection.main;
+    const line=editor.state.doc.lineAt(selection.head), scope=scopeAt(editor.state.doc.toString(),line.number);
+    if(selection.empty && scope?.kind==='block' && scope.mode!=='code' && line.number===scope.end-1 && !line.text.trim() && scope.end<=editor.state.doc.lines) {
+      const end=editor.state.doc.line(scope.end);
+      event.preventDefault();event.stopPropagation();
+      if(end.to===editor.state.doc.length) editor.dispatch({changes:{from:end.to,insert:'\n'},selection:{anchor:end.to+1},userEvent:'input.block.exit'});
+      else editor.dispatch({selection:{anchor:end.to+1},scrollIntoView:true});
+      return;
+    }
+    if (selection.empty) { const line=editor.state.doc.lineAt(selection.head); if(selection.head===line.to && scopeAt(editor.state.doc.toString(),line.number)?.mode === 'timer') { const command=parseTimer(line.text); if(command) applyTimer(command); } }
+  }
+  if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+    const key = event.key.toLowerCase();
+    if (key === 'c' && editor.state.selection.main.empty) {
+      const doc=editor.state.doc, line=doc.lineAt(editor.state.selection.main.head);
+      const scope=scopeAt(doc.toString(),line.number);
+      if(scope?.mode==='code') {
+        const from=scope.start<doc.lines ? doc.line(scope.start+1).from : doc.length;
+        const to=scope.end<=doc.lines ? doc.line(scope.end).from-1 : doc.length;
+        const content=doc.sliceString(from,Math.max(from,to));
+        const handler=window.webkit?.messageHandlers?.quicknote;
+        if(handler) { event.preventDefault(); event.stopPropagation(); handler.postMessage({type:'copyCode',content}); return; }
+        if(navigator.clipboard?.writeText) { event.preventDefault(); event.stopPropagation(); navigator.clipboard.writeText(content).catch(()=>{}); return; }
+      }
+    }
+    if (key === '/') {
+      event.preventDefault(); event.stopPropagation();
+      const lines = selectedLines(editor.state);
+      const customCode = blockCodeCommentChanges(editor.state);
+      if(customCode) { if(customCode.length) editor.dispatch({changes:customCode,userEvent:'input.comment'}); return; }
+      const inCode = lines.length && lines.every(line => isCodeAt(editor.state, line.from));
+      if (!inCode || !toggleLineComment(editor)) {
+        const changes = commentChanges(editor.state, {includeCode:!!inCode});
+        if (changes.length) editor.dispatch({changes, userEvent:'input.comment'});
+      }
+      return;
+    }
+    if (['n','d','[',']','1'].includes(key)) {
+      event.preventDefault(); event.stopPropagation();
+      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(1); else if (key === ']') navigate(-1); else select(state.notes[0].id);
+      return;
+    }
+  }
+  if (event.key !== 'Escape' || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey || event.repeat) return;
+  const cm = getCM(editor); const vimState = cm?.state?.vim; const input = vimState?.inputState;
+  const pending = !!(cm?.state?.dialog || vimState?.insertMode || vimState?.visualMode || vimState?.exMode || input?.keyBuffer?.length || input?.operator || input?.motion || input?.repeatOverride || input?.registerName);
+  if (!pending) { event.preventDefault(); event.stopPropagation(); hide(); }
+}, true);
+// Vim yanks bypass CodeMirror's clipboard filter, so filter their selected text too.
+const registers=Vim.getRegisterController();
+const originalPushText=registers.pushText;
+registers.pushText=function(name,operator,text,linewise,blockwise) {
+  if(editor && typeof text==='string') text=visibleCopiedText(text,editor.state);
+  return originalPushText.call(this,name,operator,text,linewise,blockwise);
+};
+Vim.defineEx('write', 'w', () => { if (state) persist(); });
+window.focusEditor = () => { if (editor) editor.focus(); };
+window.loadNotesBase64 = value => {
+  try {
+    const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
+    if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error('笔记文件格式无效');
+    if (loaded) state = loaded; else { const n = newNote(); state = {notes:[n],selected:n.id}; }
+    changeEditor(state.selected); renderTimer(true); scheduleTimer(); $('save').textContent = loaded ? '已载入' : '新笔记';
+  } catch (error) { $('save').className='error'; $('save').textContent = '读取失败：'+error.message; }
+};
+if (!window.webkit?.messageHandlers?.quicknote) { const saved = localStorage.getItem('quicknote-test'); window.loadNotesBase64(saved ? btoa(unescape(encodeURIComponent(saved))) : null); }
