@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/languages-4-6d6984?style=flat-square" alt="Four interface languages" />
 </p>
 
-本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。 首次启动时，Inkflit 会按系统语言创建四篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前，并打开欢迎页。
+本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。 首次启动时，Inkflit 会按系统语言创建七篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前，并打开欢迎页。
 
 <p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
 

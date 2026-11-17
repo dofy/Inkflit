@@ -8,7 +8,8 @@ const catalog=Object.fromEntries(await Promise.all(['en','zh-Hans','zh-Hant','ja
 test('every guide language contains usable examples of all feature blocks',()=>{
   assert.deepEqual(Object.keys(catalog).sort(),['en','ja','zh-Hans','zh-Hant'].sort());
   for(const [language,notes] of Object.entries(catalog)) {
-    assert.equal(notes.length,4,language);
+    assert.equal(notes.length,7,language);
+    assert.ok(['@date','⌘⇧F','⌘⇧P','{date#2}'].every(text=>notes.join('\n').includes(text)),`${language}: snippets, search and commands`);
     assert.ok(notes.every(note=>note.startsWith('# ') && note.length>100),language);
     const blocks=notes.flatMap(note=>featureScopes(note));
     assert.deepEqual(blocks.map(scope=>scope.mode).sort(),['list','math','sum','avg','count','code'].sort(),language);

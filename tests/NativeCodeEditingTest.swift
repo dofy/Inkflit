@@ -1139,13 +1139,14 @@ final class NativeCodeEditingTest {
         app.generateOnboarding { [self] error in
             guard error != nil, (try? String(contentsOf: first, encoding: .utf8)) == "external change" else { fail("guide generation overwrote an external change") }
             app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).notes.length") { [self] value, error in
-                guard error == nil, (value as? NSNumber)?.intValue == 4 else { fail("failed guide generation changed the editor") }
+                guard error == nil, (value as? NSNumber)?.intValue == guideCount else { fail("failed guide generation changed the editor") }
                 do { try original.write(to: first, options: .atomic) } catch { fail("could not restore guide fixture") }
                 print("PASS guide regeneration preserves external changes")
                 createOnboardingUserNote()
             }
         }
     }
+    private var guideCount: Int { (try? Onboarding.contents(language: Localization.current).count) ?? 0 }
     private func createOnboardingUserNote() {
         app.web.evaluateJavaScript("window.confirm=()=>true; document.getElementById('new').click()") { [self] _, error in
             guard error == nil else { fail("could not create user note") }
@@ -1156,9 +1157,9 @@ final class NativeCodeEditingTest {
                         do {
                             let snapshot = try NoteFiles.read(app.storageURL.deletingLastPathComponent())
                             // New notes go last; ⌘1 returns to the first guide before deleting the guides.
-                            guard let user = snapshot.notes.last, user.content == "u", snapshot.notes.count == 5 else { fail("user note missing") }
+                            guard let user = snapshot.notes.last, user.content == "u", snapshot.notes.count == guideCount + 1 else { fail("user note missing") }
                             key(18, "1", "1", .command)
-                            later { [self] in deleteGuideNotes(4, user: user) }
+                            later { [self] in deleteGuideNotes(guideCount, user: user) }
                         } catch { fail("could not read user note: \(error)") }
                     }
                 }
@@ -1224,13 +1225,13 @@ final class NativeCodeEditingTest {
     private func regenerateGuides(before users: [StoredNote]) {
         app.showSettings()
         guard let settings = app.settingsController, settings.testGenerateOnboarding() else { fail("guide settings button missing or clipped") }
-        waitForNoteCount(4 + users.count) { [self] in
+        waitForNoteCount(guideCount + users.count) { [self] in
             app.requestFlush { [self] success, _ in
                     guard success else { fail("regenerated guides were not saved") }
                     do {
                         let snapshot = try NoteFiles.read(app.storageURL.deletingLastPathComponent())
                         let guides = try Onboarding.contents(language: Localization.current)
-                        guard snapshot.notes.count == 4 + users.count, Array(snapshot.notes.prefix(4)).map(\.content) == guides,
+                        guard snapshot.notes.count == guides.count + users.count, Array(snapshot.notes.prefix(guides.count)).map(\.content) == guides,
                               Array(snapshot.notes.suffix(users.count)) == users, snapshot.selected == snapshot.notes.first?.id else { fail("regenerated guides were not placed before existing user notes") }
                     } catch { fail("could not inspect regenerated guides: \(error)") }
                     print("PASS guide deletion and regeneration before existing notes")

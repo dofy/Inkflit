@@ -42,3 +42,16 @@ test('Enter after a list keeps an unindented continuation line unindented', asyn
   assert.equal(plan('para\nline|'), null, 'outside lists nothing changes');
   assert.equal(plan('- item\n```\ncode|\n```'), null, 'code is left alone');
 });
+
+test('wrapped list items hang under their text; tasks and code are left alone', async () => {
+  const { listIndentDecorations } = await import('../web/typography.js');
+  const doc = ['- bullet', '  - nested', '12. numbered', '- [ ] task', 'plain', '```', '- in code', '```'].join('\n');
+  const state = EditorState.create({ doc, extensions: [markdown()] });
+  const styled = [];
+  listIndentDecorations(state, [{ from: 0, to: doc.length }]).between(0, doc.length, (from, to, decoration) => { styled.push([state.doc.lineAt(from).text, decoration.spec.attributes.style]); });
+  assert.deepEqual(styled, [
+    ['- bullet', 'text-indent:-2ch;padding-left:calc(6px + 2ch)'],
+    ['  - nested', 'text-indent:-4ch;padding-left:calc(6px + 4ch)'],
+    ['12. numbered', 'text-indent:-4ch;padding-left:calc(6px + 4ch)'],
+  ]);
+});

@@ -21,7 +21,7 @@ A local-first floating note app for macOS, with Markdown, Vim editing, code high
 
 <p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
 
-On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes and opens the welcome note, using the current app language.
+On first launch, Inkflit creates seven guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes and opens the welcome note, using the current app language.
 
 The Mac release is built for Apple Silicon. Run `./scripts/package-release.sh` to create an unsigned-for-distribution DMG; the app is ad hoc signed and not notarized.
 

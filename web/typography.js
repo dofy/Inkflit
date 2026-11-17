@@ -41,3 +41,26 @@ export const noteInlineCode=ViewPlugin.fromClass(class {
     if(update.docChanged || update.viewportChanged || syntaxTree(update.startState)!==syntaxTree(update.state)) this.decorations=inlineCodeDecorations(update.state,update.view.visibleRanges);
   }
 },{decorations:value=>value.decorations});
+
+// Wrapped Markdown list items line up under their text, not under the
+// bullet: a hanging indent as wide as the marker. Task items ("- [ ] ")
+// draw a checkbox in place of their marker and are left as they are.
+const hangingCache = new Map();
+const hanging = width => {
+  if (!hangingCache.has(width)) hangingCache.set(width, Decoration.line({ attributes: { style: `text-indent:-${width}ch;padding-left:calc(6px + ${width}ch)` } }));
+  return hangingCache.get(width);
+};
+export function listIndentDecorations(state, ranges) {
+  const result = [], doc = state.doc;
+  for (const range of ranges) {
+    for (let number = doc.lineAt(range.from).number; number <= doc.lineAt(range.to).number; number++) {
+      const line = doc.line(number), marker = /^(\s*(?:[-*+]|\d+[.)]) )(?!\[[ xX]\])/.exec(line.text);
+      if (marker && !isCodeAt(state, line.from)) result.push(hanging(marker[1].length).range(line.from));
+    }
+  }
+  return Decoration.set(result, true);
+}
+export const noteListIndent = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = listIndentDecorations(view.state, view.visibleRanges); }
+  update(update) { if (update.docChanged || update.viewportChanged) this.decorations = listIndentDecorations(update.state, update.view.visibleRanges); }
+}, { decorations: value => value.decorations });
