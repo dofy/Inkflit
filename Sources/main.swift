@@ -416,7 +416,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func applyWindowAppearance() {
         let appearance = windowAppearance()
-        backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
+        if let window, WindowBlur.isAvailable {
+            backdrop?.isHidden = true
+            WindowBlur.set(window, radius: WindowBlur.radius(forPercent: appearance.blur))
+        } else {
+            // Fallback: a faded effect view only mixes blurred and sharp content.
+            backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: [appearance.theme, appearance.opacity]), let json = String(data: data, encoding: .utf8) else { return }
         web?.evaluateJavaScript("window.setUIAppearance?.(...\(json))", completionHandler: nil)
     }
@@ -1087,6 +1093,28 @@ enum MachineInfo {
     }
 }
 if CommandLine.arguments.dropFirst().contains("--mcp") { InkflitMCP.run(); exit(0) }
+/// Background blur by radius, from the window server: it blurs whatever is
+/// behind the window, the way Terminal and iTerm2 do. NSVisualEffectView has
+/// no radius, and fading it only mixes blurred and sharp content, so text
+/// behind the note stayed readable. The SPI is looked up at run time; when it
+/// is missing the effect view is used instead.
+enum WindowBlur {
+    private typealias MainConnection = @convention(c) () -> Int32
+    private typealias SetRadius = @convention(c) (Int32, UInt32, UInt32) -> Int32
+    private static let functions: (MainConnection, SetRadius)? = {
+        guard let handle = dlopen(nil, RTLD_NOW),
+              let main = dlsym(handle, "CGSMainConnectionID"), let set = dlsym(handle, "CGSSetWindowBackgroundBlurRadius") else { return nil }
+        return (unsafeBitCast(main, to: MainConnection.self), unsafeBitCast(set, to: SetRadius.self))
+    }()
+    static var isAvailable: Bool { functions != nil }
+    /// 0–100 % in Settings maps to a 0–40 point radius.
+    static func radius(forPercent percent: Int) -> Int { Int((Double(max(0, min(100, percent))) * 0.4).rounded()) }
+    static func set(_ window: NSWindow, radius: Int) {
+        guard let (main, set) = functions, window.windowNumber > 0 else { return }
+        _ = set(main(), UInt32(window.windowNumber), UInt32(radius))
+    }
+}
+
 /// macOS shows the accent menu (k → ķ) when a letter is held. In Vim mode a
 /// held key must repeat instead (hold j or k to move), so turn the menu off
 /// for Inkflit while Vim is on; with Vim off the system setting applies again.

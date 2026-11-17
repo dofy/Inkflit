@@ -1548,7 +1548,9 @@ final class NativeCodeEditingTest {
         settings.testSelectSettingsTab(1)
         let saved = app.windowAppearance()
         guard saved.theme == expected.theme && saved.opacity == expected.opacity && saved.blur == expected.blur else { fail("appearance preference mismatch") }
-        guard app.backdrop.isHidden == (expected.blur == 0), abs(app.backdrop.alphaValue - CGFloat(expected.blur) / 100) < 0.001 else { fail("backdrop state mismatch") }
+        // The window server blurs by radius; the effect view is only a fallback.
+        if WindowBlur.isAvailable { guard app.backdrop.isHidden else { fail("effect view should be hidden when the window is blurred by radius") } }
+        else { guard app.backdrop.isHidden == (expected.blur == 0), abs(app.backdrop.alphaValue - CGFloat(expected.blur) / 100) < 0.001 else { fail("backdrop state mismatch") } }
         later { [self] in
             app.web.evaluateJavaScript("[document.documentElement.dataset.uiTheme, document.documentElement.style.getPropertyValue('--ui-opacity'), getComputedStyle(document.querySelector('.app')).backgroundColor, getComputedStyle(document.querySelector('header')).height, getComputedStyle(document.querySelector('.drag-bar')).height]") { [self] value, error in
                 guard error == nil, let values = value as? [String], values.count == 5 else { fail("could not read applied appearance") }
