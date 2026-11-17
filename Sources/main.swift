@@ -363,6 +363,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func updateVimEnabled(_ enabled: Bool) {
         UserDefaults.standard.set(enabled, forKey: "vimEnabled")
+        PressAndHold.apply(vimEnabled: enabled)
         syncVimEnabled()
     }
     func syncVimEnabled() {
@@ -1059,6 +1060,18 @@ enum MachineInfo {
     }
 }
 if CommandLine.arguments.dropFirst().contains("--mcp") { InkflitMCP.run(); exit(0) }
+/// macOS shows the accent menu (k → ķ) when a letter is held. In Vim mode a
+/// held key must repeat instead (hold j or k to move), so turn the menu off
+/// for Inkflit while Vim is on; with Vim off the system setting applies again.
+/// AppKit reads this early, so it is set before the app starts and kept in
+/// step with the Vim setting.
+enum PressAndHold {
+    static func apply(vimEnabled: Bool) {
+        if vimEnabled { UserDefaults.standard.set(false, forKey: "ApplePressAndHoldEnabled") }
+        else { UserDefaults.standard.removeObject(forKey: "ApplePressAndHoldEnabled") }
+    }
+}
+PressAndHold.apply(vimEnabled: UserDefaults.standard.object(forKey: "vimEnabled") as? Bool ?? true)
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
