@@ -652,7 +652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_PLAIN_TEXT_TEST"] == "1" {
             NativeCodeEditingTest.startPlainText(self)
         }
-        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_TEST"] != "1" {
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_DELETE_NOTICES_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_TEST"] != "1" {
             NativeCodeEditingTest.startFileStorage(self)
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] == "1" {
@@ -684,6 +684,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
             NativeCodeEditingTest.startBlockCalculation(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMAND_TEST"] == "1" {
+            NativeCodeEditingTest.startCommandPalette(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_DELETE_NOTICES_TEST"] == "1" {
+            NativeCodeEditingTest.startDeleteNotices(self)
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_VIM_BOUNDARIES_TEST"] == "1" {
             NativeCodeEditingTest.startVimBoundaries(self)
@@ -898,6 +904,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             if rects.count == 5 && width.doubleValue.isFinite && width.doubleValue > 0 {
                 toolbarDrag.buttonRects = rects; toolbarDrag.measuredWidth = width.doubleValue
+            }
+            return
+        }
+        if type == "command", let action = body["action"] as? String {
+            let value = body["value"] as? String ?? ""
+            switch action {
+            case "settings": showSettings()
+            case "toggle-vim": updateVimEnabled(!vimEnabled()); settingsController?.refresh()
+            case "ui-theme":
+                guard UIThemes.all.contains(where: { $0.id == value }) else { return }
+                var appearance = windowAppearance(); appearance.theme = value; updateWindowAppearance(appearance); settingsController?.refresh()
+            case "code-theme": updateCodeTheme(value); settingsController?.refresh()
+            case "indent": updateCodeIndentation(value); settingsController?.refresh()
+            case "language":
+                guard value == "system" || Localization.supported.contains(value) else { return }
+                UserDefaults.standard.set(value, forKey: "language"); syncLanguage()
+                settingsController?.window?.close(); settingsController = nil
+            default: break
             }
             return
         }

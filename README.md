@@ -29,18 +29,21 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | `⌘N` | New note |
 | `⌘[` / `⌘]` | Previous / next note |
 | `⌘1` | Latest note |
-| `⌘D` | Delete the current note after confirmation; restore it from Trash in Settings |
+| `⌘D` | Delete the current note; restore the latest deletion with `⌘U` within 12 seconds or use Trash in Settings |
 | `⌘⇧D` | Delete the current feature block; this can be undone |
 | `⌘K` | Change the current block type |
 | `⌘L` | Choose a code block language |
 | `⌘O` / `⌘⇧O` | Insert an editable line below / above the current text line or feature block |
 | `⌘/` | Toggle comments on the current or selected lines |
 | `⌘⇧F` | Search all current notes |
+| `⌘⇧P` | Open the command palette to search note actions and settings |
 | `Esc` | In Vim mode, leave editing mode, then press again to hide; with Vim off, hide immediately |
 
 Vim mode is enabled by default. Turn it off in Settings → Editing to type directly; `Esc` then hides the window and `⌘Z` / `⌘⇧Z` undo and redo.
 
 Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and does not load vimrc. Undo history is retained per note while the app runs, but not after exit. Normal mode temporarily switches to an ASCII input source and restores the previous input method in insert mode or when the window loses focus. An active IME candidate is cancelled before Esc leaves insert mode.
+
+The command palette accepts command names and keywords. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
 
 ## Feature blocks
 

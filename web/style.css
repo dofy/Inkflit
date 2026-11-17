@@ -54,3 +54,19 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .cm-editor .cm-vim-panel input{min-width:0;color:var(--ui-ink,#302921)!important;caret-color:var(--ui-cursor,#ad4f12)!important;background:transparent!important;font:inherit}
 .cm-editor .cm-vim-panel span[style*="color"]{color:var(--ui-muted,#89796e)!important}
 .cm-editor .cm-searchMatch{background:var(--ui-selection,#f8d7bc)!important;color:var(--ui-ink,#302921)!important;border-radius:2px}
+
+/* Independent undo notices stay above the editor and scroll when many notes are deleted. */
+.delete-notices{position:absolute;z-index:20;right:16px;bottom:16px;width:min(360px,calc(100% - 32px));max-height:45%;overflow:auto;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.delete-notice{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-paper);color:var(--ui-ink)}
+.delete-notice-copy{min-width:0;flex:1}.delete-notice-label{font-size:11px;color:var(--ui-muted)}.delete-notice-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.delete-notice-time{flex:none;color:var(--ui-muted);font-variant-numeric:tabular-nums}.delete-notice-undo{flex:none;color:var(--ui-accent);background:var(--ui-bar);font-weight:600}.delete-notice-undo:hover{background:var(--ui-hover)}
+
+.delete-notice.is-next{border-color:var(--ui-accent);background:var(--ui-bar)}
+.delete-notice.is-next .delete-notice-undo{background:var(--ui-paper)}
+
+/* A compact command surface shares the current accent and material. */
+.command-panel{position:absolute;inset:0;z-index:40;display:flex;justify-content:center;align-items:flex-start;padding:18px 16px;background:rgba(0,0,0,.22)}
+.command-card{width:min(100%,460px);max-height:min(75%,430px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--ui-border);border-radius:11px;background:var(--ui-paper);color:var(--ui-ink);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.command-search{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--ui-border)}.command-prompt{font:600 23px/1 ui-monospace,monospace;color:var(--ui-accent)}
+.command-search input{flex:1;min-width:0;padding:0;border:0;outline:0;background:transparent;color:var(--ui-ink);caret-color:var(--ui-cursor);font:14px -apple-system,BlinkMacSystemFont,sans-serif}.command-search kbd,.command-row kbd{font:11px ui-monospace,monospace;color:var(--ui-muted)}
+.command-results{overflow:auto;padding:5px;min-height:0}.command-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;text-align:left;color:var(--ui-ink)}.command-row[aria-selected=true],.command-row:hover{background:var(--ui-bar)}.command-row-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-row-group{color:var(--ui-muted);font-size:11px}.command-empty{padding:20px 12px;text-align:center;color:var(--ui-muted)}
+.command-footer{display:flex;justify-content:space-between;gap:8px;padding:7px 14px;border-top:1px solid var(--ui-border);font-size:11px;color:var(--ui-muted)}

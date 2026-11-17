@@ -20,6 +20,7 @@ import { classHighlighter, tags } from '@lezer/highlight';
 import { applyCodeTheme } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 import { searchNotes, notePreview } from './note-search.js';
+import { filterCommands } from './command-palette.js';
 
 const $ = id => document.getElementById(id);
 const markdownColors=HighlightStyle.define([
@@ -72,7 +73,10 @@ window.setLanguage = value => {
   }
   $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
   $('search-panel').setAttribute('aria-label',t('搜索笔记')); $('search-input').placeholder=t('搜索所有笔记'); $('search-input').setAttribute('aria-label',t('搜索所有笔记')); $('search-close').setAttribute('aria-label',t('关闭'));
+  $('command-panel').setAttribute('aria-label',t('命令面板'));$('command-input').placeholder=t('搜索命令');$('command-input').setAttribute('aria-label',t('搜索命令'));$('command-hint').textContent=t('选择命令');
+  if(!$('command-panel').hidden)renderCommands();
   document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
+  updateDeleteNotices();
   if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); }
 };
 function refreshNav() {
@@ -127,16 +131,84 @@ function bindVimMode() {
 }
 function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(true); }
 function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(true); }
+const deleteNotices = new Map();
+let deletionQueue=0, deleting=false, deleteOrder=[], placeholderID=null, noticeTimer=null;
+function syncDeleteOrder() {
+  const active=state.notes.map(note=>note.id), available=new Set([...active,...deleteNotices.keys()]);
+  deleteOrder=deleteOrder.filter(id=>available.has(id));
+  for(let i=0;i<active.length;i++) {
+    const id=active[i];if(deleteOrder.includes(id))continue;
+    const next=active.slice(i+1).find(value=>deleteOrder.includes(value));
+    const previous=active.slice(0,i).reverse().find(value=>deleteOrder.includes(value));
+    const at=next ? deleteOrder.indexOf(next) : previous ? deleteOrder.indexOf(previous)+1 : deleteOrder.length;
+    deleteOrder.splice(at,0,id);
+  }
+}
+function updateDeleteNotices() {
+  const now=Date.now();
+  for(const [id,entry] of deleteNotices) {
+    const remaining=Math.max(0,Math.ceil((entry.expires-now)/1000));
+    if(!remaining) {entry.element.remove();deleteNotices.delete(id);continue;}
+    entry.label.textContent=`${t('已删除')} · ${id.slice(0,6)}`;
+    entry.time.textContent=`${remaining}${t('秒')}`;
+    entry.button.setAttribute('aria-label',`${t('恢复')} ${entry.title}`);
+  }
+  const next=[...deleteNotices.keys()].at(-1);
+  for(const [id,entry] of deleteNotices) {
+    const highlighted=id===next;entry.element.classList.toggle('is-next',highlighted);
+    entry.button.textContent=t('恢复')+(highlighted?' ⌘U':'');
+    entry.button.title=highlighted ? '⌘U' : '';
+  }
+  if(!deleteNotices.size && noticeTimer) {clearInterval(noticeTimer);noticeTimer=null;}
+}
+function addDeleteNotice(note, savedEditor, placeholder) {
+  const element=document.createElement('div');element.className='delete-notice';
+  const copy=document.createElement('div');copy.className='delete-notice-copy';
+  const label=document.createElement('div');label.className='delete-notice-label';
+  const title=document.createElement('div');title.className='delete-notice-title';
+  const display=Array.from(notePreview(note.content).trim() || t('空白笔记')).slice(0,80).join(''); title.textContent=display;
+  const time=document.createElement('span');time.className='delete-notice-time';
+  const button=document.createElement('button');button.type='button';button.className='delete-notice-undo';
+  button.addEventListener('mousedown',event=>event.preventDefault());
+  button.addEventListener('click',()=>restoreDeletedNote(note.id));
+  copy.append(label,title);element.append(copy,time,button);$('delete-notices').prepend(element);$('delete-notices').scrollTop=0;
+  deleteNotices.set(note.id,{note,savedEditor,placeholder,title:display,element,label,time,button,expires:Date.now()+12000});
+  if(!noticeTimer)noticeTimer=setInterval(updateDeleteNotices,250);updateDeleteNotices();
+}
+function restoreDeletedNote(id) {
+  const entry=deleteNotices.get(id);if(!entry || entry.expires<=Date.now() || !state)return;
+  if(state.notes.some(note=>note.id===id)) {entry.element.remove();deleteNotices.delete(id);updateDeleteNotices();return;}
+  syncDeleteOrder();
+  const placeholderIndex=entry.placeholder ? state.notes.findIndex(note=>note.id===entry.placeholder && !note.content) : -1;
+  if(placeholderIndex>=0) {state.notes.splice(placeholderIndex,1);if(placeholderID===entry.placeholder)placeholderID=null;}
+  const rank=deleteOrder.indexOf(id), next=deleteOrder.slice(rank+1).find(candidate=>state.notes.some(note=>note.id===candidate));
+  const previous=deleteOrder.slice(0,rank).reverse().find(candidate=>state.notes.some(note=>note.id===candidate));
+  const position=next ? state.notes.findIndex(note=>note.id===next) : previous ? state.notes.findIndex(note=>note.id===previous)+1 : state.notes.length;
+  state.notes.splice(position,0,entry.note);if(entry.savedEditor)editorStates.set(id,entry.savedEditor);
+  changeEditor(id);if(placeholderIndex>=0)editorStates.delete(entry.placeholder);
+  entry.element.remove();deleteNotices.delete(id);updateDeleteNotices();persist(true);
+}
 function deleteNote() {
-  if (!state || !confirm(t('删除这条笔记？可在设置中的回收站恢复。'))) return;
-  const deleted = state.selected;
+  if(!state)return;
+  deletionQueue++;processDeletionQueue();
+}
+function processDeletionQueue() {
+  if(deleting || !state || deletionQueue===0)return;
+  deletionQueue--;deleting=true;
+  const deleted=state.selected;
+  if(state.notes.length===1 && deleted===placeholderID && !current().content) {deletionQueue=0;deleting=false;return;}
   const saveBeforeDelete=()=>persist(true,(ok,revision)=>{
-    if(!ok || !state || state.selected!==deleted)return;
-    if(revision<saveRevision) { saveBeforeDelete(); return; }
-    const index=state.notes.findIndex(n=>n.id===deleted);
-    if(index<0)return;
-    state.notes.splice(index,1); if (!state.notes.length) state.notes.push(newNote());
-    changeEditor(state.notes[Math.min(index,state.notes.length-1)].id); editorStates.delete(deleted); persist(true);
+    if(!ok || !state || state.selected!==deleted) {deletionQueue=0;deleting=false;return;}
+    if(revision<saveRevision) {saveBeforeDelete();return;}
+    const index=state.notes.findIndex(note=>note.id===deleted);
+    if(index<0) {deletionQueue=0;deleting=false;return;}
+    syncDeleteOrder();
+    const [note]=state.notes.splice(index,1);let placeholder=null;
+    if(!state.notes.length) {const empty=newNote();placeholder=placeholderID=empty.id;state.notes.push(empty);}
+    changeEditor(state.notes[Math.min(index,state.notes.length-1)].id);
+    const savedEditor=editorStates.get(deleted);editorStates.delete(deleted);
+    addDeleteNotice(note,savedEditor,placeholder);
+    persist(true,success=>{if(!success)deletionQueue=0;deleting=false;processDeletionQueue();});
   });
   saveBeforeDelete();
 }
@@ -164,6 +236,49 @@ function chooseSearch(index) {
   const from=Math.min(result.at,editor.state.doc.length),to=Math.min(from+result.length,editor.state.doc.length);
   editor.dispatch({selection:{anchor:from,head:to},scrollIntoView:true});editor.focus();
 }
+let commandChoices=[], commandIndex=0;
+function nativeCommand(action,value) { window.webkit?.messageHandlers?.quicknote?.postMessage({type:'command',action,...(value===undefined?{}:{value})}); }
+function availableCommands() {
+  const note=t('笔记'), setting=t('设置');
+  const commands=[
+    {label:t('新建笔记'),group:note,shortcut:'⌘N',aliases:['new create note'],run:createNote},
+    {label:t('搜索笔记'),group:note,shortcut:'⌘⇧F',aliases:['search find note'],run:()=>openSearch()},
+    {label:t('上一条笔记'),group:note,shortcut:'⌘[',aliases:['previous note'],run:()=>navigate(-1)},
+    {label:t('下一条笔记'),group:note,shortcut:'⌘]',aliases:['next note'],run:()=>navigate(1)},
+    {label:t('删除笔记'),group:note,shortcut:'⌘D',aliases:['delete note trash'],run:deleteNote},
+    {label:t('打开设置'),group:setting,shortcut:'⌘,',aliases:['settings preferences'],run:()=>nativeCommand('settings')},
+    {label:t(vimEnabled?'关闭 Vim 模式':'开启 Vim 模式'),group:setting,aliases:['vim mode toggle'],run:()=>nativeCommand('toggle-vim')}
+  ];
+  if(deleteNotices.size)commands.splice(5,0,{label:t('恢复最近删除的笔记'),group:note,shortcut:'⌘U',aliases:['restore undo deleted note'],run:()=>{updateDeleteNotices();const id=[...deleteNotices.keys()].at(-1);if(id)restoreDeletedNote(id);}});
+  for(const [id,label] of [['orange','暖橙'],['blue','海蓝'],['green','鼠尾草']])commands.push({label:`${t('界面主色')}：${t(label)}`,group:setting,aliases:['appearance accent theme color',id],run:()=>nativeCommand('ui-theme',id)});
+  for(const [id,label] of [['amber','琥珀'],['ocean','海蓝'],['contrast','鲜明']])commands.push({label:`${t('代码配色')}：${t(label)}`,group:setting,aliases:['code syntax theme',id],run:()=>nativeCommand('code-theme',id)});
+  for(const [id,label] of [['spaces2','2 个空格'],['spaces4','4 个空格'],['tabs','Tab']])commands.push({label:`${t('代码缩进')}：${t(label)}`,group:setting,aliases:['code indentation indent',id],run:()=>nativeCommand('indent',id)});
+  for(const [id,label] of [['system','跟随系统'],['en','English'],['zh-Hans','简体中文'],['zh-Hant','繁體中文'],['ja','日本語']])commands.push({label:`${t('语言')}：${t(label)}`,group:setting,aliases:['language locale',id],run:()=>nativeCommand('language',id)});
+  return commands;
+}
+function renderCommands() {
+  const list=$('command-results');commandChoices=filterCommands(availableCommands(),$('command-input').value);
+  commandIndex=Math.min(commandIndex,Math.max(0,commandChoices.length-1));list.replaceChildren();
+  if(!commandChoices.length){const empty=document.createElement('div');empty.className='command-empty';empty.textContent=t('没有匹配的命令');list.append(empty);$('command-input').removeAttribute('aria-activedescendant');return;}
+  commandChoices.forEach((command,index)=>{
+    const button=document.createElement('button');button.type='button';button.className='command-row';button.id=`command-option-${index}`;button.setAttribute('role','option');button.setAttribute('aria-selected',String(index===commandIndex));
+    const title=document.createElement('span');title.className='command-row-title';title.textContent=command.label;
+    const group=document.createElement('span');group.className='command-row-group';group.textContent=command.group;
+    button.append(title,group);if(command.shortcut){const shortcut=document.createElement('kbd');shortcut.textContent=command.shortcut;button.append(shortcut);}
+    button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>runCommand(index));list.append(button);
+  });
+  $('command-input').setAttribute('aria-activedescendant',`command-option-${commandIndex}`);
+  list.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'});
+}
+function openCommands() {
+  if(!state)return;closeBlockMenu();closeLanguageMenu();if(!$('search-panel').hidden)closeSearch();
+  $('command-panel').hidden=false;$('command-input').value='';commandIndex=0;renderCommands();$('command-input').focus();
+}
+function closeCommands() { $('command-panel').hidden=true;editor?.focus(); }
+function runCommand(index) {const command=commandChoices[index];if(!command)return;closeCommands();command.run();}
+$('command-input').addEventListener('input',()=>{commandIndex=0;renderCommands();});
+$('command-panel').addEventListener('mousedown',event=>{if(event.target===$('command-panel'))closeCommands();});
+window.openCommands=openCommands;
 window.openNoteSearch=openSearch;
 window.inkflitSelectNote=id=>{if(state?.notes.some(note=>note.id===id)){select(id);return true;}return false;};
 $('search').onclick=()=>openSearch();
@@ -179,6 +294,17 @@ function refreshInsights() {
 setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)}); refreshInsights();} });
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
+  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='p') {event.preventDefault();event.stopPropagation();if(!event.repeat){if($('command-panel').hidden)openCommands();else closeCommands();}return;}
+  if(!$('command-panel').hidden) {
+    if(event.key==='Escape') {event.preventDefault();event.stopPropagation();closeCommands();return;}
+    if(event.key==='ArrowDown'||event.key==='ArrowUp') {event.preventDefault();event.stopPropagation();if(commandChoices.length){commandIndex=(commandIndex+(event.key==='ArrowDown'?1:-1)+commandChoices.length)%commandChoices.length;renderCommands();}return;}
+    if(event.key==='Enter') {event.preventDefault();event.stopPropagation();if(!event.repeat)runCommand(commandIndex);return;}
+    return;
+  }
+  if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='u' && deleteNotices.size) {
+    updateDeleteNotices();const id=[...deleteNotices.keys()].at(-1);
+    if(id) {event.preventDefault();event.stopPropagation();if(!event.repeat)restoreDeletedNote(id);return;}
+  }
   if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='f') { event.preventDefault();event.stopPropagation();openSearch();return; }
   if(!$('search-panel').hidden) {
     if(event.key==='Escape') {event.preventDefault();event.stopPropagation();closeSearch();return;}
@@ -354,9 +480,10 @@ window.inkflitNotesOperation = async request => {
   }
   if(action==='delete') {
     const deleted=note.id, selected=state.selected===deleted, position=state.notes.indexOf(note);
-    state.notes.splice(position,1);if(!state.notes.length)state.notes.push(newNote());
-    if(selected)changeEditor(state.notes[Math.min(position,state.notes.length-1)].id);
-    editorStates.delete(deleted);
+    syncDeleteOrder();state.notes.splice(position,1);let placeholder=null;
+    if(!state.notes.length) {const empty=newNote();placeholder=placeholderID=empty.id;state.notes.push(empty);}
+    if(selected)changeEditor(state.notes[Math.min(position,state.notes.length-1)].id);else refreshNav();
+    const savedEditor=editorStates.get(deleted);editorStates.delete(deleted);addDeleteNotice(note,savedEditor,placeholder);
     await new Promise((resolve,reject)=>persist(true,ok=>ok?resolve():reject(new Error('Save failed; changes remain in the editor'))));
     return {deleted:deleted};
   }

@@ -371,11 +371,11 @@ final class NativeCodeEditingTest {
                                     guard error == nil else { fail("could not set up delete confirmation") }
                                     clickToolbarButton(3); later { [self] in
                                         app.web.evaluateJavaScript("[window.__deleteAsked === true, JSON.parse(window.exportNotesJSON()).notes.length]") { [self] value,error in
-                                            guard error == nil, let result=value as? [Any], result.count==2, result[0] as? Bool == true, result[1] as? Int == 3 else { fail("delete button did not open confirmation") }
+                                            guard error == nil, let result=value as? [Any], result.count==2, result[0] as? Bool == false, result[1] as? Int == 2 else { fail("delete button did not delete without confirmation") }
                                             clickToolbarButton(4); later { [self] in
                                                 app.web.evaluateJavaScript("document.getElementById('search-panel').hidden") { [self] value,error in
                                                     guard error == nil, value as? Bool == false else { fail("search button did not open search") }
-                                                    print("PASS native toolbar mouse clicks, search and delete confirmation"); app.restoreInputSource(); exit(0)
+                                                    print("PASS native toolbar mouse clicks, search and immediate delete"); app.restoreInputSource(); exit(0)
                                                 }
                                             }
                                         }
@@ -475,6 +475,124 @@ final class NativeCodeEditingTest {
                         }
                     }
                 } else { checkCalculation(mode) }
+            }
+        }
+    }
+    static func startCommandPalette(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app);app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testCommandPalette() }
+    }
+    private func testCommandPalette() {
+        key(35,"P","p",[.command,.shift]);later { [self] in
+            app.web.evaluateJavaScript("[document.getElementById('command-panel').hidden,document.activeElement.id,document.querySelectorAll('.command-row').length]") { [self] value,error in
+                guard error == nil, let v=value as? [Any],v[0] as? Bool == false,v[1] as? String == "command-input",(v[2] as? Int ?? 0)>10 else { fail("command palette did not open: \(String(describing:value))") }
+                key(125,"\u{f701}");later { [self] in
+                    app.web.evaluateJavaScript("document.querySelector('.command-row[aria-selected=true]')?.id") { [self] value,error in
+                        guard error == nil,value as? String == "command-option-1" else { fail("command keyboard navigation") }
+                        key(53,"\u{1b}");later { [self] in
+                            guard app.window.isVisible else { fail("command Escape hid window") }
+                            key(35,"P","p",[.command,.shift]);later { [self] in
+                                sequence([{ self.key(9,"v") }, { self.key(34,"i") }, { self.key(46,"m") }, { self.key(36,"\r") }]) { [self] in
+                                    DispatchQueue.main.asyncAfter(deadline:.now()+0.4) { [self] in
+                                        guard !app.vimEnabled(),UserDefaults.standard.object(forKey:"vimEnabled") as? Bool == false else { fail("palette did not persist Vim setting") }
+                                        key(35,"P","p",[.command,.shift]);later { [self] in
+                                            sequence([{ self.key(11,"b") }, { self.key(37,"l") }, { self.key(32,"u") }, { self.key(14,"e") }, { self.key(36,"\r") }]) { [self] in
+                                                DispatchQueue.main.asyncAfter(deadline:.now()+0.4) { [self] in
+                                                    guard app.windowAppearance().theme == "blue" else { fail("palette did not persist theme") }
+                                                    if let path=ProcessInfo.processInfo.environment["INKFLIT_COMMAND_CAPTURE"] {
+                                                        key(35,"P","p",[.command,.shift]);later { [self] in
+                                                            app.web.takeSnapshot(with:nil) { [self] image,_ in
+                                                                if let tiff=image?.tiffRepresentation,let rep=NSBitmapImageRep(data:tiff),let png=rep.representation(using:.png,properties:[:]) { try? png.write(to:URL(fileURLWithPath:path)) }
+                                                                key(53,"\u{1b}");later { [self] in testCommandCreate() }
+                                                            }
+                                                        }
+                                                    } else { testCommandCreate() }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func testCommandCreate() {
+        key(35,"P","p",[.command,.shift]);later { [self] in
+            sequence([{ self.key(45,"n") },{ self.key(14,"e") },{ self.key(13,"w") },{ self.key(36,"\r") }]) { [self] in
+                app.web.evaluateJavaScript("[document.getElementById('command-panel').hidden,JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)]") { [self] value,error in
+                    guard error == nil,let v=value as? [Any],v[0] as? Bool == true,let notes=v[1] as? [String],notes == ["","initial"] else { fail("palette create note: \(String(describing:value))") }
+                    print("PASS command palette search, navigation, settings persistence, Escape and new note")
+                    app.restoreInputSource();exit(0)
+                }
+            }
+        }
+    }
+    static func startDeleteNotices(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app);app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testDeleteNotices() }
+    }
+    private func testDeleteNotices() {
+        app.web.evaluateJavaScript("window.confirm=()=>{window.__deleteAsked=true;return false};true") { [self] _,error in
+            guard error == nil else { fail("could not install confirmation probe") }
+            key(30,"]","]",.command);later { [self] in
+                sequence([{ self.key(34,"i") }, { self.key(7,"x") }, { self.key(53,"\u{1b}") }]) { [self] in
+                key(2,"d","d",.command);key(2,"d","d",.command)
+                DispatchQueue.main.asyncAfter(deadline:.now()+1) { [self] in
+                    app.web.evaluateJavaScript("[window.__deleteAsked===true,JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content),[...document.querySelectorAll('.delete-notice-title')].map(n=>n.textContent),[...document.querySelectorAll('.delete-notice-time')].map(n=>parseInt(n.textContent)),getComputedStyle(document.querySelector('.delete-notice')).boxShadow]") { [self] value,error in
+                        guard error == nil,let v=value as? [Any],v[0] as? Bool == false,let notes=v[1] as? [String],notes == ["alpha"],let titles=v[2] as? [String],Set(titles)==Set(["xbeta","gamma"]),let times=v[3] as? [Int],times.count==2,times.allSatisfy({$0>0 && $0<=12}),v[4] as? String == "none" else { fail("rapid delete notices: \(String(describing:value))") }
+                        if let path=ProcessInfo.processInfo.environment["INKFLIT_DELETE_CAPTURE"] {
+                            app.web.takeSnapshot(with:nil) { image,_ in
+                                guard let tiff=image?.tiffRepresentation,let rep=NSBitmapImageRep(data:tiff),let png=rep.representation(using:.png,properties:[:]) else { return }
+                                try? png.write(to:URL(fileURLWithPath:path))
+                            }
+                        }
+                        do { let snap=try NoteFiles.read(app.storageURL.deletingLastPathComponent());guard snap.notes.map(\.content)==["alpha"] else { fail("rapid deletes not saved") } } catch { fail("cannot read after rapid deletion") }
+                        app.web.evaluateJavaScript("[document.querySelector('.delete-notice.is-next .delete-notice-title')?.textContent,document.querySelectorAll('.delete-notice.is-next').length,document.querySelector('.delete-notice.is-next button')?.textContent]") { [self] value,error in
+                            guard error == nil,let v=value as? [Any],v[0] as? String == "gamma",v[1] as? Int == 1,(v[2] as? String)?.contains("⌘U") == true else { fail("newest notice not highlighted: \(String(describing:value))") }
+                            key(32,"u","u",.command); later { [self] in
+                                app.web.evaluateJavaScript("[JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content),document.querySelector('.delete-notice.is-next .delete-notice-title')?.textContent]") { [self] value,error in
+                                    guard error == nil,let v=value as? [Any],v[0] as? [String] == ["alpha","gamma"],v[1] as? String == "xbeta" else { fail("first shortcut did not restore newest: \(String(describing:value))") }
+                                    key(32,"u","u",.command)
+                                    DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { [self] in
+                                        do { let snap=try NoteFiles.read(app.storageURL.deletingLastPathComponent());guard snap.notes.map(\.content)==["alpha","xbeta","gamma"] else { fail("restored notes lost order or content") } } catch { fail("cannot read restored notes") }
+                                        key(2,"d","d",.command);key(2,"d","d",.command);key(2,"d","d",.command)
+                                        DispatchQueue.main.asyncAfter(deadline:.now()+1) { [self] in
+                                            app.web.evaluateJavaScript("[JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content),document.querySelectorAll('.delete-notice').length]") { [self] value,error in
+                                                guard error == nil, let v=value as? [Any],v[0] as? [String] == [""], v[1] as? Int == 3 else { fail("delete last note placeholder: \(String(describing:value))") }
+                                                app.web.evaluateJavaScript("[...document.querySelectorAll('.delete-notice')].find(n=>n.querySelector('.delete-notice-title').textContent==='alpha').querySelector('button').click()") { [self] _,error in
+                                                    guard error == nil else { fail("could not restore last note") }
+                                                    DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { [self] in
+                                                        do { let snap=try NoteFiles.read(app.storageURL.deletingLastPathComponent());guard snap.notes.map(\.content)==["alpha"] else { fail("placeholder was not removed on restore") } } catch { fail("cannot read last note restore") }
+                                                        DispatchQueue.main.asyncAfter(deadline:.now()+12.5) { [self] in
+                                                            app.web.evaluateJavaScript("document.querySelectorAll('.delete-notice').length") { [self] value,error in
+                                                                guard error == nil, value as? Int == 0 else { fail("delete notices did not expire") }
+                                                                do { let trash=app.storageURL.deletingLastPathComponent().appendingPathComponent("trash");guard (try FileManager.default.contentsOfDirectory(atPath:trash.path)).count>=3 else { fail("expired notes missing from trash") } } catch { fail("cannot inspect trash") }
+                                                                do { try Data("external change".utf8).write(to:NoteFiles.noteURL(app.storageURL.deletingLastPathComponent(),"a"),options:.atomic) } catch { fail("could not create save conflict") }
+                                                                key(2,"d","d",.command)
+                                                                DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { [self] in
+                                                                    app.web.evaluateJavaScript("[JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content),document.querySelectorAll('.delete-notice').length,document.getElementById('save').classList.contains('error')]") { [self] value,error in
+                                                                        guard error == nil,let result=value as? [Any],result[0] as? [String] == ["alpha"],result[1] as? Int == 0,result[2] as? Bool == true else { fail("failed save did not prevent deletion: \(String(describing:value))") }
+                                                                        guard (try? String(contentsOf:NoteFiles.noteURL(app.storageURL.deletingLastPathComponent(),"a"),encoding:.utf8)) == "external change" else { fail("delete overwrote externally modified note") }
+                                                                        print("PASS rapid delete, sequential shortcut undo, individual restore, original order, last note, 12 second expiry and save conflict")
+                                                                        app.restoreInputSource();exit(0)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
             }
         }
     }
