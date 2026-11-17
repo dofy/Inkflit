@@ -5,7 +5,7 @@ import { syntaxTree } from '@codemirror/language';
 import { t, lang } from './i18n.js';
 import { nativeRequest } from './app.js';
 import { isCodeAt } from './comments.js';
-import { matchSnippets, snippetContext } from './snippets.js';
+import { matchSnippets, snippetContext, addSnippetSource, templateSnippet } from './snippets.js';
 
 const currentContext = () => snippetContext({ native: nativeRequest, locale: lang() });
 
@@ -17,6 +17,22 @@ function inCode(state, pos) {
   if (isCodeAt(state, pos)) return true;
   for (let node = syntaxTree(state).resolveInner(pos, 1); node; node = node.parent) if (node.name === 'InlineCode') return true;
   return false;
+}
+
+// User snippets from snippets.json, sent by the app (Settings → Snippets).
+// Each is a template row; rows sharing a trigger form a group and lead the
+// built-in group of the same name.
+let userRows = [];
+addSnippetSource(() => userRows);
+export function setUserSnippets(list) {
+  userRows = (Array.isArray(list) ? list : [])
+    .filter(item => item && /^[a-z][a-z0-9-]*$/.test(item.trigger) && typeof item.content === 'string' && item.content)
+    .map(({ trigger, content }) => {
+      const row = templateSnippet(trigger, content);
+      // Templates may hold clock or network placeholders, so the preview is
+      // asked again after a second.
+      return Object.assign(row, { preview: row.expand, previewTTL: 1000 });
+    });
 }
 
 // "@name" being replaced by a value that is still loading. The range follows
@@ -124,7 +140,8 @@ function renderPreview(completion) {
     describe();
     // One retry while the row is still shown, since the list may stay open.
     const show = retry => cachedPreview(snippet).then(text => {
-      if (text) element.textContent = text;
+      // Multi-line values show their first line.
+      if (text) element.textContent = text.includes('\n') ? `${text.split('\n')[0]} …` : text;
       else if (retry) setTimeout(() => { if (element.isConnected) show(false); }, 1500);
     });
     show(true);

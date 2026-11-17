@@ -15,7 +15,7 @@ export const current = () => app.state.notes.find(note => note.id === app.state.
 export const newNote = () => { const now = new Date().toISOString(); return { id: crypto.randomUUID(), content: '', created: now, updated: now }; };
 
 // The native app's message handler, absent when the page runs in a browser.
-export const nativeHandler = () => window.webkit?.messageHandlers?.quicknote;
+export const nativeHandler = () => window.webkit?.messageHandlers?.inkflit;
 export function nativeCommand(action, value) { nativeHandler()?.postMessage({ type: 'command', action, ...(value === undefined ? {} : { value }) }); }
 
 // Ask the native app for a value. It answers with window.resolveNativeRequest.

@@ -5,7 +5,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { headingDecorations } from '../web/typography.js';
 
 test('Markdown headings get their own levels without changing code or text', () => {
-  const doc = ['# One','## Two','### Three','#### Four','##### Five','###### Six','Setext','===','Other','---','```js','# code','```',':::quicknote code js','# block code',':::end','###not a heading'].join('\n');
+  const doc = ['# One','## Two','### Three','#### Four','##### Five','###### Six','Setext','===','Other','---','```js','# code','```',':::inkflit code js','# block code',':::end','###not a heading'].join('\n');
   const state = EditorState.create({doc, extensions:[markdown()]});
   const actual = [];
   headingDecorations(state, [{from:0,to:doc.length}]).between(0,doc.length,(from,to,decoration) => {
@@ -22,7 +22,7 @@ test('Markdown headings get their own levels without changing code or text', () 
 
 test('inline code gets a chip, fenced and block code do not', async () => {
   const { inlineCodeDecorations } = await import('../web/typography.js');
-  const doc = ['Use `npm ci` and `npm test`.','```js','const a = `x`;','```',':::quicknote code js','`raw`',':::end','plain'].join('\n');
+  const doc = ['Use `npm ci` and `npm test`.','```js','const a = `x`;','```',':::inkflit code js','`raw`',':::end','plain'].join('\n');
   const state = EditorState.create({doc, extensions:[markdown()]});
   const marked = [];
   inlineCodeDecorations(state, [{from:0,to:doc.length}]).between(0,doc.length,(from,to) => { marked.push(doc.slice(from,to)); });

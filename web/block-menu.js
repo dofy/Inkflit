@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { featureScopes, scopeAt } from './features.js';
+import { featureScopes, scopeAt, markerPrefix } from './features.js';
 const items = [
   ['list','block.checklist','block.checklistDetail'],['math','block.math','block.mathDetail'],
   ['sum','block.sum','block.sumDetail'],['avg','block.average','block.averageDetail'],
@@ -109,13 +109,13 @@ function choose(mode) {
       if(current.trigger) changes.push({from:current.from,to:triggerTo});
       anchor=start.from;
     } else {
-      changes.push({from:start.from,to:start.to,insert:`:::quicknote ${mode}`});
+      changes.push({from:start.from,to:start.to,insert:`${markerPrefix} ${mode}`});
       if(current.trigger) changes.push({from:current.from,to:triggerTo});
       anchor=doc.line(scope.start+1).from;
     }
   } else {
-    const insert=`:::quicknote ${mode}\n\n:::end\n`;
-    changes.push({from:current.from,to:triggerTo,insert});anchor=current.from+`:::quicknote ${mode}\n`.length;
+    const insert=`${markerPrefix} ${mode}\n\n:::end\n`;
+    changes.push({from:current.from,to:triggerTo,insert});anchor=current.from+`${markerPrefix} ${mode}\n`.length;
   }
   closeBlockMenu();
   const changeSet=editor.state.changes(changes);

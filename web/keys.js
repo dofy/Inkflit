@@ -24,7 +24,7 @@ const consume = event => { event.preventDefault(); event.stopPropagation(); };
 
 export function hide() {
   if (nativeHandler()) nativeHandler().postMessage({ type: 'hide' });
-  else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1;
+  else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
 }
 
 // ⌘⇧P and ⌘⇧F toggle their palette from anywhere, switching away from the other one.

@@ -37,6 +37,6 @@ window.setLanguage(lang());
 
 // In a plain browser (tests, previews) notes live in localStorage.
 if (!nativeHandler()) {
-  const saved = localStorage.getItem('quicknote-test');
+  const saved = localStorage.getItem('inkflit-test');
   window.loadNotesBase64(saved ? btoa(unescape(encodeURIComponent(saved))) : null);
 }

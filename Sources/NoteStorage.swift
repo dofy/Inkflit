@@ -27,6 +27,16 @@ struct NoteSnapshot: Codable, Equatable {
         guard !notes.isEmpty, ids.allSatisfy({ !$0.isEmpty }), Set(ids).count == ids.count, ids.contains(selected) else { throw NoteStorageError.invalidSnapshot }
     }
 }
+/// A user snippet: typing @trigger offers `content`. Rows may share a trigger,
+/// like macOS text replacements; `content` can span lines and use {date}-style
+/// placeholders. Stored in snippets.json next to the notes.
+struct UserSnippet: Codable, Equatable {
+    var trigger: String
+    var content: String
+    /// Starts with a lowercase letter, then lowercase letters, digits or "-".
+    static func isValidTrigger(_ trigger: String) -> Bool { trigger.range(of: #"^[a-z][a-z0-9-]*$"#, options: .regularExpression) != nil }
+}
+private struct SnippetFile: Codable { var version = 1; var snippets: [UserSnippet] }
 private struct NoteIndex: Codable {
     struct Entry: Codable { var id: String; var created: String?; var updated: String }
     var version = 1
@@ -39,6 +49,19 @@ enum NoteFiles {
     static var lastBackup: [String: Date] = [:]
     static let files = FileManager.default
     static func index(_ directory: URL) -> URL { directory.appendingPathComponent("index.json") }
+    static func snippetsURL(_ directory: URL) -> URL { directory.appendingPathComponent("snippets.json") }
+    /// User snippets, or none when the file does not exist yet.
+    static func readSnippets(_ directory: URL) throws -> [UserSnippet] {
+        let url = snippetsURL(directory)
+        guard files.fileExists(atPath: url.path) else { return [] }
+        let file = try JSONDecoder().decode(SnippetFile.self, from: Data(contentsOf: url))
+        guard file.version == 1 else { throw NoteStorageError.invalidSnapshot }
+        return file.snippets
+    }
+    static func writeSnippets(_ snippets: [UserSnippet], to directory: URL) throws {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try encoder.encode(SnippetFile(snippets: snippets)).write(to: snippetsURL(directory), options: .atomic)
+    }
     static func filename(_ id: String) -> String {
         // UUID ids are normal, but encode arbitrary ids without allowing path traversal.
         Data(id.utf8).base64EncodedString().replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "=", with: "") + ".md"
@@ -68,7 +91,8 @@ enum NoteFiles {
     // Install into an existing user-selected directory without replacing unrelated files.
     static func install(_ stage: URL, in directory: URL) throws {
         let archives = try files.contentsOfDirectory(atPath: stage.path).filter { $0.hasPrefix("index-before-rebuild-") && $0.hasSuffix(".json") }
-        let names = ["notes", "backups", "trash"] + archives + ["index.json"]
+        let snippets = files.fileExists(atPath: stage.appendingPathComponent("snippets.json").path) ? ["snippets.json"] : []
+        let names = ["notes", "backups", "trash"] + archives + snippets + ["index.json"]
         for name in names where files.fileExists(atPath: directory.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
         for name in names { try files.moveItem(at: stage.appendingPathComponent(name), to: directory.appendingPathComponent(name)) }
         try files.removeItem(at: stage)
@@ -87,10 +111,11 @@ enum NoteFiles {
     static func copy(_ snapshot: NoteSnapshot, from source: URL, to destination: URL) throws {
         guard try read(source) == snapshot else { throw NoteStorageError.invalidSnapshot }
         try files.createDirectory(at: destination, withIntermediateDirectories: true)
-        for name in ["notes", "backups", "trash", "index.json"] where files.fileExists(atPath: destination.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
+        for name in ["notes", "backups", "trash", "index.json", "snippets.json"] where files.fileExists(atPath: destination.appendingPathComponent(name).path) { throw NoteStorageError.destinationExists }
         let stage = destination.appendingPathComponent(".inkflit-copy-\(UUID().uuidString)", isDirectory: true)
         try files.createDirectory(at: stage, withIntermediateDirectories: true)
         for name in ["notes", "backups", "trash", "index.json"] { try files.copyItem(at: source.appendingPathComponent(name), to: stage.appendingPathComponent(name)) }
+        if files.fileExists(atPath: snippetsURL(source).path) { try files.copyItem(at: snippetsURL(source), to: snippetsURL(stage)) }
         for name in try files.contentsOfDirectory(atPath: source.path) where name.hasPrefix("index-before-rebuild-") && name.hasSuffix(".json") {
             try files.copyItem(at: source.appendingPathComponent(name), to: stage.appendingPathComponent(name))
         }

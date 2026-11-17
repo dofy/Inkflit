@@ -430,7 +430,7 @@ final class NativeCodeEditingTest {
     private func checkCalculation(_ mode: String) {
         let body="price: 80\nprice * 2 =\n10 km to mi ="
         content { [self] text in
-            expect(text,":::quicknote \(mode)\n\(body)\n:::end","\(mode) preserves block body")
+            expect(text,":::inkflit \(mode)\n\(body)\n:::end","\(mode) preserves block body")
             let styleCheck="""
             (()=>{ const markers=[...document.querySelectorAll('.cm-math-variable')]; if ('\(mode)'!=='math') return markers.length===0; if(markers.length!==2 || markers.some(x=>x.textContent!=='price')) return false; const p=document.createElement('span'); document.body.append(p); let ok=true; for(const theme of ['orange','blue','green']) { window.setUIAppearance(theme,100); p.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ui-button'); if(markers.some(marker=>getComputedStyle(marker).color!==getComputedStyle(p).color || Number(getComputedStyle(marker).fontWeight)<600)) ok=false; } p.remove(); return ok; })()
             """
@@ -465,7 +465,7 @@ final class NativeCodeEditingTest {
             later { [self] in
                 if finish {
                     content { [self] text in
-                        expect(text,":::quicknote math\nprice: 80\nprice * 2 =\n10 km to mi =\n:::end","return to math preserves block body")
+                        expect(text,":::inkflit math\nprice: 80\nprice * 2 =\n10 km to mi =\n:::end","return to math preserves block body")
                         app.web.evaluateJavaScript("[...document.querySelectorAll('.calculation-result')].map(x=>x.textContent.trim())") { [self] value,error in
                             guard error == nil, let results=value as? [String], results.count==2, results[0]=="160", results[1].contains("6.213711922 mi") else { fail("math results after switching back: \(String(describing:value))") }
                             app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
@@ -494,7 +494,53 @@ final class NativeCodeEditingTest {
                     guard error == nil, let list = value as? [[Any]], list.count == 4,
                           list.contains(where: { ($0.last as? String)?.range(of: #"^\d+\.\d+\.\d+\.\d+$"#, options: .regularExpression) != nil }) else { fail("@ip previews missing in the app") }
                     print("PASS native public IP preview")
-                    app.restoreInputSource(); exit(0)
+                    testUserSnippets()
+                }
+            }
+        }
+    }
+    /// Settings → Snippets writes snippets.json and the note window offers the rows.
+    private func testUserSnippets() {
+        key(53,"\u{1b}"); key(53,"\u{1b}")
+        app.showSettings()
+        guard let settings = app.settingsController else { fail("settings missing") }
+        guard settings.testTabCount() == 5 else { fail("settings should have five tabs") }
+        if let directory = ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE_DIR"], !directory.isEmpty {
+            for tab in [SettingsController.Tab.general, .appearance, .edit, .snippets, .data] {
+                settings.select(tab); settings.window?.contentView?.layoutSubtreeIfNeeded(); settings.window?.displayIfNeeded()
+                RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+                // screencapture draws the real window, text and controls included.
+                let capture = Process(); capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                capture.arguments = ["-x", "-o", "-l\(settings.window?.windowNumber ?? 0)", "\(directory)/settings-\(tab.rawValue).png"]
+                try? capture.run(); capture.waitUntilExit()
+            }
+        }
+        settings.select(.snippets)
+        let editor = settings.testSnippetsEditor()
+        guard editor.testIsEditable(), editor.testRows().isEmpty else { fail("snippets editor should start empty") }
+        editor.testAdd(trigger: "addr", content: "Home")
+        editor.testAdd(trigger: "addr", content: "first")
+        editor.testEditSelectedContent("Office\nFloor 3")
+        editor.testAdd(trigger: "Bad trigger", content: "ignored")
+        let directory = app.storageURL.deletingLastPathComponent()
+        guard let saved = try? NoteFiles.readSnippets(directory), saved == [UserSnippet(trigger: "addr", content: "Home"), UserSnippet(trigger: "addr", content: "Office\nFloor 3")] else { fail("snippets.json: \(String(describing: try? NoteFiles.readSnippets(directory)))") }
+        guard editor.testStatus() == L("settings.snippetInvalidTrigger") else { fail("status after saving: \(editor.testStatus())") }
+        print("PASS native snippets settings save")
+        RunLoop.current.run(until: Date().addingTimeInterval(1))
+        let tokens = editor.testPlaceholderTokens()
+        guard tokens.contains("ipv4"), tokens.contains("date#2"), tokens.contains("timesec") else { fail("placeholder menu: \(tokens)") }
+        editor.testAdd(trigger: "ip4", content: "IP ")
+        guard editor.testInsertPlaceholder("ipv4") == "IP {ipv4}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "ip4", content: "IP {ipv4}") else { fail("insert placeholder") }
+        print("PASS native placeholder menu")
+        settings.window?.orderOut(nil); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.5) { [self] in
+            sequence([{ self.key(31,"o") }, { self.key(19,"@","2",.shift) }, { self.key(0,"a") }, { self.key(2,"d") }, { self.key(2,"d") }, { self.key(15,"r") }]) { [self] in
+                DispatchQueue.main.asyncAfter(deadline:.now()+2) { [self] in
+                    app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-tooltip-autocomplete li')].map(li=>li.querySelector('.cm-completionDetail')?.textContent)") { [self] value,error in
+                        guard error == nil, let details = value as? [String], details == ["Home", "Office …"] else { fail("@addr rows: \(String(describing: value))") }
+                        print("PASS native user snippets in the editor")
+                        app.restoreInputSource(); exit(0)
+                    }
                 }
             }
         }
@@ -672,7 +718,7 @@ final class NativeCodeEditingTest {
         } }
     }
     private func testTrailingBlank(_ mode: String) {
-        let original=":::quicknote \(mode)\nfirst\n\n:::end", deleted=":::quicknote \(mode)\nfirst\n:::end"
+        let original=":::inkflit \(mode)\nfirst\n\n:::end", deleted=":::inkflit \(mode)\nfirst\n:::end"
         sequence([{ self.key(38,"j") }, { self.key(2,"d") }, { self.key(2,"d") }]) { [self] in content { [self] text in
             expect(text,deleted,"Vim dd removes trailing empty line in \(mode)")
             key(32,"u"); later { [self] in content { [self] text in
@@ -719,7 +765,7 @@ final class NativeCodeEditingTest {
                                 expect(text,"x","Vim setting survives note switch")
                                 key(30,"]","]",.command); later { [self] in
                                     key(33,"{","[",.shift); later { [self] in content { [self] text in
-                                        expect(text,":::quicknote code json\n{}\n:::end","code pairing with Vim disabled")
+                                        expect(text,":::inkflit code json\n{}\n:::end","code pairing with Vim disabled")
                                         key(33,"[","[",.command); later { [self] in
                                             app.showSettings(); settings.testToggleVim()
                                             guard app.vimEnabled() else { fail("Vim preference not enabled") }
@@ -893,7 +939,7 @@ final class NativeCodeEditingTest {
                 later { [self] in content { [self] text in
                     expect(text, "12", "convert block to plain text")
                     key(32, "u"); later { [self] in content { [self] text in
-                        expect(text, ":::quicknote sum\n12\n:::end", "undo convert to text")
+                        expect(text, ":::inkflit sum\n12\n:::end", "undo convert to text")
                         key(15, "\u{12}", "r", .control); later { [self] in content { [self] text in
                             expect(text, "12", "redo convert to text")
                             sequence([{ self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(44, "/") }]) { [self] in
@@ -924,7 +970,7 @@ final class NativeCodeEditingTest {
                     guard next.contains("plain") && !next.contains("cm-block-header-line") else { fail("arrow down did not reach the next block: \(next)") }
                 sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(0, "A", "a", .shift) }, { self.key(36, "\r") }]) { [self] in
                     content { [self] text in
-                        let expected = ":::quicknote sum\n12\n\n:::end"
+                        let expected = ":::inkflit sum\n12\n\n:::end"
                         expect(text, expected, "Return after nonempty final block line")
                         key(36, "\r"); later { [self] in content { [self] value in
                             expect(value, expected + "\n", "Return on final blank line exits block")
@@ -938,7 +984,7 @@ final class NativeCodeEditingTest {
         }
     }
     private func testCommentGroupVim() {
-        let original = "// first\n// second\n// third\n:::quicknote code js\n// code comment\nconst x = 3;\n:::end\n// after code\n// next\n:::quicknote list\n// inside list\napple\n:::end\n// after list"
+        let original = "// first\n// second\n// third\n:::inkflit code js\n// code comment\nconst x = 3;\n:::end\n// after code\n// next\n:::inkflit list\n// inside list\napple\n:::end\n// after list"
         let changed = original.replacingOccurrences(of: "// second", with: "// secondx")
         sequence([{ self.key(38, "j") }, { self.key(0, "A", "a", .shift) }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
             content { [self] text in
@@ -1415,12 +1461,12 @@ final class NativeCodeEditingTest {
         app.web.evaluateJavaScript("window.focusEditor?.()") { [self] _, _ in
             later { [self] in
                 sequence([{ self.key(34, "i") }, { self.key(33, "{", "[", .shift) }]) { [self] in content { [self] text in
-                    expect(text, ":::quicknote code json\n{}\n:::end", "native brace pair")
+                    expect(text, ":::inkflit code json\n{}\n:::end", "native brace pair")
                     key(36, "\r")
                     later { [self] in content { [self] text in
-                        expect(text, ":::quicknote code json\n{\n\(unit)\n}\n:::end", "native indentation")
+                        expect(text, ":::inkflit code json\n{\n\(unit)\n}\n:::end", "native indentation")
                         sequence([{ self.key(39, "\"", "'", .shift) }, { self.key(40, "k") }, { self.key(14, "e") }, { self.key(16, "y") }, { self.key(39, "\"", "'", .shift) }, { self.key(41, ":", ";", .shift) }, { self.key(49, " ") }, { self.key(18, "1") }]) { [self] in content { [self] text in
-                            completedText = ":::quicknote code json\n{\n\(unit)\"key\": 1\n}\n:::end"
+                            completedText = ":::inkflit code json\n{\n\(unit)\"key\": 1\n}\n:::end"
                             expect(text, completedText, "native quote pair and closer")
                             sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }]) { [self] in content { [self] undone in
                                 if undone == completedText { fail("Vim undo did not change the note") }
@@ -1439,15 +1485,15 @@ final class NativeCodeEditingTest {
     }
     private func testPairDeletionAndTab() {
         sequence([{ self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(33, "[") }, { self.key(51, "\u{7f}") }]) { [self] in content { [self] text in
-            expect(text, ":::quicknote code json\n\n:::end", "native paired backspace")
+            expect(text, ":::inkflit code json\n\n:::end", "native paired backspace")
             key(48, "\t")
             later { [self] in content { [self] text in
-                expect(text, ":::quicknote code json\n\(unit)\n:::end", "native Tab indentation")
+                expect(text, ":::inkflit code json\n\(unit)\n:::end", "native Tab indentation")
                 key(48, "\u{19}", "\t", .shift)
                 later { [self] in content { [self] text in
-                    expect(text, ":::quicknote code json\n\n:::end", "native Shift-Tab outdent")
+                    expect(text, ":::inkflit code json\n\n:::end", "native Shift-Tab outdent")
                     sequence([{ self.key(25, "(", "9", .shift) }, { self.key(29, ")", "0", .shift) }]) { [self] in content { [self] text in
-                        expect(text, ":::quicknote code json\n()\n:::end", "native bracket closer skips existing character")
+                        expect(text, ":::inkflit code json\n()\n:::end", "native bracket closer skips existing character")
                         sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(33, "{", "[", .shift) }]) { [self] in content { [self] text in
                             expect(text, "{", "ordinary text does not auto-pair")
                             sequence([{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(33, "[", "[", .command) }]) { [self] in
@@ -1596,12 +1642,12 @@ final class NativeCodeEditingTest {
         app.showWindow()
         sequence([{ self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }]) { [self] in
             content { [self] text in
-                let original = "// comment\n\n:::quicknote code json\n{}\n:::end"
+                let original = "// comment\n\n:::inkflit code json\n{}\n:::end"
                 expect(text, original, "native block spacing fixture")
                 sequence([{ self.key(5, "g") }, { self.key(5, "g") }, { self.key(2, "d") }, { self.key(2, "d") }]) { [self] in content { [self] text in
-                    expect(text, "\n:::quicknote code json\n{}\n:::end", "Vim delete preceding text line")
+                    expect(text, "\n:::inkflit code json\n{}\n:::end", "Vim delete preceding text line")
                     sequence([{ self.key(2, "d") }, { self.key(2, "d") }]) { [self] in content { [self] text in
-                        expect(text, ":::quicknote code json\n{}\n:::end", "Vim delete blank line before block")
+                        expect(text, ":::inkflit code json\n{}\n:::end", "Vim delete blank line before block")
                         sequence([{ self.key(32, "u") }, { self.key(32, "u") }]) { [self] in content { [self] text in
                             expect(text, original, "Vim undo deleted lines before block")
                             testOpenAroundBlock()
@@ -1612,7 +1658,7 @@ final class NativeCodeEditingTest {
         }
     }
     private func testOpenAroundBlock() {
-        let original = ":::quicknote code json\n{}\n:::end"
+        let original = ":::inkflit code json\n{}\n:::end"
         sequence([{ self.key(30, "]", "]", .command) }, { self.key(31, "O", "o", [.command,.shift]) }, { self.key(0, "a") }]) { [self] in content { [self] text in
             expect(text, "a\n" + original, "Cmd Shift O opens editable text above first block")
             sequence([{ self.key(53, "\u{1b}") }, { self.key(32, "u") }]) { [self] in content { [self] text in
@@ -1642,8 +1688,8 @@ final class NativeCodeEditingTest {
         } }
     }
     private func testListIndentation(alreadySelected: Bool = false) {
-        let original = ":::quicknote list\nroot\n  parent\napple\n[x] done\n- [ ] task\n:::end"
-        let indented = ":::quicknote list\nroot\n  parent\n  apple\n[x] done\n- [ ] task\n:::end"
+        let original = ":::inkflit list\nroot\n  parent\napple\n[x] done\n- [ ] task\n:::end"
+        let indented = ":::inkflit list\nroot\n  parent\n  apple\n[x] done\n- [ ] task\n:::end"
         let start: [() -> Void] = alreadySelected ? [{ self.key(48, "\t") }] : [{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(48, "\t") }]
         sequence(start) { [self] in content { [self] text in
             expect(text, original, "root item cannot indent")
@@ -1656,7 +1702,7 @@ final class NativeCodeEditingTest {
                         sequence([{ self.key(48, "\u{19}", "\t", .shift) }]) { [self] in content { [self] text in
                             expect(text, original, "normal mode Shift Tab outdents checklist item")
                             sequence([{ self.key(34, "i") }, { self.key(48, "\t") }, { self.key(48, "\t") }, { self.key(48, "\t") }]) { [self] in content { [self] text in
-                                expect(text, ":::quicknote list\nroot\n  parent\n    apple\n[x] done\n- [ ] task\n:::end", "nested indentation stops one level below previous item")
+                                expect(text, ":::inkflit list\nroot\n  parent\n    apple\n[x] done\n- [ ] task\n:::end", "nested indentation stops one level below previous item")
                                 app.web.evaluateJavaScript("[...document.querySelectorAll('.task-checkbox')].map(item => item.getBoundingClientRect().left)") { [self] value, error in
                                     guard error == nil, let positions = value as? [Double], positions.count == 5, positions[2] > positions[1] + 5 else { fail("nested checklist checkbox was not rendered at its indentation") }
                                     print("PASS nested checklist checkbox indentation")

@@ -174,19 +174,42 @@ export const snippetContext = (overrides = {}) => ({
   ...overrides,
 });
 
+// The row a template placeholder names:
+//   {date}     the default (first) row of a trigger
+//   {date#2}   the second row of that group
+//   {ipv4}     the row with that alias
+export function placeholderRow(name, rows = allSnippets()) {
+  const [, trigger, position] = /^([a-z][\w-]*)(?:#(\d+))?$/.exec(name) || [];
+  if (!trigger) return null;
+  const group = rows.filter(row => row.trigger === trigger);
+  if (position) return group[Number(position) - 1] ?? null;
+  return group[0] ?? rows.find(row => row.aliases?.includes(trigger)) ?? null;
+}
+
 // Templates let data define snippets: "Meeting {date} {time}" inserts the
-// default row of each trigger in braces. Unknown names stay as written; "{{"
-// is a literal brace. Async rows are awaited.
+// rows named in braces (see placeholderRow). Unknown names stay as written;
+// "{{" is a literal brace. Async rows are awaited.
 export async function expandTemplate(template, context = snippetContext(), rows = allSnippets()) {
-  const first = new Map();
-  for (const row of rows) if (!first.has(row.trigger)) first.set(row.trigger, row);
-  const parts = template.split(/(\{\{|\{[a-z][\w-]*\})/);
+  const parts = template.split(/(\{\{|\{[a-z][\w-]*(?:#\d+)?\})/);
   const values = await Promise.all(parts.map(part => {
     if (part === '{{') return '{';
-    const row = /^\{[a-z][\w-]*\}$/.test(part) && first.get(part.slice(1, -1));
+    const row = part.startsWith('{') && part.endsWith('}') ? placeholderRow(part.slice(1, -1), rows) : null;
     return row ? row.expand(context) : part;
   }));
   return values.join('');
+}
+
+// Every built-in row as a placeholder, for the Settings menu: grouped by
+// trigger, with the shortest way to name it and an example value.
+export function placeholderCatalog(context = snippetContext()) {
+  const positions = new Map();
+  return builtinSnippets.map(row => {
+    const position = (positions.get(row.trigger) || 0) + 1; positions.set(row.trigger, position);
+    const token = position === 1 ? row.trigger : row.aliases?.[0] ?? `${row.trigger}#${position}`;
+    let example = null;
+    if (row.live) { try { example = row.preview(context); } catch {} }
+    return { trigger: row.trigger, token, example, description: row.description ?? null };
+  });
 }
 
 // A row built from a template, the shape user-defined snippets take. While it

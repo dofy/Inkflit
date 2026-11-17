@@ -48,7 +48,7 @@ test('math variable highlights cover only definitions and references in this blo
 test('feature type conversion recalculates from unchanged body',async()=>{
  const {analyzeScopes}=await import('../web/features.js');
  const body='price: 80\nprice * 2 =\n10 km to mi =';
- const doc=mode=>`:::quicknote ${mode}\n${body}\n:::end`;
+ const doc=mode=>`:::inkflit ${mode}\n${body}\n:::end`;
  const math=analyzeScopes(doc('math'))[0];
  assert.equal(math.results.length,2); assert.equal(math.results[0].text,'160');
  assert.match(math.results[1].text,/^6\.213711922 mi$/);
@@ -76,7 +76,7 @@ test('code language names and aliases resolve to their syntax parser',async()=>{
 
 test('independent blocks keep their scope and do not parse markup in code',async()=>{
  const {featureScopes,scopeAt,analyzeScopes}=await import('../web/features.js');
- const text='before\n:::quicknote math\nprice: 2\nprice*3=\n:::end\nbetween\n:::quicknote code javascript\n```math\n2+2=\n```\n:::end\nafter\n:::quicknote sum\n5\n:::end';
+ const text='before\n:::inkflit math\nprice: 2\nprice*3=\n:::end\nbetween\n:::inkflit code javascript\n```math\n2+2=\n```\n:::end\nafter\n:::inkflit sum\n5\n:::end';
  assert.deepEqual(featureScopes(text).map(s=>s.mode),['math','code','sum']);
  assert.equal(scopeAt(text,4).mode,'math'); assert.equal(scopeAt(text,6),null); assert.equal(scopeAt(text,9).mode,'code'); assert.equal(scopeAt(text,12),null);
  assert.equal(analyzeScopes(text)[0].results[0].text,'6'); assert.equal(analyzeScopes(text)[2].summary,'合计 5 · 1 个数');
@@ -85,24 +85,24 @@ test('independent blocks keep their scope and do not parse markup in code',async
 test('feature block markers reject ordinary edits but remain undoable',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');
  const {blockProtection}=await import('../web/block-protection.js');
- const doc=':::quicknote sum\n2+3=\n:::end\n';
+ const doc=':::inkflit sum\n2+3=\n:::end\n';
  const state=EditorState.create({doc,extensions:[blockProtection]});
- const blocked=state.update({changes:{from:15,to:16},annotations:Transaction.userEvent.of('delete')});
+ const blocked=state.update({changes:{from:13,to:14},annotations:Transaction.userEvent.of('delete')});
  assert.equal(blocked.state.doc.toString(),doc);
  const allowed=state.update({changes:{from:doc.indexOf('2'),to:doc.indexOf('2')+1,insert:'4'},annotations:Transaction.userEvent.of('input.type')});
  assert.match(allowed.state.doc.toString(),/4\+3/);
- const change=state.update({changes:{from:0,to:16,insert:':::quicknote math'},annotations:Transaction.userEvent.of('input.block')});
- assert.match(change.state.doc.toString(),/^:::quicknote math/);
+ const change=state.update({changes:{from:0,to:16,insert:':::inkflit math'},annotations:Transaction.userEvent.of('input.block')});
+ assert.match(change.state.doc.toString(),/^:::inkflit math/);
 });
 
 test('Vim line deletion keeps the end marker and remains editable',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');
  const {blockProtection}=await import('../web/block-protection.js');
- const doc=':::quicknote list\nfirst\nlast\n:::end\n';
+ const doc=':::inkflit list\nfirst\nlast\n:::end\n';
  const state=EditorState.create({doc,extensions:[blockProtection]});
  const from=doc.indexOf('last'), to=doc.indexOf(':::end');
  const result=state.update({changes:{from,to},annotations:Transaction.userEvent.of('delete')});
- assert.equal(result.state.doc.toString(),':::quicknote list\nfirst\n\n:::end\n');
+ assert.equal(result.state.doc.toString(),':::inkflit list\nfirst\n\n:::end\n');
 });
 
 test('Vim can delete a trailing blank line without removing block markers',async()=>{
@@ -110,16 +110,16 @@ test('Vim can delete a trailing blank line without removing block markers',async
  const {history,undo,redo}=await import('@codemirror/commands');
  const {blockProtection}=await import('../web/block-protection.js');
  for(const type of ['list','code json']) {
-  const original=`:::quicknote ${type}\nfirst\n\n:::end`;
+  const original=`:::inkflit ${type}\nfirst\n\n:::end`;
   let state=EditorState.create({doc:original,extensions:[history(),blockProtection]});
   const end=original.indexOf(':::end');
   state=state.update({changes:{from:end-1,to:end},annotations:Transaction.userEvent.of('delete')}).state;
-  assert.equal(state.doc.toString(),`:::quicknote ${type}\nfirst\n:::end`);
+  assert.equal(state.doc.toString(),`:::inkflit ${type}\nfirst\n:::end`);
   let next=state; assert.equal(undo({state,dispatch:tr=>next=tr.state}),true); state=next;
   assert.equal(state.doc.toString(),original);
   assert.equal(redo({state,dispatch:tr=>next=tr.state}),true);
-  assert.equal(next.doc.toString(),`:::quicknote ${type}\nfirst\n:::end`);
-  const sole=`:::quicknote ${type}\n\n:::end`, marker=sole.indexOf(':::end');
+  assert.equal(next.doc.toString(),`:::inkflit ${type}\nfirst\n:::end`);
+  const sole=`:::inkflit ${type}\n\n:::end`, marker=sole.indexOf(':::end');
   const empty=EditorState.create({doc:sole,extensions:[blockProtection]});
   assert.equal(empty.update({changes:{from:marker-1,to:marker},annotations:Transaction.userEvent.of('delete')}).state.doc.toString(),sole);
  }
@@ -129,27 +129,27 @@ test('whole lines before a feature block can be removed and undone without joini
  const {EditorState,Transaction}=await import('@codemirror/state');
  const {history,undo}=await import('@codemirror/commands');
  const {blockProtection}=await import('../web/block-protection.js');
- const original='// comment\n\n:::quicknote code json\n{}\n:::end';
+ const original='// comment\n\n:::inkflit code json\n{}\n:::end';
  let state=EditorState.create({doc:original,extensions:[history(),blockProtection]});
- const marker=state.doc.toString().indexOf(':::quicknote');
+ const marker=state.doc.toString().indexOf(':::inkflit');
  state=state.update({changes:{from:0,to:marker},annotations:Transaction.userEvent.of('delete')}).state;
- assert.equal(state.doc.toString(),':::quicknote code json\n{}\n:::end');
+ assert.equal(state.doc.toString(),':::inkflit code json\n{}\n:::end');
  let restored=state; assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true); assert.equal(restored.doc.toString(),original);
- const doc='before\n\n:::quicknote list\nitem\n:::end';
+ const doc='before\n\n:::inkflit list\nitem\n:::end';
  state=EditorState.create({doc,extensions:[blockProtection]});
  state=state.update({changes:{from:7,to:8},annotations:Transaction.userEvent.of('delete')}).state;
- assert.equal(state.doc.toString(),'before\n:::quicknote list\nitem\n:::end');
+ assert.equal(state.doc.toString(),'before\n:::inkflit list\nitem\n:::end');
  const unsafe=state.update({changes:{from:3,to:7},annotations:Transaction.userEvent.of('delete')}).state;
- assert.equal(unsafe.doc.toString(),'bef\n:::quicknote list\nitem\n:::end');
+ assert.equal(unsafe.doc.toString(),'bef\n:::inkflit list\nitem\n:::end');
 });
 
 test('first cursor position and insertions preserve hidden block markers',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');
  const {blockProtection,nearestEditablePosition}=await import('../web/block-protection.js');
- const doc=':::quicknote math\n3+4=\n:::end';
+ const doc=':::inkflit math\n3+4=\n:::end';
  const state=EditorState.create({doc,extensions:[blockProtection]});
  assert.equal(nearestEditablePosition(state.doc,0,0,true),doc.indexOf('3+4'));
- for(const from of [0,16]) {
+ for(const from of [0,14]) {
    const result=state.update({changes:{from,insert:'x'},annotations:Transaction.userEvent.of('input.type')});
    assert.equal(result.state.doc.toString(),doc);
  }
@@ -157,32 +157,32 @@ test('first cursor position and insertions preserve hidden block markers',async(
 
 test('copy excludes only structural markers and keeps code text',async()=>{
  const {EditorState}=await import('@codemirror/state'); const {visibleCopiedText}=await import('../web/block-protection.js');
- const text=':::quicknote list\n苹果\n梨\n:::end\n段落\n```text\n:::end\n```';
+ const text=':::inkflit list\n苹果\n梨\n:::end\n段落\n```text\n:::end\n```';
  const state=EditorState.create({doc:text,selection:{anchor:0,head:text.length}});
  assert.equal(visibleCopiedText(text,state),'苹果\n梨\n段落\n```text\n:::end\n```');
 });
 test('cross-block deletion preserves marker lines and allows undo',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');const {history,undo}=await import('@codemirror/commands');const {blockProtection}=await import('../web/block-protection.js');
- const doc=':::quicknote list\n苹果\n:::end\n中间\n:::quicknote math\n2+3=\n:::end\n结尾';
+ const doc=':::inkflit list\n苹果\n:::end\n中间\n:::inkflit math\n2+3=\n:::end\n结尾';
  let state=EditorState.create({doc,extensions:[history(),blockProtection]});
  state=state.update({changes:{from:doc.indexOf('苹果'),to:doc.indexOf(':::end',doc.indexOf('2+3='))},annotations:Transaction.userEvent.of('delete')}).state;
- assert.equal(state.doc.toString(),':::quicknote list\n\n:::end\n\n:::quicknote math\n\n:::end\n结尾');
+ assert.equal(state.doc.toString(),':::inkflit list\n\n:::end\n\n:::inkflit math\n\n:::end\n结尾');
  let restored=state; assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true); assert.equal(restored.doc.toString(),doc);
 });
 
 
 test('pasting over a cross-block selection replaces text without removing block boundaries',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');const {history,undo}=await import('@codemirror/commands');const {blockProtection}=await import('../web/block-protection.js');
- const doc=':::quicknote list\n苹果\n:::end\n中间\n:::quicknote math\n2+3=\n:::end\n结尾';
+ const doc=':::inkflit list\n苹果\n:::end\n中间\n:::inkflit math\n2+3=\n:::end\n结尾';
  let state=EditorState.create({doc,extensions:[history(),blockProtection]});
  state=state.update({changes:{from:doc.indexOf('苹果'),to:doc.indexOf(':::end',doc.indexOf('2+3=')),insert:'新内容'},annotations:Transaction.userEvent.of('input.paste')}).state;
- assert.equal(state.doc.toString(),':::quicknote list\n新内容\n:::end\n\n:::quicknote math\n\n:::end\n结尾');
+ assert.equal(state.doc.toString(),':::inkflit list\n新内容\n:::end\n\n:::inkflit math\n\n:::end\n结尾');
  let restored=state; assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true); assert.equal(restored.doc.toString(),doc);
 });
 
 test('moving upward into a block lands on the last grapheme',async()=>{
  const {EditorState}=await import('@codemirror/state');const {nearestEditablePosition}=await import('../web/block-protection.js');
- const doc=':::quicknote list\n梨👩‍💻\n:::end\n段落';
+ const doc=':::inkflit list\n梨👩‍💻\n:::end\n段落';
  const state=EditorState.create({doc});const marker=doc.indexOf(':::end');
  assert.equal(nearestEditablePosition(state.doc,marker,doc.length,false),doc.indexOf('👩'));
 });
@@ -190,9 +190,9 @@ test('moving upward into a block lands on the last grapheme',async()=>{
 test('cursor crosses adjacent block markers without landing on a marker',async()=>{
  const {EditorState}=await import('@codemirror/state');
  const {nearestEditablePosition}=await import('../web/block-protection.js');
- const doc=':::quicknote sum\n12\n\n:::end\n:::quicknote list\nfirst\n:::end';
+ const doc=':::inkflit sum\n12\n\n:::end\n:::inkflit list\nfirst\n:::end';
  const state=EditorState.create({doc});
- const second=doc.indexOf(':::quicknote list'), firstEnd=doc.indexOf(':::end');
+ const second=doc.indexOf(':::inkflit list'), firstEnd=doc.indexOf(':::end');
  assert.equal(nearestEditablePosition(state.doc,second,doc.indexOf('first'),false),doc.indexOf('\n\n')+1);
  assert.equal(nearestEditablePosition(state.doc,firstEnd,doc.indexOf('12'),false),doc.indexOf('first'));
 });
@@ -202,15 +202,15 @@ test('delete block shortcut targets one complete block and can be undone',async(
  const {history,undo}=await import('@codemirror/commands');
  const {blockProtection}=await import('../web/block-protection.js');
  const {deleteCurrentBlock}=await import('../web/block-menu.js');
- const doc='before\n:::quicknote list\napple\n:::end\n:::quicknote math\n2+3=\n:::end\nafter';
+ const doc='before\n:::inkflit list\napple\n:::end\n:::inkflit math\n2+3=\n:::end\nafter';
  let state=EditorState.create({doc,selection:{anchor:doc.indexOf('apple')},extensions:[history(),blockProtection]});
  const view={get state(){return state},dispatch:spec=>{state=state.update(spec).state},focus(){}};
  assert.equal(deleteCurrentBlock(view),true);
- assert.equal(state.doc.toString(),'before\n:::quicknote math\n2+3=\n:::end\nafter');
+ assert.equal(state.doc.toString(),'before\n:::inkflit math\n2+3=\n:::end\nafter');
  let restored=state;assert.equal(undo({state,dispatch:tr=>restored=tr.state}),true);assert.equal(restored.doc.toString(),doc);
  state=EditorState.create({doc,selection:{anchor:0},extensions:[history(),blockProtection]});
  assert.equal(deleteCurrentBlock(view),false);assert.equal(state.doc.toString(),doc);
- const broken=':::quicknote list\nunfinished';
+ const broken=':::inkflit list\nunfinished';
  state=EditorState.create({doc:broken,selection:{anchor:broken.length},extensions:[history(),blockProtection]});
  assert.equal(deleteCurrentBlock(view),false);assert.equal(state.doc.toString(),broken);
 });
@@ -218,7 +218,7 @@ test('delete block shortcut targets one complete block and can be undone',async(
 test('block switch shortcut only targets one complete feature block',async()=>{
  const {EditorState}=await import('@codemirror/state');
  const {currentBlockScope}=await import('../web/block-menu.js');
- const doc='plain\n:::quicknote code javascript\nconst a=1;\n:::end\n:::quicknote list\nitem\n:::end\nafter';
+ const doc='plain\n:::inkflit code javascript\nconst a=1;\n:::end\n:::inkflit list\nitem\n:::end\nafter';
  let state=EditorState.create({doc,selection:{anchor:doc.indexOf('const')}});
  assert.equal(currentBlockScope(state).mode,'code');
  state=EditorState.create({doc,selection:{anchor:doc.indexOf('item')}});
@@ -227,7 +227,7 @@ test('block switch shortcut only targets one complete feature block',async()=>{
  assert.equal(currentBlockScope(state),null);
  state=EditorState.create({doc,selection:{anchor:doc.indexOf('const'),head:doc.indexOf('item')+2}});
  assert.equal(currentBlockScope(state),null);
- const unfinished=':::quicknote code\nunfinished';
+ const unfinished=':::inkflit code\nunfinished';
  state=EditorState.create({doc:unfinished,selection:{anchor:unfinished.length}});
  assert.equal(currentBlockScope(state),null);
 });
@@ -238,10 +238,10 @@ test('adjacent text lines can be opened above or below a feature block and undon
  const {blockProtection}=await import('../web/block-protection.js');
  const {planAdjacentBlockLine}=await import('../web/block-menu.js');
  for(const [doc,above,expected,anchor] of [
-   [':::quicknote code json\n{}\n:::end',true,'\n:::quicknote code json\n{}\n:::end',0],
-   [':::quicknote code json\n{}\n:::end',false,':::quicknote code json\n{}\n:::end\n',33],
-   ['before\n:::quicknote list\nitem\n:::end\nafter',true,'before\n\n:::quicknote list\nitem\n:::end\nafter',7],
-   ['before\n:::quicknote list\nitem\n:::end\nafter',false,'before\n:::quicknote list\nitem\n:::end\n\nafter',37]
+   [':::inkflit code json\n{}\n:::end',true,'\n:::inkflit code json\n{}\n:::end',0],
+   [':::inkflit code json\n{}\n:::end',false,':::inkflit code json\n{}\n:::end\n',31],
+   ['before\n:::inkflit list\nitem\n:::end\nafter',true,'before\n\n:::inkflit list\nitem\n:::end\nafter',7],
+   ['before\n:::inkflit list\nitem\n:::end\nafter',false,'before\n:::inkflit list\nitem\n:::end\n\nafter',35]
  ]) {
    let state=EditorState.create({doc,selection:{anchor:doc.indexOf(above && doc.includes('item')?'item':doc.includes('{}')?'{}':'item')},extensions:[history(),blockProtection]});
    const plan=planAdjacentBlockLine(state,above); assert.ok(plan);
@@ -250,9 +250,9 @@ test('adjacent text lines can be opened above or below a feature block and undon
    let next=state;assert.equal(undo({state,dispatch:tr=>next=tr.state}),true);assert.equal(next.doc.toString(),doc);
    state=next;assert.equal(redo({state,dispatch:tr=>next=tr.state}),true);assert.equal(next.doc.toString(),expected);
  }
- const text='outside\n:::quicknote code\nx\n:::end';
+ const text='outside\n:::inkflit code\nx\n:::end';
  let state=EditorState.create({doc:text,selection:{anchor:0}});assert.equal(planAdjacentBlockLine(state,true),null);
- state=EditorState.create({doc:':::quicknote code\nx',selection:{anchor:18}});assert.equal(planAdjacentBlockLine(state,false),null);
+ state=EditorState.create({doc:':::inkflit code\nx',selection:{anchor:16}});assert.equal(planAdjacentBlockLine(state,false),null);
 });
 
 test('open plain text lines above and below without crossing block boundaries',async()=>{
@@ -272,10 +272,10 @@ test('open plain text lines above and below without crossing block boundaries',a
   let next=state;assert.equal(undo({state,dispatch:t=>next=t.state}),true);assert.equal(next.doc.toString(),doc);
   state=next;assert.equal(redo({state,dispatch:t=>next=t.state}),true);assert.equal(next.doc.toString(),expected);
  }
- for(const doc of [':::quicknote code\nx\n:::end','```js\nx\n```',':::quicknote code\nx']) {
+ for(const doc of [':::inkflit code\nx\n:::end','```js\nx\n```',':::inkflit code\nx']) {
   const state=EditorState.create({doc,selection:{anchor:doc.indexOf('x')}});assert.equal(planAdjacentTextLine(state,true),null);
  }
- const doc='first\n:::quicknote list\nitem\n:::end\nlast';
+ const doc='first\n:::inkflit list\nitem\n:::end\nlast';
  assert.equal(planAdjacentTextLine(EditorState.create({doc,selection:{anchor:0,head:doc.length}}),true),null);
 });
 
@@ -283,7 +283,7 @@ test('task cursor skips checkbox marker while preserving code and plain text',as
  const {EditorState}=await import('@codemirror/state');
  const {markdown}=await import('@codemirror/lang-markdown');
  const {taskContentPosition}=await import('../web/tasks.js');
- const doc=':::quicknote list\n[x] finished\n[ ] open\n:::end\n```\n[x] code\n```';
+ const doc=':::inkflit list\n[x] finished\n[ ] open\n:::end\n```\n[x] code\n```';
  const state=EditorState.create({doc,extensions:[markdown()]});
  const finished=doc.indexOf('[x]'), open=doc.indexOf('[ ]'), code=doc.lastIndexOf('[x]');
  assert.equal(taskContentPosition(state,finished),finished+4);
@@ -293,3 +293,4 @@ test('task cursor skips checkbox marker while preserving code and plain text',as
 });
 import { setLanguage } from '../web/i18n.js';
 setLanguage('zh-Hans');
+

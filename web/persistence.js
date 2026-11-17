@@ -12,7 +12,7 @@ export function persist(force = false, onResult = null) {
   const revision = ++saveRevision, json = JSON.stringify(app.state);
   if (onResult) saveCallbacks.set(revision, onResult);
   if (nativeHandler()) nativeHandler().postMessage({ type: 'save', json, revision, force });
-  else { try { localStorage.setItem('quicknote-test', json); saveResult(true, null, revision); } catch (error) { saveResult(false, error.message, revision); } }
+  else { try { localStorage.setItem('inkflit-test', json); saveResult(true, null, revision); } catch (error) { saveResult(false, error.message, revision); } }
 }
 
 export function saveResult(ok, error, revision) {

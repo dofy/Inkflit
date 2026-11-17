@@ -15,11 +15,11 @@ test('search treats query as literal, including regex punctuation',()=>{
   assert.deepEqual(searchNotes(notes,'(USD)').map(x=>x.id),['1']);
 });
 test('search and previews exclude hidden feature markers but include their content',()=>{
-  const note={id:'1',content:':::quicknote code javascript\nconst code = 2;\n:::end\nbody'};
+  const note={id:'1',content:':::inkflit code javascript\nconst code = 2;\n:::end\nbody'};
   assert.equal(notePreview(note.content),'const code = 2;');
-  assert.deepEqual(searchNotes([note],'quicknote'),[]);
+  assert.deepEqual(searchNotes([note],'inkflit'),[]);
   const match=searchNotes([note],'code')[0];
   assert.equal(note.content.slice(match.at,match.at+match.length),'code');
   assert.ok(match.at>note.content.indexOf('\n'));
-  assert.equal(notePreview(':::quicknote list\n\n:::end'),'');
+  assert.equal(notePreview(':::inkflit list\n\n:::end'),'');
 });

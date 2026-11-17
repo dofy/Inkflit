@@ -45,7 +45,7 @@ test('fallback comments an unknown code block without touching its fences', () =
 
 test('comments inside a Python feature block use the language syntax', async () => {
   const {blockCodeCommentChanges, isCodeAt}=await import('../web/comments.js');
-  const doc=':::quicknote code python\n  print(1)\n:::end';
+  const doc=':::inkflit code python\n  print(1)\n:::end';
   const state=docState(doc,doc.indexOf('print'));
   assert.equal(isCodeAt(state,doc.indexOf('print')),true);
   assert.deepEqual(blockCodeCommentChanges(state),[{from:doc.indexOf('print'),insert:'# '}]);

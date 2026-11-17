@@ -4,7 +4,7 @@ import { EditorState } from '@codemirror/state';
 import { planCodeEdit, normalizeIndentation } from '../web/code-editing.js';
 
 function inBlock(text, offset=text.length, language='javascript') {
-  const prefix=`:::quicknote code ${language}\n`;
+  const prefix=`:::inkflit code ${language}\n`;
   return EditorState.create({doc:prefix+text+'\n:::end',selection:{anchor:prefix.length+offset}});
 }
 function apply(state,key,indentation='spaces2') {

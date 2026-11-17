@@ -605,6 +605,78 @@
     "zh-Hant": "重新產生引導筆記",
     "ja": "ガイドノートを再作成"
   },
+  "settings.data": {
+    "en": "Data",
+    "zh-Hans": "数据",
+    "zh-Hant": "資料",
+    "ja": "データ"
+  },
+  "settings.snippets": {
+    "en": "Snippets",
+    "zh-Hans": "片段",
+    "zh-Hant": "片段",
+    "ja": "スニペット"
+  },
+  "settings.snippetsDetail": {
+    "en": "Type @ and a trigger to insert it",
+    "zh-Hans": "输入 @ 加触发词即可插入",
+    "zh-Hant": "輸入 @ 加觸發詞即可插入",
+    "ja": "@ とトリガーで挿入"
+  },
+  "settings.snippetsHint": {
+    "en": "Rows with the same trigger form a group; the first is inserted by default. Content can span lines and use placeholders: {date} inserts the default date, {date#2} the second format, {ipv4} a named one. Use Insert placeholder to pick one.",
+    "zh-Hans": "触发词相同的几行组成一组，默认插入第一行。内容可以多行，也可以用占位符：{date} 插入默认日期，{date#2} 插入第二种格式，{ipv4} 这样的别名插入指定格式。用“插入占位符”选择即可。",
+    "zh-Hant": "觸發詞相同的幾行組成一組，預設插入第一行。內容可以多行，也可以用預留位置：{date} 插入預設日期，{date#2} 插入第二種格式，{ipv4} 這樣的別名插入指定格式。用「插入預留位置」選擇即可。",
+    "ja": "同じトリガーの行はグループになり、既定では最初の行が挿入されます。内容は複数行にでき、プレースホルダも使えます：{date} は既定の日付、{date#2} は 2 番目の形式、{ipv4} のような別名はその形式を挿入します。「プレースホルダを挿入」から選べます。"
+  },
+  "settings.snippetTrigger": {
+    "en": "Trigger",
+    "zh-Hans": "触发词",
+    "zh-Hant": "觸發詞",
+    "ja": "トリガー"
+  },
+  "settings.snippetContent": {
+    "en": "Content",
+    "zh-Hans": "内容",
+    "zh-Hant": "內容",
+    "ja": "内容"
+  },
+  "settings.snippetAdd": {
+    "en": "Add snippet",
+    "zh-Hans": "添加片段",
+    "zh-Hant": "新增片段",
+    "ja": "スニペットを追加"
+  },
+  "settings.snippetRemove": {
+    "en": "Remove snippet",
+    "zh-Hans": "删除片段",
+    "zh-Hant": "刪除片段",
+    "ja": "スニペットを削除"
+  },
+  "settings.snippetsEmpty": {
+    "en": "No snippets yet. Click + to add one.",
+    "zh-Hans": "还没有片段，点 + 添加。",
+    "zh-Hant": "還沒有片段，點 + 新增。",
+    "ja": "スニペットはまだありません。+ で追加します。"
+  },
+  "settings.snippetInvalidTrigger": {
+    "en": "Triggers start with a lowercase letter and use lowercase letters, digits or -. Rows with other triggers are not saved.",
+    "zh-Hans": "触发词以小写字母开头，只能包含小写字母、数字或 -。其他触发词的行不会保存。",
+    "zh-Hant": "觸發詞以小寫字母開頭，只能包含小寫字母、數字或 -。其他觸發詞的列不會儲存。",
+    "ja": "トリガーは小文字で始め、小文字・数字・- だけを使います。それ以外の行は保存されません。"
+  },
+  "settings.snippetsUnreadable": {
+    "en": "snippets.json could not be read and was left unchanged: ",
+    "zh-Hans": "无法读取 snippets.json，文件未改动：",
+    "zh-Hant": "無法讀取 snippets.json，檔案未變更：",
+    "ja": "snippets.json を読み込めないため変更していません："
+  },
+  "palette.manageSnippets": {
+    "en": "Manage snippets",
+    "zh-Hans": "管理片段",
+    "zh-Hant": "管理片段",
+    "ja": "スニペットを管理"
+  },
   "settings.vimMode": {
     "en": "Vim Mode",
     "zh-Hans": "Vim 模式",
@@ -1174,5 +1246,11 @@
     "zh-Hans": "操作已完成，但无法返回结果。",
     "zh-Hant": "操作已完成，但無法回傳結果。",
     "ja": "操作は完了しましたが、結果を返せませんでした。"
+  },
+  "settings.insertPlaceholder": {
+    "en": "Insert placeholder",
+    "zh-Hans": "插入占位符",
+    "zh-Hant": "插入預留位置",
+    "ja": "プレースホルダを挿入"
   }
 }

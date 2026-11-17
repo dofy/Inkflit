@@ -76,6 +76,7 @@ function availableCommands() {
     { label: t('settings.backgroundBlur'), group: setting, aliases: ['background blur'], children: percent('blur', [0, 20, 40, 60, 80, 100], 0, 100) },
     { label: t('settings.automaticBackups'), group: setting, aliases: ['automatic backup versions'], children: backups },
     { label: t('settings.launchAtLogin'), group: setting, aliases: ['launch at login startup'], children: choices('login', [['on', 'palette.on'], ['off', 'settings.off']]) },
+    { label: t('palette.manageSnippets'), group: setting, aliases: ['snippets text replacement @'], run: () => nativeCommand('snippets') },
     { label: t('settings.restoreGuideNotes'), group: setting, aliases: ['restore guide notes onboarding'], run: () => nativeCommand('onboarding') },
     { label: t('settings.openHelp'), group: setting, aliases: ['help guide documentation'], run: () => nativeCommand('help') }
   );

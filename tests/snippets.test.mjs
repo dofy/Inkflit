@@ -101,10 +101,23 @@ test('user rows lead their group, like several "addr" replacements', async () =>
   assert.equal(matchSnippets('date').filter(({ row }) => row.trigger === 'date').length, 5);
 });
 
-test('templates expand default rows and keep the rest', async () => {
-  const context = snippetContext({ now });
+test('templates name a default row, a numbered row or an alias', async () => {
+  const context = snippetContext({ now, fetch: async url => ({ ok: true, text: async () => url.includes('api64') ? '2001:db8::64' : url.includes('api6') ? '2001:db8::1' : '203.0.113.7' }) });
   assert.equal(await expandTemplate('Meeting {date} at {time}', context), 'Meeting 2026-11-18 at 09:05');
-  assert.equal(await expandTemplate('{unknown} {{date} {{', context), '{unknown} {date} {');
+  assert.equal(await expandTemplate('{date#2} {date#3} {timesec}', context), '2026/11/18 20261118 09:05:30');
+  assert.equal(await expandTemplate('{ip} / {ipv4} / {ipv6}', context), '2001:db8::64 / 203.0.113.7 / 2001:db8::1');
+  assert.equal(await expandTemplate('{unknown} {date#9} {{date} {{', context), '{unknown} {date#9} {date} {');
+});
+
+test('the placeholder catalog names every built-in row', async () => {
+  const { placeholderCatalog, placeholderRow } = await import('../web/snippets.js');
+  const catalog = placeholderCatalog(snippetContext({ now }));
+  assert.equal(catalog.length, builtinSnippets.length);
+  assert.deepEqual(catalog.filter(item => item.trigger === 'ip').map(item => item.token), ['ip', 'ipv4', 'ipv6', 'localip']);
+  assert.deepEqual(catalog.filter(item => item.trigger === 'date').map(item => item.token), ['date', 'date#2', 'date#3', 'date#4', 'date#5']);
+  assert.equal(catalog.find(item => item.token === 'timesec').example, '09:05:30');
+  for (const item of catalog) assert.ok(placeholderRow(item.token), `${item.token} resolves`);
+  assert.equal(new Set(catalog.map(item => item.token)).size, catalog.length, 'tokens are unique');
 });
 
 test('the list appears after @ only outside code and words', () => {
@@ -120,7 +133,7 @@ test('the list appears after @ only outside code and words', () => {
   assert.equal(labels('mail me@da|'), null);
   assert.equal(labels('`@da|`'), null);
   assert.equal(labels('```js\n@da|\n```'), null);
-  assert.equal(labels(':::quicknote code js\n@da|\n:::end'), null);
+  assert.equal(labels(':::inkflit code js\n@da|\n:::end'), null);
   assert.equal(labels('@xyz|'), null);
 });
 
@@ -133,4 +146,18 @@ test('a loading snippet keeps following its text through edits', async () => {
   assert.deepEqual([state.field(pending).get(id).from, state.field(pending).get(id).to], [5, 8]);
   state = state.update({ changes: { from: 6, to: 8, insert: 'ipv4' } }).state;
   assert.equal(state.field(pending).has(id), false, 'edited text is no longer replaced');
+});
+
+test('user snippets from the app join and lead their groups', async () => {
+  const { setUserSnippets } = await import('../web/snippet-completion.js');
+  setUserSnippets([{ trigger: 'addr', content: 'Home\nStreet 1' }, { trigger: 'addr', content: 'Office' }, { trigger: 'date', content: 'Today: {date}' }, { trigger: 'Bad', content: 'x' }, { trigger: 'empty', content: '' }]);
+  try {
+    const context = snippetContext({ now });
+    assert.deepEqual(await Promise.all(matchSnippets('addr').map(({ row }) => row.expand(context))), ['Home\nStreet 1', 'Office']);
+    assert.equal(await matchSnippets('date')[0].row.expand(context), 'Today: 2026-11-18');
+    assert.equal(matchSnippets('bad').length, 0, 'invalid triggers are ignored');
+    assert.equal(matchSnippets('empty').length, 0, 'empty content is ignored');
+    assert.ok(matchSnippets('addr')[0].row.previewTTL, 'user rows are previewed');
+  } finally { setUserSnippets([]); }
+  assert.equal(matchSnippets('addr').length, 0);
 });

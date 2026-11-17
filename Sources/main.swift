@@ -96,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var settingsController: SettingsController?
     var reopenLanguageSettings = false
     var activationObserver: NSObjectProtocol?
-    let isolatedTest = ProcessInfo.processInfo.environment["QUICKNOTE_ISOLATED_TEST"] == "1"
+    let isolatedTest = ProcessInfo.processInfo.environment["INKFLIT_ISOLATED_TEST"] == "1"
     var usesNoteFiles: Bool {
         #if INKFLIT_NATIVE_TEST
         return !isolatedTest || ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1"
@@ -137,11 +137,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if !isolatedTest, Bundle.main.bundleIdentifier == "xyz.phpz.app.inkflit" {
-            let defaults = UserDefaults.standard
-            DefaultsMigration.migrate(defaults: defaults, destinationDomain: "xyz.phpz.app.inkflit",
-                legacy: defaults.persistentDomain(forName: DefaultsMigration.legacyBundleID))
-        }
         NSApp.setActivationPolicy(.accessory)
         #if INKFLIT_NATIVE_TEST
         if isolatedTest, let appearance = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"] {
@@ -176,7 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         windowMenu.addItem(withTitle: L("app.closeWindow"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         windowRoot.submenu = windowMenu; mainMenu.addItem(windowRoot); NSApp.mainMenu = mainMenu
         let config = WKWebViewConfiguration()
-        config.userContentController.add(self, name: "quicknote")
+        config.userContentController.add(self, name: "inkflit")
         web = DragWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self; web.uiDelegate = self
         web.underPageBackgroundColor = .clear
@@ -238,10 +233,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             else if handlerStatus != noErr || !registerHotKey(code: hotKeyCode, modifiers: hotKeyModifiers) { reportHotKeyFailure() }
         }
         showWindow()
-        if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_SETTINGS"] == "1" { showSettings() }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_SETTINGS"] == "1" { showSettings() }
     }
     func configureStorage() {
-        if let override = ProcessInfo.processInfo.environment["QUICKNOTE_DATA_PATH"] {
+        if let override = ProcessInfo.processInfo.environment["INKFLIT_DATA_PATH"] {
             storageURL = URL(fileURLWithPath: override)
             requireExistingStorage = usesNoteFiles && FileManager.default.fileExists(atPath: storageURL.path)
             return
@@ -251,6 +246,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Inkflit", isDirectory: true)
         storageURL = NoteFiles.index(directory)
         requireExistingStorage = defaults.string(forKey: "notesDirectory") != nil || FileManager.default.fileExists(atPath: storageURL.path)
+    }
+    /// User snippets live in snippets.json next to the notes. A file that
+    /// cannot be read throws, so Settings never saves over it with an empty list.
+    func userSnippets() throws -> [UserSnippet] { try NoteFiles.readSnippets(storageURL.deletingLastPathComponent()) }
+    func saveUserSnippets(_ snippets: [UserSnippet]) -> String? {
+        do { try NoteFiles.writeSnippets(snippets, to: storageURL.deletingLastPathComponent()); syncUserSnippets(snippets); return nil }
+        catch { return error.localizedDescription }
+    }
+    func syncUserSnippets(_ snippets: [UserSnippet]? = nil) {
+        guard let list = snippets ?? (try? userSnippets()), let data = try? JSONEncoder().encode(list), let text = String(data: data, encoding: .utf8) else { return }
+        web.evaluateJavaScript("window.setUserSnippets?.(\(text))", completionHandler: nil)
     }
     func changeStorageDirectory(_ directory: URL, completion: @escaping (String?) -> Void) {
         let directory = directory.standardizedFileURL
@@ -273,8 +279,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     try NoteFiles.copy(snapshot, from: source, to: directory)
                 } else if self.requireExistingStorage {
                     throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
-                } else { try NoteFiles.create(snapshot, in: directory) }
+                } else {
+                    try NoteFiles.create(snapshot, in: directory)
+                    if FileManager.default.fileExists(atPath: NoteFiles.snippetsURL(source).path) { try FileManager.default.copyItem(at: NoteFiles.snippetsURL(source), to: NoteFiles.snippetsURL(directory)) }
+                }
                 self.storageURL = destination; self.requireExistingStorage = true
+                self.syncUserSnippets(); self.settingsController?.reloadSnippets()
                 self.loadedSnapshot = snapshot
                 if !self.isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
                 completion(nil)
@@ -425,14 +435,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     @objc func showSettings() {
         hideWindow()
         makeSettingsController()
-        if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
+        if reopenLanguageSettings { settingsController?.select(.general); reopenLanguageSettings = false }
         settingsController?.show()
     }
     func loginItemStatus() -> SMAppService.Status {
-        isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? testLoginStatus : SMAppService.mainApp.status
+        isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_LOGIN_REAL"] != "1" ? testLoginStatus : SMAppService.mainApp.status
     }
     func setLoginItem(_ enabled: Bool) -> String? {
-        if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" { testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_LOGIN_REAL"] != "1" { testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
         do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
         catch { return L("error.loginItem") + error.localizedDescription }
     }
@@ -454,7 +464,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
                 setAppearance: { [weak self] value in self?.updateWindowAppearance(value) },
                 loginStatus: { [weak self] in self?.loginItemStatus() ?? .notFound },
-                setLogin: { [weak self] enabled in self?.setLoginItem(enabled) ?? L("error.settingsUnavailable") })
+                setLogin: { [weak self] enabled in
+                    guard let self else { return L("error.settingsUnavailable") }
+                    return self.setLoginItem(enabled)
+                })
+            settingsController?.loadSnippets = { [weak self] in
+                guard let self else { throw NoteStorageError.invalidSnapshot }
+                return try self.userSnippets()
+            }
+            // nil means saved; only a missing app is reported as an error here.
+            settingsController?.saveSnippets = { [weak self] snippets in
+                guard let self else { return L("error.settingsUnavailable") }
+                return self.saveUserSnippets(snippets)
+            }
+            settingsController?.loadPlaceholders = { [weak self] completion in
+                self?.web.evaluateJavaScript("window.snippetPlaceholders?.()") { value, _ in completion(value as? [[String: Any]] ?? []) }
+            }
             settingsController?.restoreNote = { [weak self] data in
                 guard let self else { return }
                 self.web.evaluateJavaScript("window.restoreNoteBase64('\(data.base64EncodedString())')") { [weak self] _, error in
@@ -582,6 +607,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool { hideWindow(); return false }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        syncUserSnippets()
         syncLanguage()
         syncCodeIndentation()
         syncVimEnabled()
@@ -819,7 +845,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if insertMode { restoreInputSource() } else { useVimInputSource() }
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
-        if prompt == "quicknote-input-mode", let mode = defaultText { setEditorMode(mode); completionHandler(""); return }
+        if prompt == "inkflit-input-mode", let mode = defaultText { setEditorMode(mode); completionHandler(""); return }
         completionHandler(nil)
     }
     private func queueSave(_ data: Data, revision: Int, force: Bool) {
@@ -972,6 +998,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 }
             case "onboarding": generateOnboarding { [weak self] error in if let error { self?.showError(error) } }
             case "help": makeSettingsController(); settingsController?.openHelpWindow()
+            case "snippets": showSettings(); settingsController?.select(.snippets)
             default: break
             }
             return

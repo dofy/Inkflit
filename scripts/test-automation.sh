@@ -6,7 +6,7 @@ qa_dir=$(mktemp -d /tmp/inkflit-auto.XXXXXX)
 qa_app="$qa_dir/Test.app"
 ditto build/Inkflit.app "$qa_app"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.seven.inkflit.auto.$(basename "$qa_dir" | tr -cd '[:alnum:]')" "$qa_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/DefaultsMigration.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$qa_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$qa_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 codesign --force --sign - --timestamp=none "$qa_app"
 python3 - "$qa_app/Contents/MacOS/Inkflit" "$qa_dir" <<'PY'
 import os, sys, json, time, tempfile, subprocess, select, base64, pathlib, signal
@@ -17,7 +17,7 @@ def filename(id): return base64.urlsafe_b64encode(id.encode()).decode().rstrip('
 notes=[{'id':'first','content':'Alpha 中文','updated':'1'},{'id':'second','content':'Beta note','updated':'2'}]
 for n in notes:(store/'notes'/filename(n['id'])).write_text(n['content'])
 (store/'index.json').write_text(json.dumps({'version':1,'notes':[{'id':n['id'],'updated':n['updated']} for n in notes],'selected':'first'}))
-socket=str(root/'bridge.sock');env=os.environ.copy();env.update(QUICKNOTE_ISOLATED_TEST='1',INKFLIT_AUTOMATION_TEST='1',INKFLIT_FILE_STORAGE_TEST='1',QUICKNOTE_DATA_PATH=str(store/'index.json'),INKFLIT_SOCKET_PATH=socket,INKFLIT_AUTOMATION_EDIT_TEST='1',INKFLIT_EDIT_READY_PATH=str(root/'editing-ready'),INKFLIT_HIDDEN_READY_PATH=str(root/'hidden-ready'))
+socket=str(root/'bridge.sock');env=os.environ.copy();env.update(INKFLIT_ISOLATED_TEST='1',INKFLIT_AUTOMATION_TEST='1',INKFLIT_FILE_STORAGE_TEST='1',INKFLIT_DATA_PATH=str(store/'index.json'),INKFLIT_SOCKET_PATH=socket,INKFLIT_AUTOMATION_EDIT_TEST='1',INKFLIT_EDIT_READY_PATH=str(root/'editing-ready'),INKFLIT_HIDDEN_READY_PATH=str(root/'hidden-ready'))
 app=subprocess.Popen([binary],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
 mcp=None
 try:
@@ -137,7 +137,7 @@ for appearance,language in [('light','en'),('dark','zh-Hant')]:
   filename=base64.urlsafe_b64encode(note['id'].encode()).decode().rstrip('=')+'.md'
   (store/'notes'/filename).write_text(note['content'])
  (store/'index.json').write_text(json.dumps({'version':1,'notes':[{'id':n['id'],'updated':n['updated']} for n in notes],'selected':'first'}))
- env=os.environ.copy();env.update(QUICKNOTE_ISOLATED_TEST='1',INKFLIT_AUTOMATION_TEST='1',INKFLIT_AUTOMATION_UI_TEST='1',INKFLIT_TEST_APPEARANCE=appearance,INKFLIT_TEST_UI_LANGUAGE=language,INKFLIT_SEARCH_CAPTURE=str(root/('search-'+appearance+'.png')),INKFLIT_FILE_STORAGE_TEST='1',QUICKNOTE_DATA_PATH=str(store/'index.json'),INKFLIT_SOCKET_PATH=str(root/('ui-'+appearance+'.sock')))
+ env=os.environ.copy();env.update(INKFLIT_ISOLATED_TEST='1',INKFLIT_AUTOMATION_TEST='1',INKFLIT_AUTOMATION_UI_TEST='1',INKFLIT_TEST_APPEARANCE=appearance,INKFLIT_TEST_UI_LANGUAGE=language,INKFLIT_SEARCH_CAPTURE=str(root/('search-'+appearance+'.png')),INKFLIT_FILE_STORAGE_TEST='1',INKFLIT_DATA_PATH=str(store/'index.json'),INKFLIT_SOCKET_PATH=str(root/('ui-'+appearance+'.sock')))
  try: result=subprocess.run([binary],env=env,timeout=20)
  except subprocess.TimeoutExpired: sys.exit('FAIL: native search and scheme test timed out')
  if result.returncode:sys.exit(result.returncode)

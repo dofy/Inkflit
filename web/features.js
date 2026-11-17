@@ -1,3 +1,5 @@
+// Feature blocks are written as ":::inkflit <type>" … ":::end".
+export const markerPrefix = ':::inkflit';
 import { t } from './i18n.js';
 import { create, all } from 'mathjs';
 
@@ -18,7 +20,7 @@ export function featureScopes(text) {
       if(close) { scopes.push({...active,start:active.line,end:i+1,global:false,closed:true}); active=null; }
       continue;
     }
-    const block=/^:::quicknote (list|math|sum|avg|count|code)(?: ([\w+.-]+))?\s*$/.exec(line);
+    const block=/^:::inkflit (list|math|sum|avg|count|code)(?: ([\w+.-]+))?\s*$/.exec(line);
     if(block) { active={kind:'block',mode:block[1],language:block[2]||'',line:i+1}; continue; }
     const open=/^\s*(`{3,}|~{3,})([^`]*)$/.exec(line);
     if(open) {

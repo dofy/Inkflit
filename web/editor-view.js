@@ -4,12 +4,12 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle, syntaxTree } from '@codemirror/language';
 import { classHighlighter, tags } from '@lezer/highlight';
-import { vim, Vim, getCM } from '@replit/codemirror-vim';
+import { vim, Vim, getCM, CodeMirror } from '@replit/codemirror-vim';
 import { app, $, current, nativeHandler } from './app.js';
 import { persist } from './persistence.js';
 import { refreshNav } from './toolbar.js';
 import { codeLanguage } from './code-languages.js';
-import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
+import { blockProtection, nearestEditablePosition, visibleCopiedText, markerRanges } from './block-protection.js';
 import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-menu.js';
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
@@ -98,7 +98,7 @@ function bindVimMode() {
   $('mode').hidden = !app.vimEnabled;
   const cm = getCM(app.editor);
   if (!app.vimEnabled || !cm) {
-    if (nativeHandler()) window.prompt('quicknote-input-mode', 'insert');
+    if (nativeHandler()) window.prompt('inkflit-input-mode', 'insert');
     return;
   }
   cm.on('vim-mode-change', event => {
@@ -108,10 +108,10 @@ function bindVimMode() {
     $('mode').textContent = String(mode).toUpperCase();
     // Wait for the native input source switch before the next keystroke can
     // reach the IME; a queued message can race with fast Vim/pinyin input.
-    if (nativeHandler()) window.prompt('quicknote-input-mode', mode);
+    if (nativeHandler()) window.prompt('inkflit-input-mode', mode);
   });
   $('mode').textContent = 'NORMAL';
-  if (nativeHandler()) window.prompt('quicknote-input-mode', 'normal');
+  if (nativeHandler()) window.prompt('inkflit-input-mode', 'normal');
 }
 
 export function setVimEnabled(value) {
@@ -144,3 +144,21 @@ registers.pushText = function (name, operator, text, linewise, blockwise) {
   return originalPushText.call(this, name, operator, text, linewise, blockwise);
 };
 Vim.defineEx('write', 'w', () => { if (app.state) persist(true); });
+
+// Vim search (/ ? * # n N) skips matches in hidden block marker lines, so
+// "list" is not found inside ":::inkflit list".
+const searchCursor = CodeMirror.prototype.getSearchCursor;
+CodeMirror.prototype.getSearchCursor = function (query, pos) {
+  const cursor = searchCursor.call(this, query, pos), find = cursor.find.bind(cursor);
+  cursor.find = back => {
+    const doc = this.cm6.state.doc, markers = markerRanges(doc);
+    const offset = position => doc.line(position.line + 1).from + position.ch;
+    for (;;) {
+      const found = find(back);
+      if (!found) return found;
+      const from = offset(cursor.from());
+      if (!markers.some(marker => from >= marker.from && from <= marker.to)) return found;
+    }
+  };
+  return cursor;
+};

@@ -9,7 +9,7 @@ import Foundation
         func check(_ condition: Bool) { precondition(condition) }
         let directory = root.appendingPathComponent("notes-root")
         try files.createDirectory(at: directory, withIntermediateDirectories: true)
-        let original = NoteSnapshot(notes: [StoredNote(id: "../危险", content: "# 中文\n:::quicknote code js\n{}\n:::end", updated: "1"), StoredNote(id: "two", content: "second", updated: "2")], selected: "two")
+        let original = NoteSnapshot(notes: [StoredNote(id: "../危险", content: "# 中文\n:::inkflit code js\n{}\n:::end", updated: "1"), StoredNote(id: "two", content: "second", updated: "2")], selected: "two")
         let sentinel = directory.appendingPathComponent("unrelated.txt")
         try Data("untouched".utf8).write(to: sentinel)
         try NoteFiles.create(original, in: directory)
@@ -65,8 +65,15 @@ import Foundation
         var stale = changed; stale.notes[0].content = "stale"
         do { try NoteFiles.copy(stale, from: directory, to: custom); fatalError("stale snapshot must not be copied") } catch NoteStorageError.invalidSnapshot {}
         check(!files.fileExists(atPath: NoteFiles.index(custom).path))
+        // User snippets live next to the notes and move with them.
+        check(try NoteFiles.readSnippets(directory).isEmpty)
+        let snippets = [UserSnippet(trigger: "addr", content: "Home\nStreet 1"), UserSnippet(trigger: "addr", content: "Office"), UserSnippet(trigger: "sig", content: "— {date}")]
+        try NoteFiles.writeSnippets(snippets, to: directory)
+        check(try NoteFiles.readSnippets(directory) == snippets)
+        check(UserSnippet.isValidTrigger("addr") && UserSnippet.isValidTrigger("a-1") && !UserSnippet.isValidTrigger("Addr") && !UserSnippet.isValidTrigger("1a") && !UserSnippet.isValidTrigger("a b") && !UserSnippet.isValidTrigger(""))
         try NoteFiles.copy(changed, from: directory, to: custom)
         check(try NoteFiles.read(custom) == changed)
+        check(try NoteFiles.readSnippets(custom) == snippets)
         let copiedBackup = custom.appendingPathComponent("backups").appendingPathComponent(backupDir.lastPathComponent)
         check(try files.contentsOfDirectory(atPath: copiedBackup.path).count == 4)
         for version in try versions() { check(try Data(contentsOf: version) == Data(contentsOf: copiedBackup.appendingPathComponent(version.lastPathComponent))) }

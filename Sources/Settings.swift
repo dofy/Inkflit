@@ -173,6 +173,15 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let backupCount = NSTextField(string: "20")
     private let backupMessage = NSTextField(wrappingLabelWithString: L("settings.automaticBackupsHint"))
     var restoreNote: ((Data) -> Void)?
+    var loadSnippets: (() throws -> [UserSnippet])?
+    var saveSnippets: (([UserSnippet]) -> String?)?
+    var loadPlaceholders: ((@escaping ([[String: Any]]) -> Void) -> Void)? {
+        didSet { snippetsEditor.loadPlaceholders = loadPlaceholders }
+    }
+    private let snippetsEditor = SnippetsEditor()
+    private var snippetsLoaded = false
+    /// Tabs in order; the raw value is the tab index.
+    enum Tab: Int { case general, appearance, edit, snippets, data }
     var rebuildIndex: (() -> String?)?
     var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
     private let onboardingButton = NSButton(title: L("settings.restoreGuideNotes"), target: nil, action: nil)
@@ -218,7 +227,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         self.getIndentation = getIndentation; self.setIndentation = setIndentation
         self.getTheme = getTheme; self.setTheme = setTheme
         self.getAppearance = getAppearance; self.setAppearance = setAppearance
-        let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 500), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = L("settings.windowTitle"); window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
         window.shortcutField = shortcut
@@ -241,7 +250,9 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     }
     private func section(_ title: String, icon: String, detail: String, controls: NSView, message: NSTextField) -> NSView {
         let heading = label(title, size: 14, weight: .semibold)
-        let subtitle = label(detail, size: 12, color: .secondaryLabelColor)
+        // Wraps to a second line instead of being cut off in longer languages.
+        let subtitle = NSTextField(wrappingLabelWithString: detail); subtitle.font = .systemFont(ofSize: 12); subtitle.textColor = .secondaryLabelColor
+        subtitle.maximumNumberOfLines = 2; subtitle.preferredMaxLayoutWidth = 160
         let textStack = NSStackView(views: [heading, subtitle]); textStack.orientation = .vertical; textStack.alignment = .leading; textStack.spacing = 4
         let symbol = NSImageView(); symbol.image = NSImage(systemSymbolName: icon, accessibilityDescription: nil)
         symbol.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
@@ -348,10 +359,20 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage)
         languagePicker.setAccessibilityLabel(L("settings.language"))
         let languageSection = section(L("settings.language"), icon: "globe", detail: L("settings.languageDetail"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("settings.languageHint")))
-        for (title, content) in [(L("settings.general"), page([loginSection, shortcutSection, storageSection])), (L("settings.appearance"), page([uiThemeSection, opacitySection, blurSection])), (L("app.edit"), page([vimSection, indentSection, themeGroup])), (L("settings.language"), page([languageSection])), (L("settings.backups"), page([backupSection, historySection, trashSection, rebuildSection]))] {
+        snippetsEditor.save = { [weak self] snippets in self?.saveSnippets?(snippets) }
+        let snippetsSection = section(L("settings.snippets"), icon: "text.badge.plus", detail: L("settings.snippetsDetail"), controls: NSView(), message: NSTextField(wrappingLabelWithString: L("settings.snippetsHint")))
+        let pages: [(Tab, String, NSView)] = [
+            (.general, L("settings.general"), page([languageSection, loginSection, shortcutSection])),
+            (.appearance, L("settings.appearance"), page([uiThemeSection, opacitySection, blurSection, themeGroup])),
+            (.edit, L("app.edit"), page([vimSection, indentSection])),
+            (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
+            (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
+        ]
+        for (tab, title, content) in pages {
+            precondition(tab.rawValue == tabs.numberOfTabViewItems, "tabs must be added in Tab order")
             let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
         }
-        tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
+        tabs.heightAnchor.constraint(equalToConstant: 460).isActive = true
         let help = NSButton(title: L("settings.openHelp"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
         onboardingButton.target = self; onboardingButton.action = #selector(onboardingPressed); onboardingButton.bezelStyle = .rounded
         let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
@@ -403,7 +424,14 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         guard let value = languagePicker.selectedItem?.representedObject as? String, value == "system" || Localization.supported.contains(value) else { return }
         UserDefaults.standard.set(value, forKey: "language"); languageChanged?()
     }
-    func selectLanguageTab() { tabs.selectTabViewItem(at: 3) }
+    func select(_ tab: Tab) { tabs.selectTabViewItem(at: tab.rawValue) }
+    /// Loads snippets.json into the editor; on the first show and after the
+    /// notes folder changes, not on every refresh, so edits in progress stay.
+    func reloadSnippets() {
+        guard let loadSnippets else { return }
+        snippetsLoaded = true
+        do { snippetsEditor.load(try loadSnippets()) } catch { snippetsEditor.loadFailed(error.localizedDescription) }
+    }
     @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? L("settings.defaultShortcutRestored") }
     @objc private func loginChanged() {
         let requested = loginSwitch.state == .on
@@ -481,7 +509,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         guard loginSwitch.accentColor == accent, vimSwitch.accentColor == accent,
               symbols.allSatisfy({ $0.contentTintColor == accent }), sliderTicks.count == 2,
               sliderTicks.allSatisfy({ $0.accentColor == accent }),
-              let page = tabs.tabViewItem(at: 1).view else { return false }
+              let page = tabs.tabViewItem(at: Tab.appearance.rawValue).view else { return false }
         page.layoutSubtreeIfNeeded()
         return [opacitySlider, blurSlider].allSatisfy { slider in
             guard let cell = slider.cell as? AccentSliderCell else { return false }
@@ -524,11 +552,19 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         do { try data.write(to: URL(fileURLWithPath: path)); return true } catch { return false }
     }
     func testEditingControlsVisible() -> Bool {
-        guard let page = tabs.tabViewItem(at: 2).view else { return false }
-        page.layoutSubtreeIfNeeded()
-        return [vimSwitch, previewBox].allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
+        // A tab is laid out only while selected, so check each page on its own tab.
+        let selected = tabs.selectedTabViewItem.map { tabs.indexOfTabViewItem($0) } ?? Tab.edit.rawValue
+        defer { tabs.selectTabViewItem(at: selected) }
+        func fits(_ views: [NSView], on tab: Tab) -> Bool {
+            select(tab); window?.contentView?.layoutSubtreeIfNeeded()
+            guard let page = tabs.tabViewItem(at: tab.rawValue).view else { return false }
+            return views.allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
+        }
+        return fits([previewBox], on: .appearance) && fits([vimSwitch, indentation], on: .edit)
     }
     func testToggleVim() { vimSwitch.performClick(nil) }
+    func testSnippetsEditor() -> SnippetsEditor { snippetsEditor }
+    func testTabCount() -> Int { tabs.numberOfTabViewItems }
     func testVimSwitchState() -> Bool { vimSwitch.state == .on }
     func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
     func testGenerateOnboarding() -> Bool {
@@ -539,8 +575,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         onboardingButton.performClick(nil); return true
     }
     func testBackupControls() -> Bool {
-        tabs.selectTabViewItem(at: 4); window?.contentView?.layoutSubtreeIfNeeded()
-        guard let page = tabs.tabViewItem(at: 4).view else { return false }
+        select(.data); window?.contentView?.layoutSubtreeIfNeeded()
+        guard let page = tabs.tabViewItem(at: Tab.data.rawValue).view else { return false }
         for (mode, expected) in [("off", 0), ("unlimited", -1), ("limited", 7)] {
             guard let index = backupMode.itemArray.firstIndex(where: { ($0.representedObject as? String) == mode }) else { return false }
             backupMode.selectItem(at: index); backupCount.integerValue = 7; backupChanged()
@@ -646,6 +682,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     }
     func show() {
         refresh()
+        if !snippetsLoaded { reloadSnippets() }
         #if INKFLIT_NATIVE_TEST
         if let value = ProcessInfo.processInfo.environment["INKFLIT_TEST_TAB"], let index = Int(value), index >= 0, index < tabs.numberOfTabViewItems { tabs.selectTabViewItem(at: index) }
         #endif
@@ -661,4 +698,198 @@ final class HelpLinks: NSObject, WKNavigationDelegate {
         }
         decisionHandler(.allow)
     }
+}
+
+/// Settings → Snippets: a table of trigger and content, like macOS text
+/// replacements, with the selected row's full content edited below. Rows
+/// that share a trigger form a group; the first is the default.
+final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, NSTextFieldDelegate, NSTextViewDelegate, NSMenuDelegate {
+    var save: (([UserSnippet]) -> String?)?
+    /// Built-in rows from the page: trigger, token ({token} names the row),
+    /// example value and description, in the app language.
+    var loadPlaceholders: ((@escaping ([[String: Any]]) -> Void) -> Void)?
+    private var placeholders: [[String: Any]] = []
+    private let insertPlaceholder = NSPopUpButton(frame: .zero, pullsDown: true)
+    private var rows: [UserSnippet] = []
+    private var editable = true
+    private let table = NSTableView()
+    private let content = NSTextView()
+    private let buttons = NSSegmentedControl(images: [NSImage(named: NSImage.addTemplateName)!, NSImage(named: NSImage.removeTemplateName)!], trackingMode: .momentary, target: nil, action: nil)
+    private let status = NSTextField(wrappingLabelWithString: "")
+    private let empty = NSTextField(labelWithString: L("settings.snippetsEmpty"))
+    private var pendingSave: DispatchWorkItem?
+
+    init() {
+        super.init(frame: .zero)
+        let trigger = NSTableColumn(identifier: .init("trigger")); trigger.title = L("settings.snippetTrigger"); trigger.width = 120; trigger.minWidth = 80
+        let value = NSTableColumn(identifier: .init("content")); value.title = L("settings.snippetContent")
+        table.addTableColumn(trigger); table.addTableColumn(value)
+        table.dataSource = self; table.delegate = self; table.usesAlternatingRowBackgroundColors = true; table.rowHeight = 22
+        table.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle; table.setAccessibilityLabel(L("settings.snippets"))
+        let tableScroll = NSScrollView(); tableScroll.documentView = table; tableScroll.hasVerticalScroller = true; tableScroll.borderType = .bezelBorder
+        buttons.target = self; buttons.action = #selector(buttonPressed)
+        buttons.setToolTip(L("settings.snippetAdd"), forSegment: 0); buttons.setToolTip(L("settings.snippetRemove"), forSegment: 1)
+        content.isRichText = false; content.font = .monospacedSystemFont(ofSize: 12, weight: .regular); content.delegate = self
+        content.isAutomaticQuoteSubstitutionEnabled = false; content.isAutomaticDashSubstitutionEnabled = false; content.isAutomaticTextReplacementEnabled = false
+        content.textContainerInset = NSSize(width: 4, height: 4); content.setAccessibilityLabel(L("settings.snippetContent"))
+        let contentScroll = NSScrollView(); contentScroll.documentView = content; contentScroll.hasVerticalScroller = true; contentScroll.borderType = .bezelBorder
+        content.minSize = NSSize(width: 0, height: 0); content.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
+        content.isVerticallyResizable = true; content.autoresizingMask = [.width]; content.textContainer?.widthTracksTextView = true
+        status.font = .systemFont(ofSize: 12); status.textColor = .secondaryLabelColor
+        empty.font = .systemFont(ofSize: 12); empty.textColor = .tertiaryLabelColor
+        insertPlaceholder.bezelStyle = .rounded; insertPlaceholder.controlSize = .small
+        insertPlaceholder.menu?.delegate = self; insertPlaceholder.addItem(withTitle: L("settings.insertPlaceholder"))
+        insertPlaceholder.setAccessibilityLabel(L("settings.insertPlaceholder"))
+        for view in [tableScroll, buttons, insertPlaceholder, contentScroll, status, empty] { view.translatesAutoresizingMaskIntoConstraints = false; addSubview(view) }
+        NSLayoutConstraint.activate([
+            tableScroll.topAnchor.constraint(equalTo: topAnchor), tableScroll.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 44), tableScroll.trailingAnchor.constraint(equalTo: trailingAnchor),
+            tableScroll.heightAnchor.constraint(equalToConstant: 150),
+            empty.centerXAnchor.constraint(equalTo: tableScroll.centerXAnchor), empty.centerYAnchor.constraint(equalTo: tableScroll.centerYAnchor, constant: 10),
+            buttons.topAnchor.constraint(equalTo: tableScroll.bottomAnchor, constant: 6), buttons.leadingAnchor.constraint(equalTo: tableScroll.leadingAnchor),
+            insertPlaceholder.centerYAnchor.constraint(equalTo: buttons.centerYAnchor), insertPlaceholder.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentScroll.topAnchor.constraint(equalTo: buttons.bottomAnchor, constant: 10), contentScroll.leadingAnchor.constraint(equalTo: tableScroll.leadingAnchor), contentScroll.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentScroll.heightAnchor.constraint(equalToConstant: 80),
+            status.topAnchor.constraint(equalTo: contentScroll.bottomAnchor, constant: 6), status.leadingAnchor.constraint(equalTo: tableScroll.leadingAnchor), status.trailingAnchor.constraint(equalTo: trailingAnchor),
+            status.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        updateControls()
+    }
+    required init?(coder: NSCoder) { nil }
+
+    func load(_ snippets: [UserSnippet]) {
+        rows = snippets; editable = true; status.stringValue = ""; status.textColor = .secondaryLabelColor
+        table.reloadData(); updateControls(); refreshPlaceholders()
+    }
+
+    // MARK: Placeholders
+    private func refreshPlaceholders() { loadPlaceholders? { [weak self] list in self?.placeholders = list } }
+    /// One submenu per trigger; each item shows {token} and an example.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        while menu.items.count > 1 { menu.removeItem(at: 1) }
+        var groups: [(String, NSMenu)] = []
+        for item in placeholders {
+            guard let trigger = item["trigger"] as? String, let token = item["token"] as? String else { continue }
+            if groups.last?.0 != trigger { groups.append((trigger, NSMenu())) }
+            let example = (item["example"] as? String) ?? (item["description"] as? String) ?? ""
+            let entry = NSMenuItem(title: "{\(token)}", action: #selector(placeholderChosen(_:)), keyEquivalent: "")
+            entry.target = self; entry.representedObject = token
+            let title = NSMutableAttributedString(string: "{\(token)}", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)])
+            if !example.isEmpty { title.append(NSAttributedString(string: "   \(example)", attributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.secondaryLabelColor])) }
+            entry.attributedTitle = title
+            groups[groups.count - 1].1.addItem(entry)
+        }
+        for (trigger, submenu) in groups {
+            let item = NSMenuItem(title: "@\(trigger)", action: nil, keyEquivalent: ""); item.submenu = submenu; menu.addItem(item)
+        }
+        refreshPlaceholders()   // examples are fresh the next time the menu opens
+    }
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool { menuItem.action != #selector(placeholderChosen(_:)) || content.isEditable }
+    @objc private func placeholderChosen(_ sender: NSMenuItem) {
+        guard content.isEditable, let token = sender.representedObject as? String else { return }
+        window?.makeFirstResponder(content)
+        content.insertText("{\(token)}", replacementRange: content.selectedRange())
+    }
+    /// The file exists but cannot be read: show why and do not allow edits,
+    /// so the file is never replaced by an empty list.
+    func loadFailed(_ message: String) {
+        rows = []; editable = false; table.reloadData()
+        status.stringValue = L("settings.snippetsUnreadable") + message; status.textColor = .systemRed
+        updateControls()
+    }
+
+    // MARK: Table
+    func numberOfRows(in tableView: NSTableView) -> Int { rows.count }
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        let isTrigger = tableColumn?.identifier.rawValue == "trigger"
+        let field = NSTextField(labelWithString: "")
+        field.lineBreakMode = .byTruncatingTail; field.font = isTrigger ? .monospacedSystemFont(ofSize: 12, weight: .medium) : .systemFont(ofSize: 12)
+        if isTrigger {
+            field.stringValue = rows[row].trigger; field.isEditable = editable; field.delegate = self; field.tag = row
+            field.placeholderString = "addr"
+            field.textColor = rows[row].trigger.isEmpty || UserSnippet.isValidTrigger(rows[row].trigger) ? .labelColor : .systemRed
+        } else {
+            let lines = rows[row].content.split(separator: "\n", omittingEmptySubsequences: false)
+            field.stringValue = (lines.first.map(String.init) ?? "") + (lines.count > 1 ? " …" : "")
+            field.textColor = .secondaryLabelColor
+        }
+        return field
+    }
+    func tableViewSelectionDidChange(_ notification: Notification) { updateControls() }
+    func controlTextDidEndEditing(_ notification: Notification) {
+        guard let field = notification.object as? NSTextField, rows.indices.contains(field.tag) else { return }
+        rows[field.tag].trigger = field.stringValue.trimmingCharacters(in: .whitespaces).lowercased()
+        table.reloadData(forRowIndexes: [field.tag], columnIndexes: [0, 1])
+        scheduleSave()
+    }
+
+    // MARK: Content
+    func textDidChange(_ notification: Notification) {
+        let row = table.selectedRow
+        guard rows.indices.contains(row) else { return }
+        rows[row].content = content.string
+        table.reloadData(forRowIndexes: [row], columnIndexes: [1])
+        scheduleSave()
+    }
+
+    @objc private func buttonPressed() {
+        if buttons.selectedSegment == 0 {
+            rows.append(UserSnippet(trigger: "", content: "")); table.reloadData()
+            let row = rows.count - 1
+            table.selectRowIndexes([row], byExtendingSelection: false); table.scrollRowToVisible(row)
+            table.editColumn(0, row: row, with: nil, select: true)
+        } else if rows.indices.contains(table.selectedRow) {
+            let row = table.selectedRow
+            rows.remove(at: row); table.reloadData()
+            if !rows.isEmpty { table.selectRowIndexes([min(row, rows.count - 1)], byExtendingSelection: false) }
+            scheduleSave()
+        }
+        updateControls()
+    }
+
+    private func updateControls() {
+        let row = table.selectedRow, selected = rows.indices.contains(row)
+        buttons.setEnabled(editable, forSegment: 0); buttons.setEnabled(editable && selected, forSegment: 1)
+        content.isEditable = editable && selected
+        if content.string != (selected ? rows[row].content : "") { content.string = selected ? rows[row].content : "" }
+        empty.isHidden = !rows.isEmpty || !editable
+    }
+
+    // Saved shortly after typing stops. Rows without a valid trigger or
+    // content stay in the table but are not saved yet.
+    private func scheduleSave() {
+        pendingSave?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.saveNow() }
+        pendingSave = work; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
+    func saveNow() {
+        guard editable, let save else { return }
+        pendingSave?.cancel(); pendingSave = nil
+        let valid = rows.filter { UserSnippet.isValidTrigger($0.trigger) && !$0.content.isEmpty }
+        if let error = save(valid) { status.stringValue = error; status.textColor = .systemRed; return }
+        let invalid = rows.contains { !$0.trigger.isEmpty && !UserSnippet.isValidTrigger($0.trigger) }
+        status.stringValue = invalid ? L("settings.snippetInvalidTrigger") : ""; status.textColor = invalid ? .systemRed : .secondaryLabelColor
+    }
+
+    #if INKFLIT_NATIVE_TEST
+    func testRows() -> [UserSnippet] { rows }
+    func testAdd(trigger: String, content text: String) {
+        rows.append(UserSnippet(trigger: trigger, content: text)); table.reloadData()
+        table.selectRowIndexes([rows.count - 1], byExtendingSelection: false); updateControls(); saveNow()
+    }
+    func testEditSelectedContent(_ text: String) { content.string = text; textDidChange(Notification(name: NSText.didChangeNotification)); saveNow() }
+    func testRemoveSelected() { buttons.selectedSegment = 1; buttonPressed(); saveNow() }
+    func testIsEditable() -> Bool { editable }
+    func testStatus() -> String { status.stringValue }
+    func testPlaceholderTokens() -> [String] {
+        guard let menu = insertPlaceholder.menu else { return [] }
+        menuNeedsUpdate(menu)
+        return menu.items.dropFirst().flatMap { $0.submenu?.items.compactMap { $0.representedObject as? String } ?? [] }
+    }
+    func testInsertPlaceholder(_ token: String) -> String {
+        guard let menu = insertPlaceholder.menu else { return "" }
+        menuNeedsUpdate(menu)
+        if let item = menu.items.flatMap({ $0.submenu?.items ?? [] }).first(where: { $0.representedObject as? String == token }) { placeholderChosen(item) }
+        saveNow(); return content.string
+    }
+    #endif
 }

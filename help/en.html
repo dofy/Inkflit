@@ -72,6 +72,8 @@
     </tbody>
   </table>
   <p>Words in parentheses insert that one format directly. The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
+  <h4>Your own snippets</h4>
+  <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. Like macOS text replacements, several rows can share a trigger, such as a few addresses under <code>addr</code>; typing <code>@addr</code> lists them all and inserts the first by default. Content can span lines and use placeholders: <code>{date}</code> inserts the default date, <code>{date#2}</code> the second date format and <code>{ipv4}</code> a format by its alias; <b>Insert placeholder</b> lists them all with examples. A row of your own leads a built-in group of the same name, so your own <code>date</code> becomes the default. Snippets are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
 </section>
 
 <section id="blocks">
@@ -127,11 +129,11 @@
   <table>
     <thead><tr><th>Tab</th><th>Options</th></tr></thead>
     <tbody>
-      <tr><td>General</td><td>Launch at login, the global shortcut, the notes folder</td></tr>
-      <tr><td>Appearance</td><td>Accent color, window opacity, background blur. Hold <kbd>⌥</kbd> while dragging a slider to move in 5% steps.</td></tr>
-      <tr><td>Edit</td><td>Vim mode, code indentation, code colors</td></tr>
-      <tr><td>Language</td><td>Follow the system, or choose English, 简体中文, 繁體中文 or 日本語</td></tr>
-      <tr><td>Backups</td><td>Automatic backups, previous versions, Trash, index recovery</td></tr>
+      <tr><td>General</td><td>Language, launch at login, the global shortcut</td></tr>
+      <tr><td>Appearance</td><td>Accent color, window opacity, background blur, code colors. Hold <kbd>⌥</kbd> while dragging a slider to move in 5% steps.</td></tr>
+      <tr><td>Edit</td><td>Vim mode, code indentation</td></tr>
+      <tr><td>Snippets</td><td>Your own snippets; see <a href="#writing">Writing</a></td></tr>
+      <tr><td>Data</td><td>Notes folder, automatic backups, previous versions, Trash, index recovery</td></tr>
     </tbody>
   </table>
   <p>Light and dark appearance follow macOS.</p>

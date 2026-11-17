@@ -1,4 +1,4 @@
-<p align="center"><img src="Design/quicknote-icon.png" alt="Inkflit icon" width="120" /></p>
+<p align="center"><img src="Design/inkflit-icon.png" alt="Inkflit icon" width="120" /></p>
 
 <h1 align="center">Inkflit</h1>
 
@@ -32,7 +32,7 @@ npm run build
 open build/Inkflit.app
 ```
 
-`npm test` 測試編輯邏輯；`npm run test:native` 使用獨立筆記測試原生視窗、程式碼編輯與 Vim 復原。預設使用臨時簽章，可透過 `QUICKNOTE_CODESIGN_IDENTITY` 指定 Apple 開發者憑證；目前未經公證。
+`npm test` 測試編輯邏輯；`npm run test:native` 使用獨立筆記測試原生視窗、程式碼編輯與 Vim 復原。預設使用臨時簽章，可透過 `INKFLIT_CODESIGN_IDENTITY` 指定 Apple 開發者憑證；目前未經公證。
 
 應用程式常駐選單列，按 `Control + Option + Space` 顯示或收起筆記，切換至其他應用程式時自動收起。拖曳視窗頂部或工具列中央空白處可移動視窗。預設寬高比為 2:3，可自由調整大小。選單列或 `⌘,` 可開啟設定，調整快捷鍵、登入時啟動、儲存位置、主色、不透明度、背景模糊、程式碼配色與縮排；介面自動配合 macOS 淺色／深色模式。語言預設跟隨系統，也可選英語、簡體中文、繁體中文或日語。設定內附離線使用說明。
 
@@ -70,7 +70,7 @@ Vim 由 CodeMirror 和 `@replit/codemirror-vim` 提供，並非 Neovim，也不�
 - **sum / avg / count**：擷取數字加總或平均，不計算算式或換算單位（例如 `2+3=` 包含兩個數字）；也可統計非空項目、詞與字元；忽略 `//` 註解行。
 - **code**：選擇語言突顯程式碼；設定中有三種配色及預覽，可選 2 空格、4 空格或 Tab 縮排。括號與引號自動配對，Return 自動縮排，Tab 縮排、Shift-Tab 減少縮排。無選區時 `⌘C` 複製區塊內容。
 
-區塊以 `:::quicknote math`、`:::end` 等 Inkflit 標記儲存在正文，不是程式碼圍欄；舊格式仍可讀取。匯率由 [Frankfurter](https://frankfurter.dev/) 提供，只取得公開匯率，不上傳筆記；服務無法使用時不會虛構匯率。
+區塊以 `:::inkflit math`、`:::end` 等 Inkflit 標記儲存在正文，不是程式碼圍欄；舊格式仍可讀取。匯率由 [Frankfurter](https://frankfurter.dev/) 提供，只取得公開匯率，不上傳筆記；服務無法使用時不會虛構匯率。
 
 
 ## 筆記與儲存

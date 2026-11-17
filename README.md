@@ -1,4 +1,4 @@
-<p align="center"><img src="Design/quicknote-icon.png" alt="Inkflit icon" width="120" /></p>
+<p align="center"><img src="Design/inkflit-icon.png" alt="Inkflit icon" width="120" /></p>
 
 <h1 align="center">Inkflit</h1>
 
@@ -35,7 +35,7 @@ npm run build
 open build/Inkflit.app
 ```
 
-Run `npm test` for editor tests and `npm run test:native` for isolated native-window, code editing and Vim undo/redo tests. Builds use an ad hoc signature by default; set `QUICKNOTE_CODESIGN_IDENTITY` to use an Apple Development certificate. The app is not notarized.
+Run `npm test` for editor tests and `npm run test:native` for isolated native-window, code editing and Vim undo/redo tests. Builds use an ad hoc signature by default; set `INKFLIT_CODESIGN_IDENTITY` to use an Apple Development certificate. The app is not notarized.
 
 Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. Appearance follows macOS light/dark mode. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
@@ -73,7 +73,7 @@ In Vim insert mode, or with Vim turned off, type `/` on an empty line to choose 
 - **sum / avg / count:** Extract and sum or average numbers without evaluating expressions or converting units (for example, `2+3=` counts two numbers); count nonempty items, words and characters. Lines beginning `//` are excluded.
 - **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
 
-Blocks use Inkflit text markers such as `:::quicknote math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
+Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 
 
 ## Notes and storage

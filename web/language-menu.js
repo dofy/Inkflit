@@ -1,3 +1,4 @@
+import { markerPrefix } from './features.js';
 import { t } from './i18n.js';
 import { currentBlockScope, closeBlockMenu } from './block-menu.js';
 
@@ -60,8 +61,8 @@ function choose(language) {
   if(!editor || !current)return;
   // The selection may be in another block when opened with the mouse.
   const line=editor.state.doc.line(current.scope.start);
-  if(!line.text.startsWith(':::quicknote code')) { closeLanguageMenu(); return; }
-  const changes=editor.state.changes({from:line.from,to:line.to,insert:':::quicknote code'+(language?' '+language:'')});
+  if(!/^:::inkflit code(?:\s|$)/.test(line.text)) { closeLanguageMenu(); return; }
+  const changes=editor.state.changes({from:line.from,to:line.to,insert:`${markerPrefix} code`+(language?' '+language:'')});
   closeLanguageMenu();
   editor.dispatch({changes,selection:editor.state.selection.map(changes),userEvent:'input.block.language'}); editor.focus();
 }
