@@ -1,10 +1,18 @@
-# Inkflit
+<p align="center"><img src="Design/quicknote-icon.png" alt="Inkflit icon" width="120" /></p>
 
-[English](README.md) · 简体中文 · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
+<h1 align="center">Inkflit</h1>
 
-本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。
+<p align="center"><strong>给值得记下的想法留一点空间。</strong><br />Markdown · Vim · Local-first · macOS</p>
 
-首次启动时，Inkflit 会按系统语言创建四篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前。
+<p align="center"><a href="README.md">English</a> · 简体中文 · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.ja.md">日本語</a><br />
+<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+
+本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。 首次启动时，Inkflit 会按系统语言创建四篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前。
+
+<p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
+
+<p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
+
 
 ## 构建和运行
 

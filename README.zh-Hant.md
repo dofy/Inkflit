@@ -1,10 +1,18 @@
-# Inkflit
+<p align="center"><img src="Design/quicknote-icon.png" alt="Inkflit icon" width="120" /></p>
 
-[English](README.md) · [简体中文](README.zh-Hans.md) · 繁體中文 · [日本語](README.ja.md)
+<h1 align="center">Inkflit</h1>
 
-Inkflit 是本地優先的 macOS 浮動筆記，支援多則筆記、Markdown、Vim 編輯、程式碼突顯、功能區塊與自動儲存。
+<p align="center"><strong>為值得記下的想法留一點空間。</strong><br />Markdown · Vim · Local-first · macOS</p>
 
-首次啟動時，Inkflit 會依系統語言建立四篇引導筆記。在設定中點擊「重新產生引導筆記」，會依目前應用程式語言把新引導放在已有筆記之前。
+<p align="center"><a href="README.md">English</a> · <a href="README.zh-Hans.md">简体中文</a> · 繁體中文 · <a href="README.ja.md">日本語</a><br />
+<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+
+Inkflit 是本地優先的 macOS 浮動筆記，支援多則筆記、Markdown、Vim 編輯、程式碼突顯、功能區塊與自動儲存。 首次啟動時，Inkflit 會依系統語言建立四篇引導筆記。在設定中點擊「重新產生引導筆記」，會依目前應用程式語言把新引導放在已有筆記之前。
+
+<p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
+
+<p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
+
 
 ## 建置與執行
 

@@ -1,8 +1,17 @@
-# Inkflit
+<p align="center"><img src="Design/quicknote-icon.png" alt="Inkflit icon" width="120" /></p>
 
-English · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md)
+<h1 align="center">Inkflit</h1>
+
+<p align="center"><strong>A little space for the thoughts worth keeping.</strong><br />Markdown · Vim · Local-first · macOS</p>
+
+<p align="center">English · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.ja.md">日本語</a><br />
+<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 A local-first floating note app for macOS, with Markdown, Vim editing, code highlighting, feature blocks and automatic saving.
+
+<p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
+
+<p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
 
 On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes, using the current app language.
 
