@@ -8,6 +8,7 @@
 <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-536b83?style=flat-square" alt="Mac: Apple Silicon" />
   <img src="https://img.shields.io/badge/macOS-13%2B-3e586c?style=flat-square" alt="macOS 13 or later" />
   <img src="https://img.shields.io/badge/notes-local--first-69816b?style=flat-square" alt="Local-first notes" />
   <img src="https://img.shields.io/badge/editor-Markdown%20%2B%20Vim-9c6f50?style=flat-square" alt="Markdown and Vim editor" />
@@ -21,6 +22,8 @@ A local-first floating note app for macOS, with Markdown, Vim editing, code high
 <p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
 
 On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes, using the current app language.
+
+The Mac release is built for Apple Silicon. Run `./scripts/package-release.sh` to create an unsigned-for-distribution DMG; the app is ad hoc signed and not notarized.
 
 ## Build and run
 

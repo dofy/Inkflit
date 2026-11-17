@@ -6,7 +6,7 @@ test_dir=$(mktemp -d "${TMPDIR%/}/inkflit-vim-test.XXXXXX")
 test_app="$test_dir/InkflitVimTest.app"
 ditto build/Inkflit.app "$test_app"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.seven.inkflit.vimtest.$(basename "$test_dir" | tr -cd '[:alnum:]')" "$test_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/DefaultsMigration.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 codesign --force --sign - --timestamp=none "$test_app"
 for restart in 0 1; do
   printf '%s' '{"notes":[{"id":"first","content":"","updated":"1"},{"id":"second","content":"","updated":"2"},{"id":"code","content":":::quicknote code json\n\n:::end","updated":"3"}],"selected":"first"}' > "$test_dir/notes.json"

@@ -6,7 +6,7 @@ qa_dir=$(mktemp -d "${TMPDIR%/}/inkflit-vim-boundaries.XXXXXX")
 qa_app="$qa_dir/Test.app"
 ditto build/Inkflit.app "$qa_app"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.seven.inkflit.boundary.$(basename "$qa_dir" | tr -cd '[:alnum:]')" "$qa_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$qa_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/DefaultsMigration.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$qa_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 codesign --force --sign - --timestamp=none "$qa_app"
 python3 - "$qa_dir/notes.json" <<'PY'
 import json,sys

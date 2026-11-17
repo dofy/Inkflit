@@ -139,7 +139,7 @@ enum InkflitMCP {
             case "initialize":
                 let params=request["params"] as? [String:Any], requested=params?["protocolVersion"] as? String ?? "2025-11-25"
                 let supported=["2025-11-25","2025-06-18","2025-03-26","2024-11-05"]
-                result(["protocolVersion":supported.contains(requested) ? requested : "2025-11-25","capabilities":["tools":[:]],"serverInfo":["name":"inkflit","version":(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.1.2")]])
+                result(["protocolVersion":supported.contains(requested) ? requested : "2025-11-25","capabilities":["tools":[:]],"serverInfo":["name":"inkflit","version":(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.1.3")]])
             case "ping":result([:])
             case "tools/list":result(["tools":descriptors])
             case "tools/call":

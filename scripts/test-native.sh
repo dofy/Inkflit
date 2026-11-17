@@ -6,7 +6,7 @@ test_dir=$(mktemp -d "${TMPDIR%/}/inkflit-native-test.XXXXXX")
 test_app="$test_dir/InkflitNativeTest.app"
 ditto build/Inkflit.app "$test_app"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.seven.quicknote.nativetest.$(basename "$test_dir" | tr -cd '[:alnum:]')" "$test_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/DefaultsMigration.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 codesign --force --sign - --timestamp=none "$test_app"
 for indentation in spaces2 spaces4 tabs; do
   python3 - "$test_dir/notes.json" <<'PY'

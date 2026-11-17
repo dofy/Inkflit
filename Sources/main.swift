@@ -137,6 +137,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if !isolatedTest, Bundle.main.bundleIdentifier == "xyz.phpz.app.inkflit" {
+            let defaults = UserDefaults.standard
+            DefaultsMigration.migrate(defaults: defaults, destinationDomain: "xyz.phpz.app.inkflit",
+                legacy: defaults.persistentDomain(forName: DefaultsMigration.legacyBundleID))
+        }
         NSApp.setActivationPolicy(.accessory)
         #if INKFLIT_NATIVE_TEST
         if isolatedTest, let appearance = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"] {
