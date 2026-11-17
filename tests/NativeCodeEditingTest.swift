@@ -102,7 +102,7 @@ final class NativeCodeEditingTest {
         }
     }
     private func testAutomationScheme() {
-        let urls=["inkflit://note/create?content=Scheme%20first", "inkflit://note/append?index=1&content=Scheme%20append", "inkflit://note/replace?index=2&content=Scheme%20replace"]
+        let urls=["inkflit://note/create?content=Scheme%20first&position=first", "inkflit://note/append?index=1&content=Scheme%20append", "inkflit://note/replace?index=2&content=Scheme%20replace"]
         app.application(NSApp,open:urls.compactMap(URL.init(string:)))
         DispatchQueue.main.asyncAfter(deadline:.now()+1) { [self] in
             app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)") { [self] value,error in
@@ -523,7 +523,7 @@ final class NativeCodeEditingTest {
         key(35,"P","p",[.command,.shift]);later { [self] in
             sequence([{ self.key(45,"n") },{ self.key(14,"e") },{ self.key(13,"w") },{ self.key(36,"\r") }]) { [self] in
                 app.web.evaluateJavaScript("[document.getElementById('command-panel').hidden,JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)]") { [self] value,error in
-                    guard error == nil,let v=value as? [Any],v[0] as? Bool == true,let notes=v[1] as? [String],notes == ["","initial"] else { fail("palette create note: \(String(describing:value))") }
+                    guard error == nil,let v=value as? [Any],v[0] as? Bool == true,let notes=v[1] as? [String],notes == ["initial",""] else { fail("palette create note: \(String(describing:value))") }
                     print("PASS command palette search, navigation, settings persistence, Escape and new note")
                     app.restoreInputSource();exit(0)
                 }
@@ -1088,8 +1088,9 @@ final class NativeCodeEditingTest {
                         guard success else { fail("could not save user note") }
                         do {
                             let snapshot = try NoteFiles.read(app.storageURL.deletingLastPathComponent())
-                            guard let user = snapshot.notes.first, user.content == "u", snapshot.notes.count == 5 else { fail("user note missing") }
-                            key(30, "]", "]", .command)
+                            // New notes go last; ⌘1 returns to the first guide before deleting the guides.
+                            guard let user = snapshot.notes.last, user.content == "u", snapshot.notes.count == 5 else { fail("user note missing") }
+                            key(18, "1", "1", .command)
                             later { [self] in deleteGuideNotes(4, user: user) }
                         } catch { fail("could not read user note: \(error)") }
                     }
@@ -1134,7 +1135,7 @@ final class NativeCodeEditingTest {
                             guard success else { fail("could not save second user note") }
                             do {
                                 let users = try NoteFiles.read(app.storageURL.deletingLastPathComponent()).notes
-                                guard users.count == 2, users[0].content == "v", users[1] == user else { fail("second user note missing") }
+                                guard users.count == 2, users[0] == user, users[1].content == "v" else { fail("second user note missing") }
                                 regenerateGuides(before: users)
                             } catch { fail("could not inspect existing notes: \(error)") }
                         }
@@ -1267,7 +1268,7 @@ final class NativeCodeEditingTest {
                                 if let error { fail("native restore: \(error)") }
                                 later { [self] in content { [self] text in
                                     expect(text, "firstx", "native trash restore")
-                                    do { guard try NoteFiles.read(directory).notes.first?.content == "firstx", FileManager.default.fileExists(atPath: items[0].path) else { fail("restore not saved or removed trash") } }
+                                    do { guard try NoteFiles.read(directory).notes.last?.content == "firstx", FileManager.default.fileExists(atPath: items[0].path) else { fail("restore not saved or removed trash") } }
                                     catch { fail("restored storage: \(error)") }
                                     testStorageLocation(directory)
                                 } }
@@ -1308,8 +1309,9 @@ final class NativeCodeEditingTest {
                             app.requestFlush { [self] success, _ in
                             guard success else { fail("could not flush changed location") }
                             do {
-                                guard try NoteFiles.read(source).notes.first?.content == "firstx",
-                                      try NoteFiles.read(destination).notes.first?.content == "firstxx" else { fail("edit went to wrong location") }
+                                // The restored note is the last one and still selected.
+                                guard try NoteFiles.read(source).notes.last?.content == "firstx",
+                                      try NoteFiles.read(destination).notes.last?.content == "firstxx" else { fail("edit went to wrong location") }
                             } catch { fail("could not read moved notes: \(error)") }
                             app.showSettings()
                             guard let settings = app.settingsController, settings.testBackupControls() else { fail("backup settings or recovery controls") }
