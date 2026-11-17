@@ -6,7 +6,7 @@ import Foundation
         let root = files.temporaryDirectory.appendingPathComponent("inkflit-storage-tests-\(UUID().uuidString)")
         try files.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? files.removeItem(at: root) }
-        func check(_ condition: Bool) { precondition(condition) }
+        func check(_ condition: Bool, line: Int = #line) { if !condition { fatalError("check failed at storage.swift:\(line)") } }
         let directory = root.appendingPathComponent("notes-root")
         try files.createDirectory(at: directory, withIntermediateDirectories: true)
         let original = NoteSnapshot(notes: [StoredNote(id: "../危险", content: "# 中文\n:::inkflit code js\n{}\n:::end", updated: "1"), StoredNote(id: "two", content: "second", updated: "2")], selected: "two")
@@ -55,6 +55,14 @@ import Foundation
         let preserved = try files.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).filter { $0.lastPathComponent.hasPrefix("index-before-rebuild-") }
         check(preserved.count == 1)
         check(try Data(contentsOf: preserved[0]) == Data("invalid".utf8))
+        // Only the newest three archives stay; old undated names go first.
+        for name in ["index-before-rebuild-5B72000A-598F-4ED4-8224-B3F48897AE10.json", "index-before-rebuild-20250101-000000-A.json", "index-before-rebuild-20260101-000000-B.json", "index-before-rebuild-20270101-000000-C.json"] {
+            try Data("old".utf8).write(to: directory.appendingPathComponent(name))
+        }
+        NoteFiles.pruneIndexArchives(directory)
+        let kept = try files.contentsOfDirectory(atPath: directory.path).filter { $0.hasPrefix("index-before-rebuild-") }.sorted()
+        check(kept.count == 3 && kept.contains("index-before-rebuild-20270101-000000-C.json") && kept.contains(preserved[0].lastPathComponent) && !kept.contains("index-before-rebuild-20250101-000000-A.json") && !kept.contains { $0.hasPrefix("index-before-rebuild-5B72") })
+        for name in kept where name != preserved[0].lastPathComponent { try files.removeItem(at: directory.appendingPathComponent(name)) }
         try savedIndex.write(to: NoteFiles.index(directory), options: .atomic)
         try files.removeItem(at: untouched)
         do { try NoteFiles.save(changed, directory: directory, backupLimit: 2); fatalError("missing note must not be overwritten") } catch {}

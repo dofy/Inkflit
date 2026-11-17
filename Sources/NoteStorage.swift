@@ -141,12 +141,29 @@ enum NoteFiles {
         try snapshot.validate()
         let original = index(directory)
         if files.fileExists(atPath: original.path) {
-            let copy = root.appendingPathComponent("index-before-rebuild-\(UUID().uuidString).json")
+            let copy = root.appendingPathComponent("\(indexArchivePrefix)\(archiveStamp.string(from: Date()))-\(UUID().uuidString).json")
             try files.copyItem(at: original, to: copy)
         }
         try writeIndex(snapshot, root: root)
         guard try read(directory) == snapshot else { throw NoteStorageError.invalidSnapshot }
+        pruneIndexArchives(root)
         return snapshot
+    }
+    /// The index from before each rebuild is kept in case the rebuild went
+    /// wrong; only the newest few are needed.
+    static let indexArchivePrefix = "index-before-rebuild-", keptIndexArchives = 3
+    private static let archiveStamp: DateFormatter = {
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.dateFormat = "yyyyMMdd-HHmmss"; return formatter
+    }()
+    /// Names carry the time, so they sort oldest first; names from before
+    /// the time was added (a bare UUID) count as the oldest.
+    static func pruneIndexArchives(_ root: URL) {
+        guard let names = try? files.contentsOfDirectory(atPath: root.path) else { return }
+        let archives = names.filter { $0.hasPrefix(indexArchivePrefix) && $0.hasSuffix(".json") }.sorted { name, other in
+            let dated = { (value: String) in value.dropFirst(indexArchivePrefix.count).range(of: #"^\d{8}-\d{6}-"#, options: .regularExpression) != nil }
+            return dated(name) == dated(other) ? name < other : !dated(name)
+        }
+        for name in archives.dropLast(keptIndexArchives) { try? files.removeItem(at: root.appendingPathComponent(name)) }
     }
     static func uniqueName(_ date: Date = Date()) -> String { "\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(UUID().uuidString).md" }
     static func save(_ snapshot: NoteSnapshot, directory: URL, backupLimit: Int, now: Date = Date()) throws {
