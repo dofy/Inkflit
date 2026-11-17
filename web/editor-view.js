@@ -15,11 +15,16 @@ import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
 import { noteComments } from './comments.js';
-import { noteHeadings } from './typography.js';
+import { noteHeadings, noteInlineCode } from './typography.js';
 
+// Markdown tokens that defaultHighlightStyle colors for light mode only
+// (#219 dark blue): give them theme colors. Scoped to Markdown, so code
+// inside fenced blocks keeps its syntax theme.
 const markdownColors = HighlightStyle.define([
   { tag: tags.meta, class: 'inkflit-md-meta' },
-  { tag: tags.url, class: 'inkflit-md-url' }
+  { tag: tags.url, class: 'inkflit-md-url' },
+  { tag: tags.labelName, class: 'inkflit-md-label' },          // ```ts info string, [link][label]
+  { tag: tags.contentSeparator, class: 'inkflit-md-meta' }    // --- horizontal rule
 ], { scope: markdownLanguage });
 const vimCompartment = new Compartment();
 // Like Vim's scrolloff=3: keep three lines visible beyond the cursor while
@@ -48,7 +53,7 @@ const saveOnChange = EditorView.updateListener.of(update => {
 function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
     vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
-    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage }), tasks, features, noteComments, noteHeadings,
+    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage }), tasks, features, noteComments, noteHeadings, noteInlineCode,
     syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff,
     keymap.of([...defaultKeymap, ...historyKeymap]),
     saveOnChange

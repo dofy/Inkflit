@@ -70,3 +70,5 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 
 .palette-crumb{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 8px;border-radius:5px;background:var(--ui-bar);color:var(--ui-accent);font-size:12px}.palette-row-more{flex:none;color:var(--ui-muted);font:600 15px/1 ui-monospace,monospace}
 .palette-row-check{flex:none;color:var(--ui-accent);font-weight:700}
+.editor .cm-content .inkflit-md-label{color:var(--ui-accent,#b95c1d)}
+.editor .cm-content .cm-note-inline-code{padding:1px 3px;border-radius:4px;background:color-mix(in srgb,var(--ui-ink,#302921) 9%,transparent)}

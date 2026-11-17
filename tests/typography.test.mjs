@@ -19,3 +19,12 @@ test('Markdown headings get their own levels without changing code or text', () 
   ]);
   assert.equal(state.doc.toString(),doc);
 });
+
+test('inline code gets a chip, fenced and block code do not', async () => {
+  const { inlineCodeDecorations } = await import('../web/typography.js');
+  const doc = ['Use `npm ci` and `npm test`.','```js','const a = `x`;','```',':::quicknote code js','`raw`',':::end','plain'].join('\n');
+  const state = EditorState.create({doc, extensions:[markdown()]});
+  const marked = [];
+  inlineCodeDecorations(state, [{from:0,to:doc.length}]).between(0,doc.length,(from,to) => { marked.push(doc.slice(from,to)); });
+  assert.deepEqual(marked, ['`npm ci`','`npm test`']);
+});
