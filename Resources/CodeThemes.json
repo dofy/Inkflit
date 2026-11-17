@@ -1,7 +1,7 @@
 [
   {
     "id": "amber",
-    "title": "琥珀",
+    "title": "settings.themeAmber",
     "colors": {
       "property": "#a33f0a",
       "string": "#007464",
@@ -27,7 +27,7 @@
   },
   {
     "id": "ocean",
-    "title": "海蓝",
+    "title": "settings.themeOceanBlue",
     "colors": {
       "property": "#005e9e",
       "string": "#087344",
@@ -53,7 +53,7 @@
   },
   {
     "id": "contrast",
-    "title": "鲜明",
+    "title": "settings.themeVivid",
     "colors": {
       "property": "#a01821",
       "string": "#006b35",

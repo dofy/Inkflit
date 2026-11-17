@@ -1,10 +1,10 @@
 import { t } from './i18n.js';
 import { featureScopes, scopeAt } from './features.js';
 const items = [
-  ['list','清单','逐行显示复选框'],['math','计算','算式、变量与单位换算'],
-  ['sum','求和','汇总块中的数字'],['avg','平均值','计算块内数字平均值'],
-  ['count','计数','统计项目、词和字符'],['code','代码','保留代码并按语言高亮'],
-  ['text','转为正文','移除功能，保留内容'],['delete','删除块','删除当前块及内容']
+  ['list','block.checklist','block.checklistDetail'],['math','block.math','block.mathDetail'],
+  ['sum','block.sum','block.sumDetail'],['avg','block.average','block.averageDetail'],
+  ['count','block.count','block.countDetail'],['code','block.code','block.codeDetail'],
+  ['text','block.convertToText','block.convertToTextDetail'],['delete','block.delete','block.deleteDetail']
 ];
 let menu, view, active=null;
 export function initBlockMenu(element, getView) {
@@ -21,7 +21,7 @@ function render(query='') {
   const choices=blockMenuChoices(active.scope,query);
   active.choices=choices; active.index=Math.min(active.index,Math.max(0,choices.length-1));
   menu.replaceChildren();
-  if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent=t('没有匹配的功能块');menu.append(e); return; }
+  if(!choices.length) { const e=document.createElement('div');e.className='block-menu-empty';e.textContent=t('block.noMatches');menu.append(e); return; }
   choices.forEach(([id,name,description],index)=>{
     const b=document.createElement('button'); b.type='button';b.className='block-menu-item'+(id==='delete'?' danger':'');b.setAttribute('role','option');b.setAttribute('aria-selected',String(index===active.index));
     const title=document.createElement('span'); title.textContent=name;

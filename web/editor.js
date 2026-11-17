@@ -21,6 +21,7 @@ import { applyCodeTheme } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 import { searchNotes, notePreview } from './note-search.js';
 import { filterCommands } from './command-palette.js';
+import { createPalette } from './palette.js';
 
 const $ = id => document.getElementById(id);
 const markdownColors=HighlightStyle.define([
@@ -36,7 +37,7 @@ let vimEnabled = true;
 const vimCompartment = new Compartment();
 const isEditing = () => !vimEnabled || !!getCM(editor)?.state?.vim?.insertMode;
 const editorStates = new Map();
-const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
+const newNote = () => { const now = new Date().toISOString(); return { id: crypto.randomUUID(), content: '', created: now, updated: now }; };
 const current = () => state.notes.find(n => n.id === state.selected);
 function reportToolbarRegions() {
   const handler=window.webkit?.messageHandlers?.quicknote;
@@ -61,30 +62,43 @@ window.saveResult = (ok, error, revision) => {
   const callback=saveCallbacks.get(revision);
   if(callback) { saveCallbacks.delete(revision); callback(ok,revision); }
   if(Number.isInteger(revision) && revision<saveRevision)return;
-  const message=ok ? '' : (error || t('保存失败'));
+  const message=ok ? '' : (error || t('error.saveFailed'));
   $('save').textContent = message; $('save').title=message; $('save').className = ok ? '' : 'error';
 };
 window.snapshotForFlush = () => state ? {json:JSON.stringify(state), revision:saveRevision} : null;
 window.setShortcutLabel = label => { $('shortcut').textContent = label; };
 window.setLanguage = value => {
   setLanguage(value); document.documentElement.lang=lang();
-  for(const [id,key,shortcut] of [['previous','上一条笔记','⌘['],['next','下一条笔记','⌘]'],['new','新建笔记','⌘N'],['delete','删除笔记','⌘D'],['search','搜索笔记','⌘⇧F']]) {
+  for(const [id,key,shortcut] of [['previous','note.previous','⌘['],['next','note.next','⌘]'],['new','note.new','⌘N'],['delete','note.delete','⌘D'],['search','palette.searchNotes','⌘⇧F']]) {
     $(id).setAttribute('aria-label',t(key)); $(id).title=t(key)+' '+shortcut;
   }
-  $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
-  $('search-panel').setAttribute('aria-label',t('搜索笔记')); $('search-input').placeholder=t('搜索所有笔记'); $('search-input').setAttribute('aria-label',t('搜索所有笔记')); $('search-close').setAttribute('aria-label',t('关闭'));
-  $('command-panel').setAttribute('aria-label',t('命令面板'));$('command-input').placeholder=t('搜索命令');$('command-input').setAttribute('aria-label',t('搜索命令'));$('command-hint').textContent=t('选择命令');
-  if(!$('command-panel').hidden)renderCommands();
-  document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
+  $('block-menu').setAttribute('aria-label',t('block.menuLabel')); $('language-menu').setAttribute('aria-label',t('editor.codeLanguage'));
+  $('search-panel').setAttribute('aria-label',t('palette.searchNotes')); $('search-input').placeholder=t('palette.searchAllNotes'); $('search-input').setAttribute('aria-label',t('palette.searchAllNotes')); $('search-hint').textContent=t('palette.chooseNote');
+  $('command-panel').setAttribute('aria-label',t('palette.commandPalette'));$('command-input').placeholder=t('palette.searchCommands');$('command-input').setAttribute('aria-label',t('palette.searchCommands'));$('command-hint').textContent=t('palette.chooseCommand');
+  if(commandPalette.open)commandPalette.render();
+  if(searchPalette.open)searchPalette.render();
+  document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'editor.markIncomplete':'editor.markComplete')));
   updateDeleteNotices();
   if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); }
 };
+let createdFormatter=null, createdFormatterLang='';
+// Local time in the app language; rebuilt only when the language changes.
+function createdFormat() {
+  if(createdFormatterLang!==lang()) { createdFormatterLang=lang(); createdFormatter=new Intl.DateTimeFormat(createdFormatterLang,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
+  return createdFormatter;
+}
 function refreshNav() {
   const index = state.notes.findIndex(n => n.id === state.selected);
   $('position').textContent = `${index + 1} / ${state.notes.length}`;
+  const created = new Date(state.notes[index]?.created ?? NaN);
+  $('created').hidden = isNaN(created);
+  $('created').textContent = isNaN(created) ? '' : createdFormat().format(created);
   $('previous').disabled = index === 0;
   $('next').disabled = index === state.notes.length - 1;
 }
+// Like Vim's scrolloff=3: keep three lines visible beyond the cursor while
+// there is content past the viewport; at the ends CodeMirror clamps naturally.
+const scrollOff=EditorView.scrollMargins.of(view => { const margin=view.defaultLineHeight*3; return {top:margin, bottom:margin}; });
 function makeState(content) {
   const initial=EditorState.create({doc:content,selection:{anchor:nearestEditablePosition(Text.of(content.split("\n")),0,0,true)},extensions:[
     vimCompartment.of(vimEnabled ? vim() : []), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), EditorState.transactionFilter.of(tr => {
@@ -93,7 +107,7 @@ function makeState(content) {
       if (tr.annotation(Transaction.userEvent) === 'input.type.compose') return tr;
       return {changes:tr.changes, selection:tr.selection, effects:tr.effects, scrollIntoView:tr.scrollIntoView,
         annotations:[Transaction.userEvent.of('input.type.compose'), ...tr.annotations.filter(a => a.type !== Transaction.userEvent)]};
-    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, noteHeadings, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping,
+    }), drawSelection(), highlightActiveLine(), markdown({codeLanguages:codeLanguage}), tasks, features, noteComments, noteHeadings, syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff,
     keymap.of([...defaultKeymap,...historyKeymap]),
     EditorView.updateListener.of(update => { if(languageMenuOpen() && (update.docChanged || update.selectionSet))closeLanguageMenu(); if (!update.docChanged || !state) return; current().content = update.state.doc.toString(); current().updated = new Date().toISOString(); refreshInsights(); updateBlockMenu(); if(isEditing()) openMenuAfterInput(update); persist(); })
   ]});
@@ -130,7 +144,7 @@ function bindVimMode() {
   if (window.webkit?.messageHandlers?.quicknote) window.prompt('quicknote-input-mode', 'normal');
 }
 function select(id) { if (!state || state.selected === id) return; changeEditor(id); persist(true); }
-function createNote() { if (!state) return; const n = newNote(); state.notes.unshift(n); changeEditor(n.id); persist(true); }
+function createNote() { if (!state) return; const n = newNote(); state.notes.push(n); changeEditor(n.id); persist(true); }
 const deleteNotices = new Map();
 let deletionQueue=0, deleting=false, deleteOrder=[], placeholderID=null, noticeTimer=null;
 function syncDeleteOrder() {
@@ -149,14 +163,14 @@ function updateDeleteNotices() {
   for(const [id,entry] of deleteNotices) {
     const remaining=Math.max(0,Math.ceil((entry.expires-now)/1000));
     if(!remaining) {entry.element.remove();deleteNotices.delete(id);continue;}
-    entry.label.textContent=`${t('已删除')} · ${id.slice(0,6)}`;
-    entry.time.textContent=`${remaining}${t('秒')}`;
-    entry.button.setAttribute('aria-label',`${t('恢复')} ${entry.title}`);
+    entry.label.textContent=`${t('note.deleted')} · ${id.slice(0,6)}`;
+    entry.time.textContent=`${remaining}${t('note.secondsUnit')}`;
+    entry.button.setAttribute('aria-label',`${t('note.undo')} ${entry.title}`);
   }
   const next=[...deleteNotices.keys()].at(-1);
   for(const [id,entry] of deleteNotices) {
     const highlighted=id===next;entry.element.classList.toggle('is-next',highlighted);
-    entry.button.textContent=t('恢复')+(highlighted?' ⌘U':'');
+    entry.button.textContent=t('note.undo')+(highlighted?' ⌘U':'');
     entry.button.title=highlighted ? '⌘U' : '';
   }
   if(!deleteNotices.size && noticeTimer) {clearInterval(noticeTimer);noticeTimer=null;}
@@ -166,7 +180,7 @@ function addDeleteNotice(note, savedEditor, placeholder) {
   const copy=document.createElement('div');copy.className='delete-notice-copy';
   const label=document.createElement('div');label.className='delete-notice-label';
   const title=document.createElement('div');title.className='delete-notice-title';
-  const display=Array.from(notePreview(note.content).trim() || t('空白笔记')).slice(0,80).join(''); title.textContent=display;
+  const display=Array.from(notePreview(note.content).trim() || t('note.empty')).slice(0,80).join(''); title.textContent=display;
   const time=document.createElement('span');time.className='delete-notice-time';
   const button=document.createElement('button');button.type='button';button.className='delete-notice-undo';
   button.addEventListener('mousedown',event=>event.preventDefault());
@@ -213,77 +227,104 @@ function processDeletionQueue() {
   saveBeforeDelete();
 }
 function navigate(direction) { if (!state) return; const index = state.notes.findIndex(n => n.id === state.selected); const next = index + direction; if (next >= 0 && next < state.notes.length) select(state.notes[next].id); }
-let searchResults=[], searchIndex=0;
-function renderSearch() {
-  const list=$('search-results'), query=$('search-input').value;
-  searchResults=query.trim()?searchNotes(state?.notes||[],query):(state?.notes||[]).map((note,index)=>({id:note.id,index:index+1,at:0,length:0,snippet:notePreview(note.content) || t('空白笔记')}));
-  searchIndex=Math.min(searchIndex,Math.max(0,searchResults.length-1));
-  list.replaceChildren();
-  if(!searchResults.length) { const empty=document.createElement('div');empty.className='search-empty';empty.textContent=t($('search-input').value.trim()?'没有匹配的笔记':'输入关键词搜索笔记');list.append(empty);return; }
-  searchResults.forEach((result,index)=>{
-    const button=document.createElement('button');button.type='button';button.className='search-result';button.setAttribute('role','option');button.setAttribute('aria-selected',String(index===searchIndex));
-    const number=document.createElement('span');number.className='search-result-index';number.textContent=String(result.index);
-    const snippet=document.createElement('span');snippet.className='search-result-snippet';snippet.textContent=result.snippet;
-    button.append(number,snippet);button.addEventListener('click',()=>chooseSearch(index));list.append(button);
-  });
-  list.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'});
-}
-function openSearch(query='') { if(!state)return;closeBlockMenu();closeLanguageMenu();$('search-panel').hidden=false;$('search-input').value=query;searchIndex=0;renderSearch();$('search-input').focus(); }
-function closeSearch() { $('search-panel').hidden=true;editor?.focus(); }
-function chooseSearch(index) {
-  const result=searchResults[index];if(!result)return;
-  closeSearch();select(result.id);
-  const from=Math.min(result.at,editor.state.doc.length),to=Math.min(from+result.length,editor.state.doc.length);
-  editor.dispatch({selection:{anchor:from,head:to},scrollIntoView:true});editor.focus();
-}
-let commandChoices=[], commandIndex=0;
+const searchPalette=createPalette({
+  id:'search',
+  rows:query=>query.trim()?searchNotes(state?.notes||[],query):(state?.notes||[]).map((note,index)=>({id:note.id,index:index+1,at:0,length:0,snippet:notePreview(note.content) || t('note.empty')})),
+  renderRow:(row,result)=>{
+    row.classList.add('search-result');
+    const number=document.createElement('span');number.className='palette-row-index';number.textContent=String(result.index);
+    const snippet=document.createElement('span');snippet.className='palette-row-title';snippet.textContent=result.snippet;
+    row.append(number,snippet);
+  },
+  empty:query=>t(query.trim()?'palette.noMatchingNotes':'palette.typeToSearch'),
+  choose:result=>{
+    select(result.id);
+    const from=Math.min(result.at,editor.state.doc.length),to=Math.min(from+result.length,editor.state.doc.length);
+    editor.dispatch({selection:{anchor:from,head:to},scrollIntoView:true});editor.focus();
+  },
+  closed:()=>editor?.focus()
+});
+function openSearch(query='') { if(!state)return;closeBlockMenu();closeLanguageMenu();commandPalette.close();searchPalette.show(query); }
 function nativeCommand(action,value) { window.webkit?.messageHandlers?.quicknote?.postMessage({type:'command',action,...(value===undefined?{}:{value})}); }
 function availableCommands() {
-  const note=t('笔记'), setting=t('设置');
+  const note=t('note.notes'), setting=t('settings.title');
   const commands=[
-    {label:t('新建笔记'),group:note,shortcut:'⌘N',aliases:['new create note'],run:createNote},
-    {label:t('搜索笔记'),group:note,shortcut:'⌘⇧F',aliases:['search find note'],run:()=>openSearch()},
-    {label:t('上一条笔记'),group:note,shortcut:'⌘[',aliases:['previous note'],run:()=>navigate(-1)},
-    {label:t('下一条笔记'),group:note,shortcut:'⌘]',aliases:['next note'],run:()=>navigate(1)},
-    {label:t('删除笔记'),group:note,shortcut:'⌘D',aliases:['delete note trash'],run:deleteNote},
-    {label:t('打开设置'),group:setting,shortcut:'⌘,',aliases:['settings preferences'],run:()=>nativeCommand('settings')},
-    {label:t(vimEnabled?'关闭 Vim 模式':'开启 Vim 模式'),group:setting,aliases:['vim mode toggle'],run:()=>nativeCommand('toggle-vim')}
+    {label:t('note.new'),group:note,shortcut:'⌘N',aliases:['new create note'],run:createNote},
+    {label:t('palette.searchNotes'),group:note,shortcut:'⌘⇧F',aliases:['search find note'],run:()=>openSearch()},
+    {label:t('note.previous'),group:note,shortcut:'⌘[',aliases:['previous note'],run:()=>navigate(-1)},
+    {label:t('note.next'),group:note,shortcut:'⌘]',aliases:['next note'],run:()=>navigate(1)},
+    {label:t('note.delete'),group:note,shortcut:'⌘D',aliases:['delete note trash'],run:deleteNote},
+    {label:t('palette.openSettings'),group:setting,shortcut:'⌘,',aliases:['settings preferences'],run:()=>nativeCommand('settings')},
+    {label:t(vimEnabled?'palette.disableVim':'palette.enableVim'),group:setting,aliases:['vim mode toggle'],run:()=>nativeCommand('toggle-vim')}
   ];
-  if(deleteNotices.size)commands.splice(5,0,{label:t('恢复最近删除的笔记'),group:note,shortcut:'⌘U',aliases:['restore undo deleted note'],run:()=>{updateDeleteNotices();const id=[...deleteNotices.keys()].at(-1);if(id)restoreDeletedNote(id);}});
-  for(const [id,label] of [['orange','暖橙'],['blue','海蓝'],['green','鼠尾草']])commands.push({label:`${t('界面主色')}：${t(label)}`,group:setting,aliases:['appearance accent theme color',id],run:()=>nativeCommand('ui-theme',id)});
-  for(const [id,label] of [['amber','琥珀'],['ocean','海蓝'],['contrast','鲜明']])commands.push({label:`${t('代码配色')}：${t(label)}`,group:setting,aliases:['code syntax theme',id],run:()=>nativeCommand('code-theme',id)});
-  for(const [id,label] of [['spaces2','2 个空格'],['spaces4','4 个空格'],['tabs','Tab']])commands.push({label:`${t('代码缩进')}：${t(label)}`,group:setting,aliases:['code indentation indent',id],run:()=>nativeCommand('indent',id)});
-  for(const [id,label] of [['system','跟随系统'],['en','English'],['zh-Hans','简体中文'],['zh-Hant','繁體中文'],['ja','日本語']])commands.push({label:`${t('语言')}：${t(label)}`,group:setting,aliases:['language locale',id],run:()=>nativeCommand('language',id)});
+  if(deleteNotices.size)commands.splice(5,0,{label:t('note.restoreLastDeleted'),group:note,shortcut:'⌘U',aliases:['restore undo deleted note'],run:()=>{updateDeleteNotices();const id=[...deleteNotices.keys()].at(-1);if(id)restoreDeletedNote(id);}});
+  // Options with several values open a second level of the palette.
+  // `current` marks the value reported by the native side (see setCommandState).
+  const choices=(action,pairs)=>()=>pairs.map(([value,label])=>({label:t(label),aliases:[value],current:commandState[action]===value,run:()=>nativeCommand(action,value)}));
+  // Presets plus the current value when it is not one of them.
+  const withCurrent=(values,action)=>{ const current=Number(commandState[action]);return Number.isInteger(current) && !values.includes(current) ? [...values,current].sort((a,b)=>b-a) : values; };
+  const percent=(action,values,min,max)=>Object.assign(()=>withCurrent(values,action).map(value=>({label:`${value}%`,aliases:[String(value)],current:commandState[action]===String(value),run:()=>nativeCommand(action,String(value))})),{
+    typed:query=>{ const value=Number(query.trim().replace(/%$/,'')); return Number.isInteger(value) && value>=min && value<=max ? {label:`${value}%`,run:()=>nativeCommand(action,String(value))} : null; }
+  });
+  const versions=count=>t('palette.keepVersions').replace('%d',String(count));
+  const backups=Object.assign(()=>[
+    {label:t('settings.off'),aliases:['off'],current:commandState.backup==='off',run:()=>nativeCommand('backup','off')},
+    {label:t('settings.backupUnlimited'),aliases:['unlimited'],current:commandState.backup==='unlimited',run:()=>nativeCommand('backup','unlimited')},
+    ...withCurrent([10,20,50,100],'backup').sort((a,b)=>a-b).map(count=>({label:versions(count),aliases:[String(count)],current:commandState.backup===String(count),run:()=>nativeCommand('backup',String(count))}))
+  ],{typed:query=>{ const count=Number(query.trim()); return Number.isInteger(count) && count>=1 && count<=1_000_000 ? {label:versions(count),run:()=>nativeCommand('backup',String(count))} : null; }});
+  commands.push(
+    {label:t('settings.accentColor'),group:setting,aliases:['appearance accent theme color'],children:choices('ui-theme',[['orange','settings.themeWarmOrange'],['blue','settings.themeOceanBlue'],['green','settings.themeSage']])},
+    {label:t('settings.codeColors'),group:setting,aliases:['code syntax theme'],children:choices('code-theme',[['amber','settings.themeAmber'],['ocean','settings.themeOceanBlue'],['contrast','settings.themeVivid']])},
+    {label:t('settings.codeIndentation'),group:setting,aliases:['code indentation indent'],children:choices('indent',[['spaces2','settings.indentTwoSpaces'],['spaces4','settings.indentFourSpaces'],['tabs','Tab']])},
+    {label:t('settings.language'),group:setting,aliases:['language locale'],children:choices('language',[['system','settings.languageSystem'],['en','English'],['zh-Hans','简体中文'],['zh-Hant','繁體中文'],['ja','日本語']])},
+    {label:t('settings.windowOpacity'),group:setting,aliases:['window opacity transparency'],children:percent('opacity',[100,90,80,70,60,50],50,100)},
+    {label:t('settings.backgroundBlur'),group:setting,aliases:['background blur'],children:percent('blur',[0,20,40,60,80,100],0,100)},
+    {label:t('settings.automaticBackups'),group:setting,aliases:['automatic backup versions'],children:backups},
+    {label:t('settings.launchAtLogin'),group:setting,aliases:['launch at login startup'],children:choices('login',[['on','palette.on'],['off','settings.off']])},
+    {label:t('settings.restoreGuideNotes'),group:setting,aliases:['restore guide notes onboarding'],run:()=>nativeCommand('onboarding')},
+    {label:t('settings.openHelp'),group:setting,aliases:['help guide documentation'],run:()=>nativeCommand('help')}
+  );
   return commands;
 }
-function renderCommands() {
-  const list=$('command-results');commandChoices=filterCommands(availableCommands(),$('command-input').value);
-  commandIndex=Math.min(commandIndex,Math.max(0,commandChoices.length-1));list.replaceChildren();
-  if(!commandChoices.length){const empty=document.createElement('div');empty.className='command-empty';empty.textContent=t('没有匹配的命令');list.append(empty);$('command-input').removeAttribute('aria-activedescendant');return;}
-  commandChoices.forEach((command,index)=>{
-    const button=document.createElement('button');button.type='button';button.className='command-row';button.id=`command-option-${index}`;button.setAttribute('role','option');button.setAttribute('aria-selected',String(index===commandIndex));
-    const title=document.createElement('span');title.className='command-row-title';title.textContent=command.label;
-    const group=document.createElement('span');group.className='command-row-group';group.textContent=command.group;
-    button.append(title,group);if(command.shortcut){const shortcut=document.createElement('kbd');shortcut.textContent=command.shortcut;button.append(shortcut);}
-    button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>runCommand(index));list.append(button);
-  });
-  $('command-input').setAttribute('aria-activedescendant',`command-option-${commandIndex}`);
-  list.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'});
+// First level: the commands, or while typing also every second-level option
+// ("Language: English") so a value can be reached in one step.
+function commandRows(query, parent) {
+  if(parent) {
+    const options=parent.children(), typed=parent.children.typed?.(query);
+    const matches=filterCommands(options,query);
+    return typed && !matches.some(option=>option.label===typed.label) ? [typed,...matches] : matches;
+  }
+  const commands=availableCommands();
+  if(!query.trim())return commands;
+  const flattened=commands.flatMap(command=>command.children ? command.children().map(option=>({...option,label:`${command.label}：${option.label}`,group:command.group,aliases:[...(command.aliases||[]),...(option.aliases||[])]})) : []);
+  return filterCommands([...commands,...flattened],query);
 }
-function openCommands() {
-  if(!state)return;closeBlockMenu();closeLanguageMenu();if(!$('search-panel').hidden)closeSearch();
-  $('command-panel').hidden=false;$('command-input').value='';commandIndex=0;renderCommands();$('command-input').focus();
-}
-function closeCommands() { $('command-panel').hidden=true;editor?.focus(); }
-function runCommand(index) {const command=commandChoices[index];if(!command)return;closeCommands();command.run();}
-$('command-input').addEventListener('input',()=>{commandIndex=0;renderCommands();});
-$('command-panel').addEventListener('mousedown',event=>{if(event.target===$('command-panel'))closeCommands();});
+const commandPalette=createPalette({
+  id:'command',
+  rows:commandRows,
+  renderRow:(row,command)=>{
+    row.classList.add('command-row');
+    const title=document.createElement('span');title.className='palette-row-title';title.textContent=command.label;
+    const group=document.createElement('span');group.className='palette-row-group';group.textContent=command.group;
+    row.append(title);if(command.group)row.append(group);
+    if(command.shortcut){const shortcut=document.createElement('kbd');shortcut.textContent=command.shortcut;row.append(shortcut);}
+    if(command.current){row.setAttribute('aria-current','true');const check=document.createElement('span');check.className='palette-row-check';check.textContent='✓';row.append(check);}
+    if(command.children){const more=document.createElement('span');more.className='palette-row-more';more.textContent='›';row.append(more);}
+  },
+  empty:()=>t('palette.noMatchingCommands'),
+  levelChanged:parent=>{ $('command-hint').textContent=parent ? t(parent.children.typed?'palette.chooseOrTypeNumber':'palette.chooseOption') : t('palette.chooseCommand'); },
+  choose:command=>command.run(),
+  closed:()=>editor?.focus()
+});
+let commandState={};
+// The native side answers a 'state' request with the current settings, keyed
+// by the same action names the commands send.
+window.setCommandState=value=>{ commandState=value && typeof value==='object' ? value : {};if(commandPalette.open)commandPalette.render(); };
+function openCommands() { if(!state)return;closeBlockMenu();closeLanguageMenu();searchPalette.close();nativeCommand('state');commandPalette.show(); }
 window.openCommands=openCommands;
 window.openNoteSearch=openSearch;
 window.inkflitSelectNote=id=>{if(state?.notes.some(note=>note.id===id)){select(id);return true;}return false;};
-$('search').onclick=()=>openSearch();
-$('search-close').onclick=closeSearch;
-$('search-input').addEventListener('input',()=>{searchIndex=0;renderSearch();});
+$('search').onclick=()=>{ if(searchPalette.open)searchPalette.close();else openSearch(); };
 function hide() { if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'hide'}); else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1; }
 $('new').onclick = createNote; $('delete').onclick = deleteNote; $('previous').onclick = () => navigate(-1); $('next').onclick = () => navigate(1);
 function refreshInsights() {
@@ -294,23 +335,23 @@ function refreshInsights() {
 setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)}); refreshInsights();} });
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
-  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='p') {event.preventDefault();event.stopPropagation();if(!event.repeat){if($('command-panel').hidden)openCommands();else closeCommands();}return;}
-  if(!$('command-panel').hidden) {
-    if(event.key==='Escape') {event.preventDefault();event.stopPropagation();closeCommands();return;}
-    if(event.key==='ArrowDown'||event.key==='ArrowUp') {event.preventDefault();event.stopPropagation();if(commandChoices.length){commandIndex=(commandIndex+(event.key==='ArrowDown'?1:-1)+commandChoices.length)%commandChoices.length;renderCommands();}return;}
-    if(event.key==='Enter') {event.preventDefault();event.stopPropagation();if(!event.repeat)runCommand(commandIndex);return;}
+  // ⌘⇧P and ⌘⇧F toggle their palette from anywhere, switching away from the other one.
+  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && ['p','f'].includes(event.key.toLowerCase())) {
+    event.preventDefault();event.stopPropagation();if(event.repeat)return;
+    const [target,open]=event.key.toLowerCase()==='p' ? [commandPalette,openCommands] : [searchPalette,()=>openSearch()];
+    if(target.open)target.close();else open();
     return;
+  }
+  const palette=commandPalette.open ? commandPalette : searchPalette.open ? searchPalette : null;
+  if(palette) {
+    if(palette.handleKey(event)) {event.preventDefault();event.stopPropagation();return;}
+    // Editor tools at the cursor (⌘L, ⌘O) leave the palette instead of being swallowed.
+    if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && ['l','o'].includes(event.key.toLowerCase())) palette.close();
+    else return;
   }
   if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='u' && deleteNotices.size) {
     updateDeleteNotices();const id=[...deleteNotices.keys()].at(-1);
     if(id) {event.preventDefault();event.stopPropagation();if(!event.repeat)restoreDeletedNote(id);return;}
-  }
-  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='f') { event.preventDefault();event.stopPropagation();openSearch();return; }
-  if(!$('search-panel').hidden) {
-    if(event.key==='Escape') {event.preventDefault();event.stopPropagation();closeSearch();return;}
-    if(event.key==='ArrowDown'||event.key==='ArrowUp') {event.preventDefault();event.stopPropagation();if(searchResults.length){searchIndex=(searchIndex+(event.key==='ArrowDown'?1:-1)+searchResults.length)%searchResults.length;renderSearch();}return;}
-    if(event.key==='Enter') {event.preventDefault();event.stopPropagation();chooseSearch(searchIndex);return;}
-    return;
   }
   keyStartDoc = editor?.state.doc;
   if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='l' && editor?.hasFocus) {
@@ -403,9 +444,10 @@ document.addEventListener('keydown', event => {
       }
       return;
     }
-    if (['n','d','[',']','1'].includes(key)) {
+    if (['n','d','[',']'].includes(key) || /^[1-9]$/.test(key)) {
       event.preventDefault(); event.stopPropagation();
-      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(-1); else if (key === ']') navigate(1); else select(state.notes[0].id);
+      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(-1); else if (key === ']') navigate(1);
+      else { const note = state.notes[Number(key) - 1]; if (note) select(note.id); }
       return;
     }
   }
@@ -458,7 +500,7 @@ window.inkflitNotesOperation = async request => {
     if(required)throw new Error('A note id or 1-based index is required');
     return null;
   };
-  const describe=note=>({id:note.id,index:state.notes.indexOf(note)+1,content:note.content,updated:note.updated});
+  const describe=note=>({id:note.id,index:state.notes.indexOf(note)+1,content:note.content,...(note.created?{created:note.created}:{}),updated:note.updated});
   if(action==='list') return {notes:state.notes.map(describe)};
   if(action==='get') return {note:describe(resolveNote(true))};
   if(action==='search') {
@@ -470,7 +512,7 @@ window.inkflitNotesOperation = async request => {
   let note=action==='create'?null:resolveNote(action==='delete');
   if(action==='create' && (id !== undefined || index !== undefined))throw new Error('Create does not take a note target');
   if(action!=='create' && request.position !== undefined)throw new Error('Position is only valid when creating a note');
-  let insertion=0;
+  let insertion=state.notes.length;
   if(action==='create' && request.position !== undefined) {
     const position=request.position;
     if(position==='last') insertion=state.notes.length;
@@ -502,7 +544,7 @@ window.inkflitNotesOperation = async request => {
 window.restoreNoteBase64 = value => {
   if (!state) throw new Error('No note state');
   const content = new TextDecoder('utf-8', {fatal:true}).decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)));
-  const note = newNote(); note.content = content; state.notes.unshift(note); changeEditor(note.id); persist(true);
+  const note = newNote(); note.content = content; state.notes.push(note); changeEditor(note.id); persist(true);
 };
 window.addOnboardingNotesBase64 = value => {
   if (!state) throw new Error('No note state');
@@ -515,10 +557,10 @@ window.addOnboardingNotesBase64 = value => {
 window.loadNotesBase64 = value => {
   try {
     const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
-    if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('笔记文件格式无效'));
+    if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('error.invalidNotesFile'));
     if (loaded) { delete loaded.timer; state = loaded; } else { const n = newNote(); state = {notes:[n],selected:n.id}; }
     changeEditor(state.selected); $('save').textContent = ''; $('save').title = ''; $('save').className = '';
-  } catch (error) { $('save').className='error'; $('save').textContent = t('读取失败：')+error.message; $('save').title=$('save').textContent; }
+  } catch (error) { $('save').className='error'; $('save').textContent = t('error.readFailed')+error.message; $('save').title=$('save').textContent; }
 };
 window.setLanguage(lang());
 if (!window.webkit?.messageHandlers?.quicknote) { const saved = localStorage.getItem('quicknote-test'); window.loadNotesBase64(saved ? btoa(unescape(encodeURIComponent(saved))) : null); }

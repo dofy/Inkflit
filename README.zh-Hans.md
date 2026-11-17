@@ -5,7 +5,7 @@
 <p align="center"><strong>给值得记下的想法留一点空间。</strong><br />Markdown · Vim · Local-first · macOS</p>
 
 <p align="center"><a href="README.md">English</a> · 简体中文 · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.ja.md">日本語</a><br />
-<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+<a href="https://inkflit.phpz.org/zh-Hans/">官网</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-536b83?style=flat-square" alt="Mac: Apple Silicon" />
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/languages-4-6d6984?style=flat-square" alt="Four interface languages" />
 </p>
 
-本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。 首次启动时，Inkflit 会按系统语言创建四篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前。
+本地优先的 macOS 浮窗笔记：多条笔记、Markdown 编辑、代码高亮、Vim 模式及自动保存。 首次启动时，Inkflit 会按系统语言创建四篇引导笔记。在设置中点击“重新生成引导笔记”，会按当前应用语言把新引导放在已有笔记之前，并打开欢迎页。
 
 <p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
 
@@ -44,7 +44,7 @@ open build/Inkflit.app
 
 - `⌘N`：新建笔记。
 - `⌘[` / `⌘]`：上一条 / 下一条笔记。
-- `⌘1`：回到最新笔记。
+- `⌘1`–`⌘9`：跳到第 1–9 条笔记。
 - `⌘D`：直接删除当前笔记；12 秒内按 `⌘U` 从最近删除的笔记依次恢复，也可在设置中的回收站恢复。
 - `⌘⇧D`：删除光标所在的功能块及其内容，可以撤销。
 - `⌘K`：打开当前功能块的类型切换菜单，包括代码块。
@@ -92,7 +92,7 @@ codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 
 其他 MCP 客户端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。单次写入内容最多 1,000,000 个 UTF-16 代码单元。
 
-新建笔记时，`create_note` 的可选 `position` 可设为 `"first"`、`"last"` 或从 1 开始的插入序号（最大为当前笔记数加 1）；默认 `"first"`。例如 `{"content":"我的笔记","position":"last"}` 在末尾新建。URL 新建也支持 `position=last` 或数字位置。
+新建笔记时，`create_note` 的可选 `position` 可设为 `"first"`、`"last"` 或从 1 开始的插入序号（最大为当前笔记数加 1）；默认 `"last"`。例如 `{"content":"我的笔记","position":"first"}` 在最前面新建。URL 新建也支持 `position=first` 或数字位置。
 
 Claude Code 可运行 `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`。在 Namo 的连接设置中添加本地 MCP，填写相同的可执行文件及参数 `["--mcp"]`，保存后测试。Namo 和 Inkflit 需在同一台 Mac 以同一用户运行；所有获准对话的成员都能调用这些工具。
 

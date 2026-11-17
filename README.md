@@ -5,7 +5,7 @@
 <p align="center"><strong>A little space for the thoughts worth keeping.</strong><br />Markdown · Vim · Local-first · macOS</p>
 
 <p align="center">English · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · <a href="README.ja.md">日本語</a><br />
-<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+<a href="https://inkflit.phpz.org/">Website</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-536b83?style=flat-square" alt="Mac: Apple Silicon" />
@@ -21,7 +21,7 @@ A local-first floating note app for macOS, with Markdown, Vim editing, code high
 
 <p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
 
-On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes, using the current app language.
+On first launch, Inkflit creates four guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes and opens the welcome note, using the current app language.
 
 The Mac release is built for Apple Silicon. Run `./scripts/package-release.sh` to create an unsigned-for-distribution DMG; the app is ad hoc signed and not notarized.
 
@@ -47,7 +47,7 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | --- | --- |
 | `⌘N` | New note |
 | `⌘[` / `⌘]` | Previous / next note |
-| `⌘1` | Latest note |
+| `⌘1`–`⌘9` | Jump to note 1–9 |
 | `⌘D` | Delete the current note; restore the latest deletion with `⌘U` within 12 seconds or use Trash in Settings |
 | `⌘⇧D` | Delete the current feature block; this can be undone |
 | `⌘K` | Change the current block type |
@@ -96,7 +96,7 @@ Restart the MCP client after configuring it. The tools are `list_notes`, `search
 
 Other MCP clients can use `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`. Each write accepts at most 1,000,000 UTF-16 code units of content.
 
-For `create_note`, optionally set `position` to `"first"`, `"last"`, or a 1-based insertion position up to the note count plus one. The default is `"first"`. For example, `{"content":"My note","position":"last"}` appends a new note. URL creation also accepts `position=last` or a numeric position.
+For `create_note`, optionally set `position` to `"first"`, `"last"`, or a 1-based insertion position up to the note count plus one. The default is `"last"`. For example, `{"content":"My note","position":"first"}` puts a new note at the beginning. URL creation also accepts `position=last` or a numeric position.
 
 For Claude Code, run `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`. In Namo, select Settings → Connections → Add local MCP, enter the same executable and `["--mcp"]` as arguments, then test. Both apps must run as the same user on the same Mac; admitted Namo users can call these tools.
 

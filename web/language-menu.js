@@ -1,7 +1,7 @@
 import { t } from './i18n.js';
 import { currentBlockScope, closeBlockMenu } from './block-menu.js';
 
-export const languages = [['','纯文本'],['javascript','JavaScript'],['typescript','TypeScript'],['python','Python'],['swift','Swift'],['json','JSON'],['html','HTML'],['css','CSS'],['sql','SQL'],['shell','Shell'],['markdown','Markdown']];
+export const languages = [['','editor.plainText'],['javascript','JavaScript'],['typescript','TypeScript'],['python','Python'],['swift','Swift'],['json','JSON'],['html','HTML'],['css','CSS'],['sql','SQL'],['shell','Shell'],['markdown','Markdown']];
 let menu, getView, active = null;
 
 export function initLanguageMenu(element, view) {

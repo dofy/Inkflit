@@ -5,7 +5,7 @@
 <p align="center"><strong>残しておきたいアイデアのための小さな場所。</strong><br />Markdown · Vim · Local-first · macOS</p>
 
 <p align="center"><a href="README.md">English</a> · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · 日本語<br />
-<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+<a href="https://inkflit.phpz.org/">公式サイト</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-536b83?style=flat-square" alt="Mac: Apple Silicon" />
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/languages-4-6d6984?style=flat-square" alt="Four interface languages" />
 </p>
 
-Inkflit はローカル優先の macOS 用フローティングメモアプリです。複数のノート、Markdown、Vim 編集、コードの構文ハイライト、機能ブロック、自動保存に対応します。 初回起動時、システム言語に合わせて4つのガイドノートを作成します。設定の「ガイドノートを再作成」は、現在のアプリ言語で既存ノートの前にガイドを追加します。
+Inkflit はローカル優先の macOS 用フローティングメモアプリです。複数のノート、Markdown、Vim 編集、コードの構文ハイライト、機能ブロック、自動保存に対応します。 初回起動時、システム言語に合わせて4つのガイドノートを作成します。設定の「ガイドノートを再作成」は、現在のアプリ言語で既存ノートの前にガイドを追加し、ようこそページを開きます。
 
 <p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
 
@@ -44,7 +44,7 @@ open build/Inkflit.app
 | --- | --- |
 | `⌘N` | 新規ノート |
 | `⌘[` / `⌘]` | 前／次のノート |
-| `⌘1` | 最新のノート |
+| `⌘1`–`⌘9` | 1〜9 番目のノートへ移動 |
 | `⌘D` | ノートを直接削除。12 秒以内なら `⌘U` で直近の削除から順に復元でき、設定のゴミ箱からも復元できます |
 | `⌘⇧D` | 現在の機能ブロックを削除。取り消しもできます |
 | `⌘K` | 現在のブロックの種類を変更 |
@@ -93,7 +93,7 @@ codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 
 他の MCP クライアントでは `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}` を利用できます。1 回の書き込みは最大 1,000,000 UTF-16 コード単位です。
 
-`create_note` の任意の `position` に `"first"`、`"last"`、または 1 始まりの挿入位置（最大は現在のノート数 + 1）を指定できます。既定値は `"first"` です。例えば `{"content":"メモ","position":"last"}` は末尾に作成します。URL からの作成でも `position=last` または数値を指定できます。
+`create_note` の任意の `position` に `"first"`、`"last"`、または 1 始まりの挿入位置（最大は現在のノート数 + 1）を指定できます。既定値は `"last"` です。例えば `{"content":"メモ","position":"first"}` は先頭に作成します。URL からの作成でも `position=first` または数値を指定できます。
 
 Claude Code では `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp` を実行します。Namo の接続設定でローカル MCP を追加し、同じ実行ファイルと引数 `["--mcp"]` を入力して接続をテストします。両アプリを同じ Mac で同じユーザーとして実行し、許可された対話メンバーがツールを使用できます。
 

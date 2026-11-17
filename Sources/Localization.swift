@@ -20,4 +20,5 @@ enum Localization {
     static var preference: String { UserDefaults.standard.string(forKey: "language") ?? "system" }
     static var current: String { supported.contains(preference) ? preference : resolve(Locale.preferredLanguages) }
 }
-func L(_ key: String) -> String { Localization.catalog[key]?[Localization.current] ?? key }
+// Keys are English ids such as "new_note"; a missing language falls back to English.
+func L(_ key: String) -> String { Localization.catalog[key]?[Localization.current] ?? Localization.catalog[key]?["en"] ?? key }

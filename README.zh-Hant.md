@@ -5,7 +5,7 @@
 <p align="center"><strong>為值得記下的想法留一點空間。</strong><br />Markdown · Vim · Local-first · macOS</p>
 
 <p align="center"><a href="README.md">English</a> · <a href="README.zh-Hans.md">简体中文</a> · 繁體中文 · <a href="README.ja.md">日本語</a><br />
-<a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
+<a href="https://inkflit.phpz.org/zh-Hant/">官網</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-536b83?style=flat-square" alt="Mac: Apple Silicon" />
@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/languages-4-6d6984?style=flat-square" alt="Four interface languages" />
 </p>
 
-Inkflit 是本地優先的 macOS 浮動筆記，支援多則筆記、Markdown、Vim 編輯、程式碼突顯、功能區塊與自動儲存。 首次啟動時，Inkflit 會依系統語言建立四篇引導筆記。在設定中點擊「重新產生引導筆記」，會依目前應用程式語言把新引導放在已有筆記之前。
+Inkflit 是本地優先的 macOS 浮動筆記，支援多則筆記、Markdown、Vim 編輯、程式碼突顯、功能區塊與自動儲存。 首次啟動時，Inkflit 會依系統語言建立四篇引導筆記。在設定中點擊「重新產生引導筆記」，會依目前應用程式語言把新引導放在已有筆記之前，並開啟歡迎頁。
 
 <p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
 
@@ -44,7 +44,7 @@ open build/Inkflit.app
 | --- | --- |
 | `⌘N` | 新增筆記 |
 | `⌘[` / `⌘]` | 上一則／下一則筆記 |
-| `⌘1` | 最新筆記 |
+| `⌘1`–`⌘9` | 跳到第 1–9 則筆記 |
 | `⌘D` | 直接刪除筆記；12 秒內按 `⌘U` 由最近刪除的筆記依序復原，也可從設定的回收站還原 |
 | `⌘⇧D` | 刪除目前功能區塊；可復原 |
 | `⌘K` | 切換目前區塊類型 |
@@ -93,7 +93,7 @@ codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 
 其他 MCP 用戶端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。每次寫入最多 1,000,000 個 UTF-16 程式碼單元。
 
-新增筆記時，`create_note` 的選用 `position` 可設為 `"first"`、`"last"` 或從 1 開始的插入位置（最大為目前筆記數加 1）；預設 `"first"`。例如 `{"content":"我的筆記","position":"last"}` 在末尾新增。URL 新增也支援 `position=last` 或數字位置。
+新增筆記時，`create_note` 的選用 `position` 可設為 `"first"`、`"last"` 或從 1 開始的插入位置（最大為目前筆記數加 1）；預設 `"last"`。例如 `{"content":"我的筆記","position":"first"}` 在最前面新增。URL 新增也支援 `position=first` 或數字位置。
 
 Claude Code 可執行 `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`。在 Namo 的連線設定中新增本機 MCP，填入相同的執行檔與參數 `["--mcp"]`，儲存並測試。兩者須在同一台 Mac 以同一使用者執行；獲准對話的成員都能使用這些工具。
 

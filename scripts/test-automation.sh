@@ -97,9 +97,9 @@ try:
  with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool: list(pool.map(parallel_append,range(6)))
  parallel=(store/'notes'/filename('second')).read_text().splitlines()
  assert parallel[0]=='Replacement' and set(parallel[1:])=={f'parallel-{i}' for i in range(6)} and len(parallel)==7,parallel
- made=call('append_note',{'content':'Created by append'})['result']['note']; assert made['index']==1
- made2=call('replace_note',{'content':'Created by replace'})['result']['note']; assert made2['index']==1
- made3=call('create_note',{'content':'Explicit creation'})['result']['note'];assert made3['index']==1
+ made=call('append_note',{'content':'Created by append'})['result']['note']; assert made['index']==len(call('list_notes')['result']['notes'])
+ made2=call('replace_note',{'content':'Created by replace'})['result']['note']; assert made2['index']==made['index']+1
+ made3=call('create_note',{'content':'Explicit creation'})['result']['note'];assert made3['index']==made2['index']+1 and made3['created']
  count=len(call('list_notes')['result']['notes'])
  tail=call('create_note',{'content':'Tail','position':'last'})['result']['note'];assert tail['index']==count+1
  middle=call('create_note',{'content':'Middle','position':2})['result']['note'];assert middle['index']==2

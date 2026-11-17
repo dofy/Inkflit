@@ -5,8 +5,8 @@ enum NoteStorageError: LocalizedError {
     case invalidSnapshot
     var errorDescription: String? {
         switch self {
-        case .destinationExists: return L("目标位置已有笔记数据或内容不一致，未覆盖。")
-        case .invalidSnapshot: return L("无法读取当前笔记，保存位置未更改。")
+        case .destinationExists: return L("error.destinationExists")
+        case .invalidSnapshot: return L("error.storageUnchanged")
         }
     }
 }
@@ -15,6 +15,8 @@ enum NoteStorageError: LocalizedError {
 struct StoredNote: Codable, Equatable {
     var id: String
     var content: String
+    // Missing for notes saved before creation times were recorded.
+    var created: String? = nil
     var updated: String
 }
 struct NoteSnapshot: Codable, Equatable {
@@ -26,7 +28,7 @@ struct NoteSnapshot: Codable, Equatable {
     }
 }
 private struct NoteIndex: Codable {
-    struct Entry: Codable { var id: String; var updated: String }
+    struct Entry: Codable { var id: String; var created: String?; var updated: String }
     var version = 1
     var notes: [Entry]
     var selected: String
@@ -50,7 +52,7 @@ enum NoteFiles {
         let index = try JSONDecoder().decode(NoteIndex.self, from: Data(contentsOf: index(directory)))
         guard index.version == 1 else { throw NoteStorageError.invalidSnapshot }
         let notes = try index.notes.map { entry in
-            StoredNote(id: entry.id, content: try String(contentsOf: noteURL(directory, entry.id), encoding: .utf8), updated: entry.updated)
+            StoredNote(id: entry.id, content: try String(contentsOf: noteURL(directory, entry.id), encoding: .utf8), created: entry.created, updated: entry.updated)
         }
         let snapshot = NoteSnapshot(notes: notes, selected: index.selected)
         try snapshot.validate(); return snapshot
@@ -60,7 +62,7 @@ enum NoteFiles {
         for name in ["notes", "backups", "trash"] { try files.createDirectory(at: root.appendingPathComponent(name), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]) }
     }
     static func writeIndex(_ snapshot: NoteSnapshot, root: URL) throws {
-        let index = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, updated: $0.updated) }, selected: snapshot.selected)
+        let index = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, created: $0.created, updated: $0.updated) }, selected: snapshot.selected)
         try JSONEncoder().encode(index).write(to: root.appendingPathComponent("index.json"), options: .atomic)
     }
     // Install into an existing user-selected directory without replacing unrelated files.
@@ -106,8 +108,8 @@ enum NoteFiles {
             guard let data = Data(base64Encoded: encoded), let id = String(data: data, encoding: .utf8), filename(id) == url.lastPathComponent else { throw NoteStorageError.invalidSnapshot }
             let date = values.contentModificationDate ?? Date(timeIntervalSince1970: 0)
             return (StoredNote(id: id, content: try String(contentsOf: url, encoding: .utf8), updated: ISO8601DateFormatter().string(from: date)), date)
-        }.sorted { $0.1 > $1.1 }
-        guard let first = dated.first else { throw NoteStorageError.invalidSnapshot }
+        }.sorted { $0.1 < $1.1 }
+        guard let first = dated.last else { throw NoteStorageError.invalidSnapshot }
         let snapshot = NoteSnapshot(notes: dated.map(\.0), selected: first.0.id)
         try snapshot.validate()
         let original = index(directory)

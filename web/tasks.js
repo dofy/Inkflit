@@ -9,7 +9,7 @@ class TaskCheckbox extends WidgetType {
   toDOM(view) {
     const button = document.createElement('button');
     button.className = 'task-checkbox'; button.type = 'button'; button.tabIndex = -1;
-    button.setAttribute('aria-label', this.checked ? t('标记为未完成') : t('标记为已完成'));
+    button.setAttribute('aria-label', this.checked ? t('editor.markIncomplete') : t('editor.markComplete'));
     button.setAttribute('aria-checked', String(this.checked)); button.setAttribute('role', 'checkbox');
     button.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
     button.addEventListener('click', event => {

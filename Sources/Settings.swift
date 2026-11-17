@@ -117,17 +117,17 @@ final class ShortcutField: NSButton {
         super.init(frame: frameRect)
         bezelStyle = .rounded; font = .monospacedSystemFont(ofSize: 13, weight: .medium)
         target = self; action = #selector(startRecording)
-        setAccessibilityLabel(L("全局快捷键"))
+        setAccessibilityLabel(L("settings.globalShortcut"))
         refresh()
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
     override var acceptsFirstResponder: Bool { true }
     @objc private func startRecording() {
-        recording = true; onMessage?(L("按下组合键，按 Esc 取消。"))
+        recording = true; onMessage?(L("settings.pressShortcutOrEsc"))
         window?.makeFirstResponder(self)
     }
     private func refresh() {
-        title = recording ? L("输入快捷键…") : (displayValue.isEmpty ? L("添加快捷键") : displayValue)
+        title = recording ? L("settings.pressShortcut") : (displayValue.isEmpty ? L("settings.addShortcut") : displayValue)
         setAccessibilityValue(title)
     }
     override func keyDown(with event: NSEvent) {
@@ -140,14 +140,14 @@ final class ShortcutField: NSButton {
         if flags.contains(.shift) { mods |= UInt32(shiftKey) }
         if flags.contains(.command) { mods |= UInt32(cmdKey) }
         guard mods & UInt32(controlKey | optionKey | cmdKey) != 0 else {
-            onMessage?(L("请包含 ⌘、⌥ 或 ⌃。"))
+            onMessage?(L("settings.shortcutNeedsModifier"))
             NSSound.beep(); return
         }
         if let message = onCapture?(UInt32(event.keyCode), mods) {
             onMessage?(message); NSSound.beep(); return
         }
         recording = false
-        onMessage?(L("快捷键已更新。"))
+        onMessage?(L("settings.shortcutUpdated"))
     }
 }
 final class SettingsWindow: NSWindow {
@@ -164,18 +164,18 @@ final class SettingsWindow: NSWindow {
 }
 final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let shortcut = ShortcutField(frame: .zero)
-    private let shortcutMessage = NSTextField(wrappingLabelWithString: L("点击快捷键，然后按下新的组合键。"))
+    private let shortcutMessage = NSTextField(wrappingLabelWithString: L("settings.globalShortcutHint"))
     private let loginSwitch = OrangeSwitch(frame: .zero)
-    private let loginMessage = NSTextField(wrappingLabelWithString: L("当前为手动启动。"))
-    private let loginSettings = NSButton(title: L("打开系统设置"), target: nil, action: nil)
+    private let loginMessage = NSTextField(wrappingLabelWithString: L("settings.launchManually"))
+    private let loginSettings = NSButton(title: L("settings.openSystemSettings"), target: nil, action: nil)
     private let storageMessage = NSTextField(wrappingLabelWithString: "")
     private let backupMode = NSPopUpButton(frame: .zero, pullsDown: false)
     private let backupCount = NSTextField(string: "20")
-    private let backupMessage = NSTextField(wrappingLabelWithString: L("每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。"))
+    private let backupMessage = NSTextField(wrappingLabelWithString: L("settings.automaticBackupsHint"))
     var restoreNote: ((Data) -> Void)?
     var rebuildIndex: (() -> String?)?
     var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
-    private let onboardingButton = NSButton(title: L("重新生成引导笔记"), target: nil, action: nil)
+    private let onboardingButton = NSButton(title: L("settings.restoreGuideNotes"), target: nil, action: nil)
     private let vimSwitch = OrangeSwitch(frame: .zero)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -218,17 +218,17 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         self.getTheme = getTheme; self.setTheme = setTheme
         self.getAppearance = getAppearance; self.setAppearance = setAppearance
         let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 500), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = L("Inkflit 设置"); window.isReleasedWhenClosed = false; window.center()
+        window.title = L("settings.windowTitle"); window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
         window.shortcutField = shortcut
         buildUI(window)
         shortcut.onCapture = { [weak self] code, mods in
-            guard let self else { return L("设置窗口不可用。") }
+            guard let self else { return L("error.settingsUnavailable") }
             let error = self.saveShortcut(code, mods)
             if error == nil { self.shortcut.displayValue = self.getShortcut() }
             return error
         }
-        shortcut.onCancel = { [weak self] in self?.shortcutMessage.stringValue = L("已取消，原快捷键保持不变。") }
+        shortcut.onCancel = { [weak self] in self?.shortcutMessage.stringValue = L("settings.shortcutCancelled") }
         shortcut.onMessage = { [weak self] in self?.shortcutMessage.stringValue = $0 }
         NotificationCenter.default.addObserver(self, selector: #selector(windowBecameKey), name: NSWindow.didBecomeKeyNotification, object: window)
         refresh()
@@ -283,50 +283,50 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         return controls
     }
     private func buildUI(_ window: SettingsWindow) {
-        let title = label(L("设置"), size: 20, weight: .semibold)
-        let description = label(L("按你的习惯使用 Inkflit"), size: 12, color: .secondaryLabelColor)
+        let title = label(L("settings.title"), size: 20, weight: .semibold)
+        let description = label(L("settings.subtitle"), size: 12, color: .secondaryLabelColor)
         let header = NSStackView(views: [title, description]); header.orientation = .vertical; header.alignment = .leading; header.spacing = 4
-        let clear = NSButton(title: L("清除"), target: self, action: #selector(clearPressed)); clear.bezelStyle = .rounded; clear.setAccessibilityLabel(L("清除全局快捷键"))
-        let reset = NSButton(title: L("恢复默认"), target: self, action: #selector(resetPressed)); reset.bezelStyle = .rounded
+        let clear = NSButton(title: L("settings.clear"), target: self, action: #selector(clearPressed)); clear.bezelStyle = .rounded; clear.setAccessibilityLabel(L("settings.clearGlobalShortcut"))
+        let reset = NSButton(title: L("settings.reset"), target: self, action: #selector(resetPressed)); reset.bezelStyle = .rounded
         shortcut.widthAnchor.constraint(greaterThanOrEqualToConstant: 112).isActive = true
         let shortcutControls = NSStackView(views: [shortcut, clear, reset]); shortcutControls.orientation = .horizontal; shortcutControls.alignment = .centerY; shortcutControls.spacing = 4
-        let shortcutSection = section(L("全局快捷键"), icon: "keyboard", detail: L("随时唤起或收起笔记"), controls: shortcutControls, message: shortcutMessage)
-        loginSwitch.target = self; loginSwitch.action = #selector(loginChanged); loginSwitch.setAccessibilityLabel(L("开机启动"))
+        let shortcutSection = section(L("settings.globalShortcut"), icon: "keyboard", detail: L("settings.globalShortcutDetail"), controls: shortcutControls, message: shortcutMessage)
+        loginSwitch.target = self; loginSwitch.action = #selector(loginChanged); loginSwitch.setAccessibilityLabel(L("settings.launchAtLogin"))
         loginSettings.target = self; loginSettings.action = #selector(openLoginSettings); loginSettings.bezelStyle = .rounded; loginSettings.isHidden = true
         let loginControls = NSStackView(views: [loginSettings, loginSwitch]); loginControls.orientation = .horizontal; loginControls.alignment = .centerY; loginControls.spacing = 8
-        let loginSection = section(L("开机启动"), icon: "power", detail: L("登录 Mac 后自动运行"), controls: loginControls, message: loginMessage)
-        let chooseStorage = NSButton(title: L("选择文件夹…"), target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
+        let loginSection = section(L("settings.launchAtLogin"), icon: "power", detail: L("settings.launchAtLoginDetail"), controls: loginControls, message: loginMessage)
+        let chooseStorage = NSButton(title: L("settings.chooseFolder"), target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
         storageMessage.lineBreakMode = .byTruncatingMiddle; storageMessage.maximumNumberOfLines = 1
-        let storageSection = section(L("笔记保存位置"), icon: "folder", detail: L("更改时保留原文件"), controls: chooseStorage, message: storageMessage)
-        for (title, value) in [(L("关闭"), "off"), (L("保留数量"), "limited"), (L("无限保留"), "unlimited")] { backupMode.addItem(withTitle: title); backupMode.lastItem?.representedObject = value }
+        let storageSection = section(L("settings.notesLocation"), icon: "folder", detail: L("settings.notesLocationDetail"), controls: chooseStorage, message: storageMessage)
+        for (title, value) in [(L("settings.off"), "off"), (L("settings.backupLimited"), "limited"), (L("settings.backupUnlimited"), "unlimited")] { backupMode.addItem(withTitle: title); backupMode.lastItem?.representedObject = value }
         backupMode.target = self; backupMode.action = #selector(backupChanged)
         backupCount.widthAnchor.constraint(equalToConstant: 56).isActive = true
         let countFormatter = NumberFormatter(); countFormatter.numberStyle = .decimal; countFormatter.minimum = 1; countFormatter.maximum = 1000000; countFormatter.allowsFloats = false
         backupCount.formatter = countFormatter; backupCount.target = self; backupCount.action = #selector(backupChanged)
         backupCount.delegate = self
-        backupCount.setAccessibilityLabel(L("保留版本数"))
+        backupCount.setAccessibilityLabel(L("settings.backupVersionCount"))
         let backupControls = NSStackView(views: [backupMode, backupCount]); backupControls.orientation = .horizontal; backupControls.spacing = 6
-        let backupSection = section(L("自动备份"), icon: "clock.arrow.circlepath", detail: L("每篇笔记的历史版本"), controls: backupControls, message: backupMessage)
-        let restoreBackup = NSButton(title: L("恢复历史版本…"), target: self, action: #selector(restoreBackupPressed)); restoreBackup.bezelStyle = .rounded
-        let historySection = section(L("历史版本"), icon: "clock", detail: L("从备份恢复笔记"), controls: restoreBackup, message: NSTextField(wrappingLabelWithString: L("恢复时会创建一篇新笔记，原版本仍会保留。")))
-        let restore = NSButton(title: L("恢复已删除笔记…"), target: self, action: #selector(restorePressed)); restore.bezelStyle = .rounded
-        let trashSection = section(L("回收站"), icon: "trash", detail: L("删除的笔记保存在本地"), controls: restore, message: NSTextField(wrappingLabelWithString: L("恢复时会创建一篇新笔记，回收站文件仍会保留。")))
-        let rebuild = NSButton(title: L("重建索引…"), target: self, action: #selector(rebuildPressed)); rebuild.bezelStyle = .rounded
-        let rebuildSection = section(L("索引恢复"), icon: "wrench.and.screwdriver", detail: L("索引损坏时使用"), controls: rebuild, message: NSTextField(wrappingLabelWithString: L("根据笔记文件恢复，顺序可能变化。")))
-        vimSwitch.target = self; vimSwitch.action = #selector(vimChanged); vimSwitch.setAccessibilityLabel(L("Vim 模式"))
-        let vimSection = section(L("Vim 模式"), icon: "keyboard", detail: L("使用 Vim 按键和模式"), controls: vimSwitch, message: NSTextField(wrappingLabelWithString: L("关闭后可直接输入，Esc 收起窗口。")))
-        for (title, value) in [(L("2 个空格"), "spaces2"), (L("4 个空格"), "spaces4"), ("Tab", "tabs")] {
+        let backupSection = section(L("settings.automaticBackups"), icon: "clock.arrow.circlepath", detail: L("settings.automaticBackupsDetail"), controls: backupControls, message: backupMessage)
+        let restoreBackup = NSButton(title: L("settings.restorePreviousVersion"), target: self, action: #selector(restoreBackupPressed)); restoreBackup.bezelStyle = .rounded
+        let historySection = section(L("settings.previousVersions"), icon: "clock", detail: L("settings.previousVersionsDetail"), controls: restoreBackup, message: NSTextField(wrappingLabelWithString: L("settings.previousVersionsHint")))
+        let restore = NSButton(title: L("settings.restoreDeletedNote"), target: self, action: #selector(restorePressed)); restore.bezelStyle = .rounded
+        let trashSection = section(L("settings.trash"), icon: "trash", detail: L("settings.trashDetail"), controls: restore, message: NSTextField(wrappingLabelWithString: L("settings.trashHint")))
+        let rebuild = NSButton(title: L("settings.rebuildIndex"), target: self, action: #selector(rebuildPressed)); rebuild.bezelStyle = .rounded
+        let rebuildSection = section(L("settings.indexRecovery"), icon: "wrench.and.screwdriver", detail: L("settings.indexRecoveryDetail"), controls: rebuild, message: NSTextField(wrappingLabelWithString: L("settings.indexRecoveryHint")))
+        vimSwitch.target = self; vimSwitch.action = #selector(vimChanged); vimSwitch.setAccessibilityLabel(L("settings.vimMode"))
+        let vimSection = section(L("settings.vimMode"), icon: "keyboard", detail: L("settings.vimModeDetail"), controls: vimSwitch, message: NSTextField(wrappingLabelWithString: L("settings.vimModeHint")))
+        for (title, value) in [(L("settings.indentTwoSpaces"), "spaces2"), (L("settings.indentFourSpaces"), "spaces4"), ("Tab", "tabs")] {
             indentation.addItem(withTitle: title); indentation.lastItem?.representedObject = value
         }
-        indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel(L("代码缩进"))
-        let indentMessage = NSTextField(wrappingLabelWithString: L("回车自动缩进；Tab 插入缩进。"))
-        let indentSection = section(L("代码缩进"), icon: "increase.indent", detail: L("代码块使用的缩进方式"), controls: indentation, message: indentMessage)
+        indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel(L("settings.codeIndentation"))
+        let indentMessage = NSTextField(wrappingLabelWithString: L("settings.codeIndentationHint"))
+        let indentSection = section(L("settings.codeIndentation"), icon: "increase.indent", detail: L("settings.codeIndentationDetail"), controls: indentation, message: indentMessage)
         for theme in CodeThemes.all { themePicker.addItem(withTitle: L(theme.title)); themePicker.lastItem?.representedObject = theme.id }
-        themePicker.target = self; themePicker.action = #selector(themeChanged); themePicker.setAccessibilityLabel(L("代码配色"))
-        let themeMessage = NSTextField(wrappingLabelWithString: L("选择后立即应用，预览展示 JSON 代码。"))
-        let themeSection = section(L("代码配色"), icon: "paintpalette", detail: L("选择语法高亮颜色"), controls: themePicker, message: themeMessage)
+        themePicker.target = self; themePicker.action = #selector(themeChanged); themePicker.setAccessibilityLabel(L("settings.codeColors"))
+        let themeMessage = NSTextField(wrappingLabelWithString: L("settings.codeColorsHint"))
+        let themeSection = section(L("settings.codeColors"), icon: "paintpalette", detail: L("settings.codeColorsDetail"), controls: themePicker, message: themeMessage)
         themePreview.font = .monospacedSystemFont(ofSize: 12, weight: .regular); themePreview.maximumNumberOfLines = 0
-        themePreview.setAccessibilityLabel(L("代码配色预览"))
+        themePreview.setAccessibilityLabel(L("settings.codeColorPreview"))
         previewBox.boxType = .custom; previewBox.borderWidth = 0
         previewBox.fillColor = NSColor(calibratedRed: 1, green: 0.992, blue: 0.98, alpha: 1); previewBox.cornerRadius = 8
         themePreview.translatesAutoresizingMaskIntoConstraints = false; previewBox.addSubview(themePreview)
@@ -336,22 +336,22 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let themeGroup = NSStackView(views: [themeSection, previewRow]); themeGroup.orientation = .vertical; themeGroup.alignment = .leading; themeGroup.spacing = 8
         themeSection.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true; previewRow.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true
         for theme in UIThemes.all { uiThemePicker.addItem(withTitle: L(theme.title)); uiThemePicker.lastItem?.representedObject = theme.id }
-        uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged(_:)); uiThemePicker.setAccessibilityLabel(L("界面主色"))
-        let uiThemeSection = section(L("界面主色"), icon: "paintbrush", detail: L("设置笔记窗口的主色调"), controls: uiThemePicker, message: NSTextField(wrappingLabelWithString: L("更改后立即应用。")))
-        let opacitySection = section(L("窗口不透明度"), icon: "circle.lefthalf.filled", detail: L("调整笔记背景的透明程度"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("窗口不透明度")), message: NSTextField(wrappingLabelWithString: L("100% 为不透明；按住 Option 以 5% 为步长调整滑块。")))
-        let blurSection = section(L("背景模糊"), icon: "drop.halffull", detail: L("柔化窗口后方内容"), controls: sliderControls(blurSlider, value: blurValue, label: L("背景模糊")), message: NSTextField(wrappingLabelWithString: L("降低不透明度后可看到模糊效果。")))
+        uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged(_:)); uiThemePicker.setAccessibilityLabel(L("settings.accentColor"))
+        let uiThemeSection = section(L("settings.accentColor"), icon: "paintbrush", detail: L("settings.accentColorDetail"), controls: uiThemePicker, message: NSTextField(wrappingLabelWithString: L("settings.changesApplyImmediately")))
+        let opacitySection = section(L("settings.windowOpacity"), icon: "circle.lefthalf.filled", detail: L("settings.windowOpacityDetail"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("settings.windowOpacity")), message: NSTextField(wrappingLabelWithString: L("settings.windowOpacityHint")))
+        let blurSection = section(L("settings.backgroundBlur"), icon: "drop.halffull", detail: L("settings.backgroundBlurDetail"), controls: sliderControls(blurSlider, value: blurValue, label: L("settings.backgroundBlur")), message: NSTextField(wrappingLabelWithString: L("settings.backgroundBlurHint")))
         tabs.tabViewType = .topTabsBezelBorder
-        for (title, value) in [(L("跟随系统"), "system"), ("English", "en"), ("简体中文", "zh-Hans"), ("繁體中文", "zh-Hant"), ("日本語", "ja")] {
+        for (title, value) in [(L("settings.languageSystem"), "system"), ("English", "en"), ("简体中文", "zh-Hans"), ("繁體中文", "zh-Hant"), ("日本語", "ja")] {
             languagePicker.addItem(withTitle: title); languagePicker.lastItem?.representedObject = value
         }
         languagePicker.target = self; languagePicker.action = #selector(changeLanguage)
-        languagePicker.setAccessibilityLabel(L("语言"))
-        let languageSection = section(L("语言"), icon: "globe", detail: L("选择应用界面语言"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("默认跟随系统语言。")))
-        for (title, content) in [(L("通用"), page([loginSection, shortcutSection, storageSection])), (L("外观"), page([uiThemeSection, opacitySection, blurSection])), (L("编辑"), page([vimSection, indentSection, themeGroup])), (L("语言"), page([languageSection])), (L("备份"), page([backupSection, historySection, trashSection, rebuildSection]))] {
+        languagePicker.setAccessibilityLabel(L("settings.language"))
+        let languageSection = section(L("settings.language"), icon: "globe", detail: L("settings.languageDetail"), controls: languagePicker, message: NSTextField(wrappingLabelWithString: L("settings.languageHint")))
+        for (title, content) in [(L("settings.general"), page([loginSection, shortcutSection, storageSection])), (L("settings.appearance"), page([uiThemeSection, opacitySection, blurSection])), (L("app.edit"), page([vimSection, indentSection, themeGroup])), (L("settings.language"), page([languageSection])), (L("settings.backups"), page([backupSection, historySection, trashSection, rebuildSection]))] {
             let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
         }
         tabs.heightAnchor.constraint(equalToConstant: 350).isActive = true
-        let help = NSButton(title: L("打开使用帮助"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
+        let help = NSButton(title: L("settings.openHelp"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
         onboardingButton.target = self; onboardingButton.action = #selector(onboardingPressed); onboardingButton.bezelStyle = .rounded
         let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
         let footerActions = NSStackView(views: [onboardingButton, help]); footerActions.orientation = .horizontal; footerActions.spacing = 6
@@ -391,19 +391,19 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         loginSwitch.setAccessibilityValue(loginSwitch.state == .on ? 1 : 0); loginSwitch.needsDisplay = true
         loginSettings.isHidden = status != .requiresApproval
         switch status {
-        case .enabled: loginMessage.stringValue = L("已在登录时自动启动。")
-        case .requiresApproval: loginMessage.stringValue = L("需要在系统设置中允许 Inkflit。")
-        case .notFound: loginMessage.stringValue = L("当前为手动启动。")
-        default: loginMessage.stringValue = L("当前为手动启动。")
+        case .enabled: loginMessage.stringValue = L("settings.launchAtLoginOn")
+        case .requiresApproval: loginMessage.stringValue = L("settings.launchAtLoginNeedsApproval")
+        case .notFound: loginMessage.stringValue = L("settings.launchManually")
+        default: loginMessage.stringValue = L("settings.launchManually")
         }
     }
-    @objc private func clearPressed() { shortcut.recording = false; clearShortcut(); refresh(); shortcutMessage.stringValue = L("全局快捷键已清除。") }
+    @objc private func clearPressed() { shortcut.recording = false; clearShortcut(); refresh(); shortcutMessage.stringValue = L("settings.globalShortcutCleared") }
     @objc private func changeLanguage() {
         guard let value = languagePicker.selectedItem?.representedObject as? String, value == "system" || Localization.supported.contains(value) else { return }
         UserDefaults.standard.set(value, forKey: "language"); languageChanged?()
     }
     func selectLanguageTab() { tabs.selectTabViewItem(at: 3) }
-    @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? L("已恢复默认快捷键。") }
+    @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? L("settings.defaultShortcutRestored") }
     @objc private func loginChanged() {
         let requested = loginSwitch.state == .on
         let error = setLogin(requested)
@@ -546,7 +546,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             guard UserDefaults.standard.integer(forKey: "backupVersionLimit") == expected else { return false }
         }
         func buttons(_ view: NSView) -> [NSButton] { (view as? NSButton).map { [$0] } ?? [] + view.subviews.flatMap(buttons) }
-        let controls = buttons(page).filter { [L("恢复历史版本…"), L("恢复已删除笔记…"), L("重建索引…")].contains($0.title) }
+        let controls = buttons(page).filter { [L("settings.restorePreviousVersion"), L("settings.restoreDeletedNote"), L("settings.rebuildIndex")].contains($0.title) }
         return controls.count == 3 && controls.allSatisfy { page.bounds.contains($0.convert($0.bounds, to: page)) }
     }
     func testSelectLanguage(_ id: String) -> Bool {
@@ -557,7 +557,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     #endif
     @objc private func chooseStoragePressed() {
         guard let window else { return }
-        let panel = NSOpenPanel(); panel.title = L("选择笔记保存文件夹"); panel.message = L("Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。")
+        let panel = NSOpenPanel(); panel.title = L("settings.chooseNotesFolder"); panel.message = L("settings.notesLocationHint")
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false; panel.canCreateDirectories = true
         panel.directoryURL = URL(fileURLWithPath: getStorage()).deletingLastPathComponent()
         panel.beginSheetModal(for: window) { [weak self] result in
@@ -580,7 +580,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let field = notification.object as? NSTextField, field === backupCount { backupChanged() }
     }
     @objc private func restorePressed() {
-        chooseRecoveryFile(folder: "trash", title: L("恢复已删除笔记…"))
+        chooseRecoveryFile(folder: "trash", title: L("settings.restoreDeletedNote"))
     }
     @objc private func onboardingPressed() {
         guard let generateOnboarding else { return }
@@ -589,23 +589,23 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             guard let self else { return }
             self.onboardingButton.isEnabled = true
             if let error, let window = self.window {
-                let alert = NSAlert(); alert.messageText = L("无法生成引导笔记"); alert.informativeText = error
+                let alert = NSAlert(); alert.messageText = L("error.createGuideNotes"); alert.informativeText = error
                 alert.beginSheetModal(for: window)
             }
         }
     }
     @objc private func restoreBackupPressed() {
-        chooseRecoveryFile(folder: "backups", title: L("恢复历史版本…"))
+        chooseRecoveryFile(folder: "backups", title: L("settings.restorePreviousVersion"))
     }
     @objc private func rebuildPressed() {
         guard let window else { return }
-        let alert = NSAlert(); alert.messageText = L("重建笔记索引？")
-        alert.informativeText = L("将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。")
-        alert.addButton(withTitle: L("重建索引")); alert.addButton(withTitle: L("取消"))
+        let alert = NSAlert(); alert.messageText = L("settings.rebuildIndexTitle")
+        alert.informativeText = L("settings.rebuildIndexMessage")
+        alert.addButton(withTitle: L("settings.rebuildIndexConfirm")); alert.addButton(withTitle: L("app.cancel"))
         alert.beginSheetModal(for: window) { [weak self] response in
             guard response == .alertFirstButtonReturn, let self else { return }
             if let error = self.rebuildIndex?() { self.backupMessage.stringValue = error }
-            else { self.backupMessage.stringValue = L("索引已重建。") }
+            else { self.backupMessage.stringValue = L("settings.indexRebuilt") }
         }
     }
     private func chooseRecoveryFile(folder: String, title: String) {
@@ -618,17 +618,19 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             let path = file.resolvingSymlinksInPath().standardizedFileURL.path
             let root = recovery.resolvingSymlinksInPath().standardizedFileURL.path + "/"
             guard path.hasPrefix(root), file.pathExtension.lowercased() == "md", let data = try? Data(contentsOf: file), String(data: data, encoding: .utf8) != nil else {
-                self.backupMessage.stringValue = L("请选择备份或回收站中的 Markdown 文件。"); return
+                self.backupMessage.stringValue = L("error.chooseRecoveryMarkdown"); return
             }
             self.restoreNote?(data)
         }
     }
+    // Entry points for the command palette.
+    func openHelpWindow() { openHelp() }
     @objc private func openHelp() {
         let resource = Localization.current == "zh-Hans" ? "Help" : "Help.\(Localization.current)"
         guard let url = Bundle.main.url(forResource: resource, withExtension: "html") else { NSSound.beep(); return }
         if helpWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-            window.title = L("Inkflit 使用帮助"); window.isReleasedWhenClosed = false; window.center()
+            window.title = L("settings.helpWindowTitle"); window.isReleasedWhenClosed = false; window.center()
             let web = WKWebView(frame: .zero)
             window.contentView = web
             web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())

@@ -1,1035 +1,1064 @@
 {
-  "设置…": {
+  "app.settingsMenu": {
     "en": "Settings…",
     "zh-Hans": "设置…",
     "zh-Hant": "設定…",
     "ja": "設定…"
   },
-  "设置": {
-    "en": "Settings",
-    "zh-Hans": "设置",
-    "zh-Hant": "設定",
-    "ja": "設定"
-  },
-  "Inkflit 设置": {
-    "en": "Inkflit Settings",
-    "zh-Hans": "Inkflit 设置",
-    "zh-Hant": "Inkflit 設定",
-    "ja": "Inkflit の設定"
-  },
-  "退出 Inkflit": {
+  "app.quit": {
     "en": "Quit Inkflit",
     "zh-Hans": "退出 Inkflit",
     "zh-Hant": "結束 Inkflit",
     "ja": "Inkflit を終了"
   },
-  "打开 Inkflit": {
+  "app.open": {
     "en": "Open Inkflit",
     "zh-Hans": "打开 Inkflit",
     "zh-Hant": "開啟 Inkflit",
     "ja": "Inkflit を開く"
   },
-  "编辑": {
+  "app.edit": {
     "en": "Edit",
     "zh-Hans": "编辑",
     "zh-Hant": "編輯",
     "ja": "編集"
   },
-  "剪切": {
+  "app.cut": {
     "en": "Cut",
     "zh-Hans": "剪切",
     "zh-Hant": "剪下",
     "ja": "カット"
   },
-  "复制": {
+  "app.copy": {
     "en": "Copy",
     "zh-Hans": "复制",
     "zh-Hant": "複製",
     "ja": "コピー"
   },
-  "粘贴": {
+  "app.paste": {
     "en": "Paste",
     "zh-Hans": "粘贴",
     "zh-Hant": "貼上",
     "ja": "ペースト"
   },
-  "全选": {
+  "app.selectAll": {
     "en": "Select All",
     "zh-Hans": "全选",
     "zh-Hant": "全選",
     "ja": "すべて選択"
   },
-  "窗口": {
+  "app.window": {
     "en": "Window",
     "zh-Hans": "窗口",
     "zh-Hant": "視窗",
     "ja": "ウインドウ"
   },
-  "关闭窗口": {
+  "app.closeWindow": {
     "en": "Close Window",
     "zh-Hans": "关闭窗口",
     "zh-Hant": "關閉視窗",
     "ja": "ウインドウを閉じる"
   },
-  "全局快捷键": {
-    "en": "Global shortcut",
-    "zh-Hans": "全局快捷键",
-    "zh-Hant": "全域快捷鍵",
-    "ja": "グローバルショートカット"
-  },
-  "按下组合键，按 Esc 取消。": {
-    "en": "Press a shortcut, or Esc to cancel.",
-    "zh-Hans": "按下组合键，按 Esc 取消。",
-    "zh-Hant": "按下組合鍵，按 Esc 取消。",
-    "ja": "キーの組み合わせを押します。Esc でキャンセル。"
-  },
-  "输入快捷键…": {
-    "en": "Press shortcut…",
-    "zh-Hans": "输入快捷键…",
-    "zh-Hant": "輸入快捷鍵…",
-    "ja": "ショートカットを入力…"
-  },
-  "添加快捷键": {
-    "en": "Add shortcut",
-    "zh-Hans": "添加快捷键",
-    "zh-Hant": "新增快捷鍵",
-    "ja": "ショートカットを追加"
-  },
-  "请包含 ⌘、⌥ 或 ⌃。": {
-    "en": "Include ⌘, ⌥ or ⌃.",
-    "zh-Hans": "请包含 ⌘、⌥ 或 ⌃。",
-    "zh-Hant": "請包含 ⌘、⌥ 或 ⌃。",
-    "ja": "⌘、⌥、⌃ のいずれかを含めてください。"
-  },
-  "快捷键已更新。": {
-    "en": "Shortcut updated.",
-    "zh-Hans": "快捷键已更新。",
-    "zh-Hant": "快捷鍵已更新。",
-    "ja": "ショートカットを更新しました。"
-  },
-  "点击快捷键，然后按下新的组合键。": {
-    "en": "Click the shortcut and press a new combination.",
-    "zh-Hans": "点击快捷键，然后按下新的组合键。",
-    "zh-Hant": "點擊快捷鍵，然後按下新的組合鍵。",
-    "ja": "ショートカットをクリックして新しいキーを押します。"
-  },
-  "当前为手动启动。": {
-    "en": "Launch manually.",
-    "zh-Hans": "当前为手动启动。",
-    "zh-Hant": "目前為手動啟動。",
-    "ja": "手動で起動します。"
-  },
-  "打开系统设置": {
-    "en": "Open System Settings",
-    "zh-Hans": "打开系统设置",
-    "zh-Hant": "開啟系統設定",
-    "ja": "システム設定を開く"
-  },
-  "设置窗口不可用。": {
-    "en": "Settings are unavailable.",
-    "zh-Hans": "设置窗口不可用。",
-    "zh-Hant": "設定視窗無法使用。",
-    "ja": "設定ウインドウを使用できません。"
-  },
-  "已取消，原快捷键保持不变。": {
-    "en": "Cancelled; shortcut unchanged.",
-    "zh-Hans": "已取消，原快捷键保持不变。",
-    "zh-Hant": "已取消，原快捷鍵保持不變。",
-    "ja": "キャンセルしました。ショートカットは変更されません。"
-  },
-  "按你的习惯使用 Inkflit": {
-    "en": "Make Inkflit work your way",
-    "zh-Hans": "按你的习惯使用 Inkflit",
-    "zh-Hant": "讓 Inkflit 配合你的習慣",
-    "ja": "Inkflit を使いやすく設定"
-  },
-  "清除": {
-    "en": "Clear",
-    "zh-Hans": "清除",
-    "zh-Hant": "清除",
-    "ja": "消去"
-  },
-  "清除全局快捷键": {
-    "en": "Clear global shortcut",
-    "zh-Hans": "清除全局快捷键",
-    "zh-Hant": "清除全域快捷鍵",
-    "ja": "グローバルショートカットを消去"
-  },
-  "恢复默认": {
-    "en": "Reset",
-    "zh-Hans": "恢复默认",
-    "zh-Hant": "恢復預設",
-    "ja": "デフォルトに戻す"
-  },
-  "随时唤起或收起笔记": {
-    "en": "Show or hide notes anywhere",
-    "zh-Hans": "随时唤起或收起笔记",
-    "zh-Hant": "隨時喚出或收起筆記",
-    "ja": "どこからでもノートを表示・非表示"
-  },
-  "开机启动": {
-    "en": "Launch at login",
-    "zh-Hans": "开机启动",
-    "zh-Hant": "登入時啟動",
-    "ja": "ログイン時に起動"
-  },
-  "登录 Mac 后自动运行": {
-    "en": "Start automatically after login",
-    "zh-Hans": "登录 Mac 后自动运行",
-    "zh-Hant": "登入 Mac 後自動執行",
-    "ja": "ログイン後に自動起動"
-  },
-  "选择文件夹…": {
-    "en": "Choose folder…",
-    "zh-Hans": "选择文件夹…",
-    "zh-Hant": "選擇資料夾…",
-    "ja": "フォルダを選択…"
-  },
-  "笔记保存位置": {
-    "en": "Notes location",
-    "zh-Hans": "笔记保存位置",
-    "zh-Hant": "筆記儲存位置",
-    "ja": "ノートの保存場所"
-  },
-  "更改时保留原文件": {
-    "en": "Keep the original when changing",
-    "zh-Hans": "更改时保留原文件",
-    "zh-Hant": "更改時保留原檔案",
-    "ja": "変更時に元のファイルを保持"
-  },
-  "2 个空格": {
-    "en": "2 spaces",
-    "zh-Hans": "2 个空格",
-    "zh-Hant": "2 個空格",
-    "ja": "スペース 2 個"
-  },
-  "4 个空格": {
-    "en": "4 spaces",
-    "zh-Hans": "4 个空格",
-    "zh-Hant": "4 個空格",
-    "ja": "スペース 4 個"
-  },
-  "代码缩进": {
-    "en": "Code indentation",
-    "zh-Hans": "代码缩进",
-    "zh-Hant": "程式碼縮排",
-    "ja": "コードのインデント"
-  },
-  "回车自动缩进；Tab 插入缩进。": {
-    "en": "Return indents; Tab inserts indentation.",
-    "zh-Hans": "回车自动缩进；Tab 插入缩进。",
-    "zh-Hant": "Return 自動縮排；Tab 插入縮排。",
-    "ja": "Return で自動インデント、Tab で挿入します。"
-  },
-  "代码块使用的缩进方式": {
-    "en": "Indentation in code blocks",
-    "zh-Hans": "代码块使用的缩进方式",
-    "zh-Hant": "程式碼區塊的縮排方式",
-    "ja": "コードブロックのインデント"
-  },
-  "代码配色": {
-    "en": "Code colors",
-    "zh-Hans": "代码配色",
-    "zh-Hant": "程式碼配色",
-    "ja": "コードの配色"
-  },
-  "选择后立即应用，预览展示 JSON 代码。": {
-    "en": "Applied immediately; preview shows JSON.",
-    "zh-Hans": "选择后立即应用，预览展示 JSON 代码。",
-    "zh-Hant": "選擇後立即套用，預覽顯示 JSON。",
-    "ja": "すぐに適用されます。プレビューは JSON です。"
-  },
-  "选择语法高亮颜色": {
-    "en": "Choose syntax highlighting",
-    "zh-Hans": "选择语法高亮颜色",
-    "zh-Hant": "選擇語法突顯顏色",
-    "ja": "構文ハイライトの配色"
-  },
-  "代码配色预览": {
-    "en": "Code color preview",
-    "zh-Hans": "代码配色预览",
-    "zh-Hant": "程式碼配色預覽",
-    "ja": "コード配色のプレビュー"
-  },
-  "界面主色": {
-    "en": "Accent color",
-    "zh-Hans": "界面主色",
-    "zh-Hant": "介面主色",
-    "ja": "アクセントカラー"
-  },
-  "设置笔记窗口的主色调": {
-    "en": "Choose the note window accent",
-    "zh-Hans": "设置笔记窗口的主色调",
-    "zh-Hant": "設定筆記視窗的主色調",
-    "ja": "ノートウインドウの色を選択"
-  },
-  "更改后立即应用。": {
-    "en": "Changes apply immediately.",
-    "zh-Hans": "更改后立即应用。",
-    "zh-Hant": "更改後立即套用。",
-    "ja": "変更はすぐに反映されます。"
-  },
-  "窗口不透明度": {
-    "en": "Window opacity",
-    "zh-Hans": "窗口不透明度",
-    "zh-Hant": "視窗不透明度",
-    "ja": "ウインドウの不透明度"
-  },
-  "调整笔记背景的透明程度": {
-    "en": "Adjust the note background",
-    "zh-Hans": "调整笔记背景的透明程度",
-    "zh-Hant": "調整筆記背景的透明程度",
-    "ja": "ノートの背景の透明度"
-  },
-  "100% 为不透明。": {
-    "en": "100% is opaque.",
-    "zh-Hans": "100% 为不透明。",
-    "zh-Hant": "100% 為不透明。",
-    "ja": "100% は不透明です。"
-  },
-  "背景模糊": {
-    "en": "Background blur",
-    "zh-Hans": "背景模糊",
-    "zh-Hant": "背景模糊",
-    "ja": "背景のぼかし"
-  },
-  "柔化窗口后方内容": {
-    "en": "Soften content behind the window",
-    "zh-Hans": "柔化窗口后方内容",
-    "zh-Hant": "柔化視窗後方內容",
-    "ja": "ウインドウ背後をぼかす"
-  },
-  "降低不透明度后可看到模糊效果。": {
-    "en": "Lower opacity to see the blur.",
-    "zh-Hans": "降低不透明度后可看到模糊效果。",
-    "zh-Hant": "降低不透明度後可看到模糊效果。",
-    "ja": "不透明度を下げるとぼかしが見えます。"
-  },
-  "通用": {
-    "en": "General",
-    "zh-Hans": "通用",
-    "zh-Hant": "一般",
-    "ja": "一般"
-  },
-  "外观": {
-    "en": "Appearance",
-    "zh-Hans": "外观",
-    "zh-Hant": "外觀",
-    "ja": "外観"
-  },
-  "打开使用帮助": {
-    "en": "Open help",
-    "zh-Hans": "打开使用帮助",
-    "zh-Hant": "開啟使用說明",
-    "ja": "ヘルプを開く"
-  },
-  "已在登录时自动启动。": {
-    "en": "Starts automatically at login.",
-    "zh-Hans": "已在登录时自动启动。",
-    "zh-Hant": "已在登入時自動啟動。",
-    "ja": "ログイン時に自動起動します。"
-  },
-  "需要在系统设置中允许 Inkflit。": {
-    "en": "Allow Inkflit in System Settings.",
-    "zh-Hans": "需要在系统设置中允许 Inkflit。",
-    "zh-Hant": "需要在系統設定中允許 Inkflit。",
-    "ja": "システム設定で Inkflit を許可してください。"
-  },
-  "全局快捷键已清除。": {
-    "en": "Global shortcut cleared.",
-    "zh-Hans": "全局快捷键已清除。",
-    "zh-Hant": "全域快捷鍵已清除。",
-    "ja": "グローバルショートカットを消去しました。"
-  },
-  "已恢复默认快捷键。": {
-    "en": "Default shortcut restored.",
-    "zh-Hans": "已恢复默认快捷键。",
-    "zh-Hant": "已恢復預設快捷鍵。",
-    "ja": "デフォルトのショートカットに戻しました。"
-  },
-  "选择笔记保存文件夹": {
-    "en": "Choose a notes folder",
-    "zh-Hans": "选择笔记保存文件夹",
-    "zh-Hant": "選擇筆記儲存資料夾",
-    "ja": "ノートの保存フォルダを選択"
-  },
-  "Inkflit 会将当前笔记复制为 notes.json，原文件会保留。": {
-    "en": "Inkflit copies notes to notes.json and keeps the original.",
-    "zh-Hans": "Inkflit 会将当前笔记复制为 notes.json，原文件会保留。",
-    "zh-Hant": "Inkflit 會將筆記複製為 notes.json，保留原檔案。",
-    "ja": "ノートを notes.json にコピーし、元のファイルを保持します。"
-  },
-  "Inkflit 使用帮助": {
-    "en": "Inkflit Help",
-    "zh-Hans": "Inkflit 使用帮助",
-    "zh-Hant": "Inkflit 使用說明",
-    "ja": "Inkflit ヘルプ"
-  },
-  "未设置": {
+  "app.notSet": {
     "en": "Not set",
     "zh-Hans": "未设置",
     "zh-Hant": "未設定",
     "ja": "未設定"
   },
-  "全局快捷键未设置": {
+  "app.globalShortcutNotSet": {
     "en": "Global shortcut not set",
     "zh-Hans": "全局快捷键未设置",
     "zh-Hant": "尚未設定全域快捷鍵",
     "ja": "グローバルショートカットは未設定です"
   },
-  "全局快捷键不可用，请在设置中重新设置": {
+  "app.shortcutUnavailableInSettings": {
     "en": "Shortcut unavailable; choose another in Settings",
     "zh-Hans": "全局快捷键不可用，请在设置中重新设置",
     "zh-Hant": "全域快捷鍵無法使用，請在設定中重新選擇",
     "ja": "ショートカットを使用できません。設定で変更してください"
   },
-  "设置…（快捷键不可用）": {
+  "app.settingsMenuShortcutUnavailable": {
     "en": "Settings… (shortcut unavailable)",
     "zh-Hans": "设置…（快捷键不可用）",
     "zh-Hant": "設定…（快捷鍵無法使用）",
     "ja": "設定…（ショートカットを使用できません）"
   },
-  "这个快捷键不可用，请换一个。": {
+  "app.shortcutUnavailableChooseAnother": {
     "en": "This shortcut is unavailable. Choose another.",
     "zh-Hans": "这个快捷键不可用，请换一个。",
     "zh-Hant": "此快捷鍵無法使用，請選擇其他快捷鍵。",
     "ja": "このショートカットは使用できません。別のものを選択してください。"
   },
-  "删除": {
+  "app.delete": {
     "en": "Delete",
     "zh-Hans": "删除",
     "zh-Hant": "刪除",
     "ja": "削除"
   },
-  "取消": {
+  "app.cancel": {
     "en": "Cancel",
     "zh-Hans": "取消",
     "zh-Hant": "取消",
     "ja": "キャンセル"
   },
-  "目标文件夹已有 notes.json，未覆盖。请选择其他文件夹。": {
-    "en": "The folder already contains notes.json; choose another folder.",
-    "zh-Hans": "目标文件夹已有 notes.json，未覆盖。请选择其他文件夹。",
-    "zh-Hant": "目標資料夾已有 notes.json，未覆蓋。請選擇其他資料夾。",
-    "ja": "フォルダに notes.json があるため、別のフォルダを選択してください。"
-  },
-  "无法读取当前笔记，保存位置未更改。": {
-    "en": "Could not read notes; location unchanged.",
-    "zh-Hans": "无法读取当前笔记，保存位置未更改。",
-    "zh-Hant": "無法讀取目前筆記，儲存位置未更改。",
-    "ja": "ノートを読み取れません。保存場所は変更されていません。"
-  },
-  "暖橙": {
-    "en": "Warm orange",
-    "zh-Hans": "暖橙",
-    "zh-Hant": "暖橙",
-    "ja": "ウォームオレンジ"
-  },
-  "海蓝": {
-    "en": "Ocean blue",
-    "zh-Hans": "海蓝",
-    "zh-Hant": "海藍",
-    "ja": "オーシャンブルー"
-  },
-  "鼠尾草": {
-    "en": "Sage",
-    "zh-Hans": "鼠尾草",
-    "zh-Hant": "鼠尾草",
-    "ja": "セージ"
-  },
-  "琥珀": {
-    "en": "Amber",
-    "zh-Hans": "琥珀",
-    "zh-Hant": "琥珀",
-    "ja": "アンバー"
-  },
-  "鲜明": {
-    "en": "Vivid",
-    "zh-Hans": "鲜明",
-    "zh-Hant": "鮮明",
-    "ja": "ビビッド"
-  },
-  "清单": {
-    "en": "Checklist",
-    "zh-Hans": "清单",
-    "zh-Hant": "清單",
-    "ja": "チェックリスト"
-  },
-  "计算": {
-    "en": "Math",
-    "zh-Hans": "计算",
-    "zh-Hant": "計算",
-    "ja": "計算"
-  },
-  "求和": {
-    "en": "Sum",
-    "zh-Hans": "求和",
-    "zh-Hant": "加總",
-    "ja": "合計"
-  },
-  "平均值": {
-    "en": "Average",
-    "zh-Hans": "平均值",
-    "zh-Hant": "平均值",
-    "ja": "平均"
-  },
-  "计数": {
-    "en": "Count",
-    "zh-Hans": "计数",
-    "zh-Hant": "計數",
-    "ja": "カウント"
-  },
-  "代码": {
-    "en": "Code",
-    "zh-Hans": "代码",
-    "zh-Hant": "程式碼",
-    "ja": "コード"
-  },
-  "普通文本": {
-    "en": "Plain text",
-    "zh-Hans": "普通文本",
-    "zh-Hant": "純文字",
-    "ja": "プレーンテキスト"
-  },
-  "删除块": {
-    "en": "Delete block",
-    "zh-Hans": "删除块",
-    "zh-Hant": "刪除區塊",
-    "ja": "ブロックを削除"
-  },
-  "逐行显示复选框": {
-    "en": "Show a checkbox on each line",
-    "zh-Hans": "逐行显示复选框",
-    "zh-Hant": "逐行顯示核取方塊",
-    "ja": "各行にチェックボックスを表示"
-  },
-  "算式、变量与单位换算": {
-    "en": "Expressions, variables and conversions",
-    "zh-Hans": "算式、变量与单位换算",
-    "zh-Hant": "算式、變數與單位換算",
-    "ja": "数式、変数、単位変換"
-  },
-  "汇总块中的数字": {
-    "en": "Add numbers in the block",
-    "zh-Hans": "汇总块中的数字",
-    "zh-Hant": "加總區塊中的數字",
-    "ja": "ブロック内の数値を合計"
-  },
-  "计算块内数字平均值": {
-    "en": "Average numbers in the block",
-    "zh-Hans": "计算块内数字平均值",
-    "zh-Hant": "計算區塊內數字平均值",
-    "ja": "ブロック内の数値の平均"
-  },
-  "统计项目、词和字符": {
-    "en": "Count items, words and characters",
-    "zh-Hans": "统计项目、词和字符",
-    "zh-Hant": "統計項目、詞和字元",
-    "ja": "項目、単語、文字を数える"
-  },
-  "保留代码并按语言高亮": {
-    "en": "Highlight code by language",
-    "zh-Hans": "保留代码并按语言高亮",
-    "zh-Hant": "保留程式碼並依語言突顯",
-    "ja": "言語に応じてコードを強調表示"
-  },
-  "移除功能，保留内容": {
-    "en": "Remove function, keep content",
-    "zh-Hans": "移除功能，保留内容",
-    "zh-Hant": "移除功能，保留內容",
-    "ja": "機能を解除して内容を保持"
-  },
-  "删除当前块及内容": {
-    "en": "Delete this block and its contents",
-    "zh-Hans": "删除当前块及内容",
-    "zh-Hant": "刪除目前區塊及內容",
-    "ja": "このブロックと内容を削除"
-  },
-  "没有匹配的功能块": {
-    "en": "No matching blocks",
-    "zh-Hans": "没有匹配的功能块",
-    "zh-Hant": "沒有符合的功能區塊",
-    "ja": "一致するブロックがありません"
-  },
-  "纯文本": {
-    "en": "Plain text",
-    "zh-Hans": "纯文本",
-    "zh-Hant": "純文字",
-    "ja": "プレーンテキスト"
-  },
-  "代码语言": {
-    "en": "Code language",
-    "zh-Hans": "代码语言",
-    "zh-Hant": "程式語言",
-    "ja": "コード言語"
-  },
-  "选择代码语言 ⌘L": {
-    "en": "Choose code language ⌘L",
-    "zh-Hans": "选择代码语言 ⌘L",
-    "zh-Hant": "選擇程式語言 ⌘L",
-    "ja": "コード言語を選択 ⌘L"
-  },
-  "标记为未完成": {
-    "en": "Mark incomplete",
-    "zh-Hans": "标记为未完成",
-    "zh-Hant": "標記為未完成",
-    "ja": "未完了にする"
-  },
-  "标记为已完成": {
-    "en": "Mark complete",
-    "zh-Hans": "标记为已完成",
-    "zh-Hant": "標記為已完成",
-    "ja": "完了にする"
-  },
-  "保存中…": {
-    "en": "Saving…",
-    "zh-Hans": "保存中…",
-    "zh-Hant": "儲存中…",
-    "ja": "保存中…"
-  },
-  "已保存": {
-    "en": "Saved",
-    "zh-Hans": "已保存",
-    "zh-Hant": "已儲存",
-    "ja": "保存済み"
-  },
-  "保存失败": {
-    "en": "Save failed",
-    "zh-Hans": "保存失败",
-    "zh-Hant": "儲存失敗",
-    "ja": "保存に失敗しました"
-  },
-  "删除这条笔记？此操作无法撤销。": {
-    "en": "Delete this note? This cannot be undone.",
-    "zh-Hans": "删除这条笔记？此操作无法撤销。",
-    "zh-Hant": "刪除此筆記？此操作無法復原。",
-    "ja": "このノートを削除しますか？元に戻せません。"
-  },
-  "完成": {
-    "en": "Done",
-    "zh-Hans": "完成",
-    "zh-Hant": "完成",
-    "ja": "完了"
-  },
-  "笔记文件格式无效": {
-    "en": "Invalid notes file",
-    "zh-Hans": "笔记文件格式无效",
-    "zh-Hant": "筆記檔案格式無效",
-    "ja": "ノートファイルの形式が無効です"
-  },
-  "已载入": {
-    "en": "Loaded",
-    "zh-Hans": "已载入",
-    "zh-Hant": "已載入",
-    "ja": "読み込み済み"
-  },
-  "新笔记": {
-    "en": "New note",
-    "zh-Hans": "新笔记",
-    "zh-Hant": "新筆記",
-    "ja": "新規ノート"
-  },
-  "读取失败：": {
-    "en": "Read failed: ",
-    "zh-Hans": "读取失败：",
-    "zh-Hant": "讀取失敗：",
-    "ja": "読み込みに失敗："
-  },
-  "上一条笔记": {
-    "en": "Previous note",
-    "zh-Hans": "上一条笔记",
-    "zh-Hant": "上一則筆記",
-    "ja": "前のノート"
-  },
-  "下一条笔记": {
-    "en": "Next note",
-    "zh-Hans": "下一条笔记",
-    "zh-Hant": "下一則筆記",
-    "ja": "次のノート"
-  },
-  "新建笔记": {
-    "en": "New note",
-    "zh-Hans": "新建笔记",
-    "zh-Hant": "新增筆記",
-    "ja": "新規ノート"
-  },
-  "删除笔记": {
-    "en": "Delete note",
-    "zh-Hans": "删除笔记",
-    "zh-Hant": "刪除筆記",
-    "ja": "ノートを削除"
-  },
-  "功能块": {
-    "en": "Feature blocks",
-    "zh-Hans": "功能块",
-    "zh-Hant": "功能區塊",
-    "ja": "機能ブロック"
-  },
-  "正在载入…": {
-    "en": "Loading…",
-    "zh-Hans": "正在载入…",
-    "zh-Hant": "載入中…",
-    "ja": "読み込み中…"
-  },
-  "汇率加载中或不可用": {
-    "en": "Exchange rates loading or unavailable",
-    "zh-Hans": "汇率加载中或不可用",
-    "zh-Hant": "匯率載入中或無法使用",
-    "ja": "為替レートを取得中、または利用できません"
-  },
-  "不支持的币种": {
-    "en": "Unsupported currency",
-    "zh-Hans": "不支持的币种",
-    "zh-Hant": "不支援的幣別",
-    "ja": "未対応の通貨"
-  },
-  "跟随系统": {
-    "en": "System",
-    "zh-Hans": "跟随系统",
-    "zh-Hant": "跟隨系統",
-    "ja": "システムに従う"
-  },
-  "语言": {
-    "en": "Language",
-    "zh-Hans": "语言",
-    "zh-Hant": "語言",
-    "ja": "言語"
-  },
-  "选择应用界面语言": {
-    "en": "Choose the interface language",
-    "zh-Hans": "选择应用界面语言",
-    "zh-Hant": "選擇應用程式介面語言",
-    "ja": "アプリの表示言語を選択"
-  },
-  "默认跟随系统语言。": {
-    "en": "Uses the system language by default.",
-    "zh-Hans": "默认跟随系统语言。",
-    "zh-Hant": "預設跟隨系統語言。",
-    "ja": "デフォルトではシステム言語に従います。"
-  },
-  "{items} 项 · {words} 词 · {chars} 字符": {
-    "en": "{items} items · {words} words · {chars} characters",
-    "zh-Hans": "{items} 项 · {words} 词 · {chars} 字符",
-    "zh-Hant": "{items} 項 · {words} 詞 · {chars} 字元",
-    "ja": "{items} 項目 · {words} 語 · {chars} 文字"
-  },
-  "合计 {total} · {count} 个数": {
-    "en": "Sum {total} · {count} numbers",
-    "zh-Hans": "合计 {total} · {count} 个数",
-    "zh-Hant": "合計 {total} · {count} 個數",
-    "ja": "合計 {total} · {count} 個"
-  },
-  "平均 {total} · {count} 个数": {
-    "en": "Average {total} · {count} numbers",
-    "zh-Hans": "平均 {total} · {count} 个数",
-    "zh-Hant": "平均 {total} · {count} 個數",
-    "ja": "平均 {total} · {count} 個"
-  },
-  "笔记文件不存在或位置不可用，请恢复文件后重新启动。": {
-    "en": "Notes file unavailable. Restore it and restart.",
-    "zh-Hans": "笔记文件不存在或位置不可用，请恢复文件后重新启动。",
-    "zh-Hant": "筆記檔案不存在或位置無法使用，請還原後重新啟動。",
-    "ja": "ノートファイルを利用できません。復元して再起動してください。"
-  },
-  "笔记文件不存在或位置不可用，请恢复文件后重试。": {
-    "en": "Notes file unavailable. Restore it and retry.",
-    "zh-Hans": "笔记文件不存在或位置不可用，请恢复文件后重试。",
-    "zh-Hant": "筆記檔案不存在或位置無法使用，請還原後重試。",
-    "ja": "ノートファイルを利用できません。復元して再試行してください。"
-  },
-  "快捷键不可用": {
+  "app.shortcutUnavailable": {
     "en": "Shortcut unavailable",
     "zh-Hans": "快捷键不可用",
     "zh-Hant": "快捷鍵無法使用",
     "ja": "ショートカットを使用できません"
   },
-  "无法读取笔记：": {
-    "en": "Could not read notes: ",
-    "zh-Hans": "无法读取笔记：",
-    "zh-Hant": "無法讀取筆記：",
-    "ja": "ノートの読み込みに失敗："
+  "settings.title": {
+    "en": "Settings",
+    "zh-Hans": "设置",
+    "zh-Hant": "設定",
+    "ja": "設定"
   },
-  "保存失败：": {
-    "en": "Save failed: ",
-    "zh-Hans": "保存失败：",
-    "zh-Hant": "儲存失敗：",
-    "ja": "保存に失敗："
+  "settings.windowTitle": {
+    "en": "Inkflit Settings",
+    "zh-Hans": "Inkflit 设置",
+    "zh-Hant": "Inkflit 設定",
+    "ja": "Inkflit の設定"
   },
-  "无法更改开机启动：": {
-    "en": "Could not change login item: ",
-    "zh-Hans": "无法更改开机启动：",
-    "zh-Hant": "無法更改登入時啟動：",
-    "ja": "ログイン時の起動を変更できません："
+  "settings.globalShortcut": {
+    "en": "Global shortcut",
+    "zh-Hans": "全局快捷键",
+    "zh-Hant": "全域快捷鍵",
+    "ja": "グローバルショートカット"
   },
-  "未迁移笔记：": {
-    "en": "Notes not migrated: ",
-    "zh-Hans": "未迁移笔记：",
-    "zh-Hant": "筆記未遷移：",
-    "ja": "ノートを移行できません："
+  "settings.pressShortcutOrEsc": {
+    "en": "Press a shortcut, or Esc to cancel.",
+    "zh-Hans": "按下组合键，按 Esc 取消。",
+    "zh-Hant": "按下組合鍵，按 Esc 取消。",
+    "ja": "キーの組み合わせを押します。Esc でキャンセル。"
   },
-  " 仍使用原位置。": {
-    "en": " Original location retained.",
-    "zh-Hans": " 仍使用原位置。",
-    "zh-Hant": " 仍使用原位置。",
-    "ja": " 元の保存場所を使います。"
+  "settings.pressShortcut": {
+    "en": "Press shortcut…",
+    "zh-Hans": "输入快捷键…",
+    "zh-Hant": "輸入快捷鍵…",
+    "ja": "ショートカットを入力…"
   },
-  "关闭": {
+  "settings.addShortcut": {
+    "en": "Add shortcut",
+    "zh-Hans": "添加快捷键",
+    "zh-Hant": "新增快捷鍵",
+    "ja": "ショートカットを追加"
+  },
+  "settings.shortcutNeedsModifier": {
+    "en": "Include ⌘, ⌥ or ⌃.",
+    "zh-Hans": "请包含 ⌘、⌥ 或 ⌃。",
+    "zh-Hant": "請包含 ⌘、⌥ 或 ⌃。",
+    "ja": "⌘、⌥、⌃ のいずれかを含めてください。"
+  },
+  "settings.shortcutUpdated": {
+    "en": "Shortcut updated.",
+    "zh-Hans": "快捷键已更新。",
+    "zh-Hant": "快捷鍵已更新。",
+    "ja": "ショートカットを更新しました。"
+  },
+  "settings.globalShortcutHint": {
+    "en": "Click the shortcut and press a new combination.",
+    "zh-Hans": "点击快捷键，然后按下新的组合键。",
+    "zh-Hant": "點擊快捷鍵，然後按下新的組合鍵。",
+    "ja": "ショートカットをクリックして新しいキーを押します。"
+  },
+  "settings.launchManually": {
+    "en": "Launch manually.",
+    "zh-Hans": "当前为手动启动。",
+    "zh-Hant": "目前為手動啟動。",
+    "ja": "手動で起動します。"
+  },
+  "settings.openSystemSettings": {
+    "en": "Open System Settings",
+    "zh-Hans": "打开系统设置",
+    "zh-Hant": "開啟系統設定",
+    "ja": "システム設定を開く"
+  },
+  "settings.shortcutCancelled": {
+    "en": "Cancelled; shortcut unchanged.",
+    "zh-Hans": "已取消，原快捷键保持不变。",
+    "zh-Hant": "已取消，原快捷鍵保持不變。",
+    "ja": "キャンセルしました。ショートカットは変更されません。"
+  },
+  "settings.subtitle": {
+    "en": "Make Inkflit work your way",
+    "zh-Hans": "按你的习惯使用 Inkflit",
+    "zh-Hant": "讓 Inkflit 配合你的習慣",
+    "ja": "Inkflit を使いやすく設定"
+  },
+  "settings.clear": {
+    "en": "Clear",
+    "zh-Hans": "清除",
+    "zh-Hant": "清除",
+    "ja": "消去"
+  },
+  "settings.clearGlobalShortcut": {
+    "en": "Clear global shortcut",
+    "zh-Hans": "清除全局快捷键",
+    "zh-Hant": "清除全域快捷鍵",
+    "ja": "グローバルショートカットを消去"
+  },
+  "settings.reset": {
+    "en": "Reset",
+    "zh-Hans": "恢复默认",
+    "zh-Hant": "恢復預設",
+    "ja": "デフォルトに戻す"
+  },
+  "settings.globalShortcutDetail": {
+    "en": "Show or hide notes anywhere",
+    "zh-Hans": "随时唤起或收起笔记",
+    "zh-Hant": "隨時喚出或收起筆記",
+    "ja": "どこからでもノートを表示・非表示"
+  },
+  "settings.launchAtLogin": {
+    "en": "Launch at login",
+    "zh-Hans": "开机启动",
+    "zh-Hant": "登入時啟動",
+    "ja": "ログイン時に起動"
+  },
+  "settings.launchAtLoginDetail": {
+    "en": "Start automatically after login",
+    "zh-Hans": "登录 Mac 后自动运行",
+    "zh-Hant": "登入 Mac 後自動執行",
+    "ja": "ログイン後に自動起動"
+  },
+  "settings.chooseFolder": {
+    "en": "Choose folder…",
+    "zh-Hans": "选择文件夹…",
+    "zh-Hant": "選擇資料夾…",
+    "ja": "フォルダを選択…"
+  },
+  "settings.notesLocation": {
+    "en": "Notes location",
+    "zh-Hans": "笔记保存位置",
+    "zh-Hant": "筆記儲存位置",
+    "ja": "ノートの保存場所"
+  },
+  "settings.notesLocationDetail": {
+    "en": "Keep the original when changing",
+    "zh-Hans": "更改时保留原文件",
+    "zh-Hant": "更改時保留原檔案",
+    "ja": "変更時に元のファイルを保持"
+  },
+  "settings.indentTwoSpaces": {
+    "en": "2 spaces",
+    "zh-Hans": "2 个空格",
+    "zh-Hant": "2 個空格",
+    "ja": "スペース 2 個"
+  },
+  "settings.indentFourSpaces": {
+    "en": "4 spaces",
+    "zh-Hans": "4 个空格",
+    "zh-Hant": "4 個空格",
+    "ja": "スペース 4 個"
+  },
+  "settings.codeIndentation": {
+    "en": "Code indentation",
+    "zh-Hans": "代码缩进",
+    "zh-Hant": "程式碼縮排",
+    "ja": "コードのインデント"
+  },
+  "settings.codeIndentationHint": {
+    "en": "Return indents; Tab inserts indentation.",
+    "zh-Hans": "回车自动缩进；Tab 插入缩进。",
+    "zh-Hant": "Return 自動縮排；Tab 插入縮排。",
+    "ja": "Return で自動インデント、Tab で挿入します。"
+  },
+  "settings.codeIndentationDetail": {
+    "en": "Indentation in code blocks",
+    "zh-Hans": "代码块使用的缩进方式",
+    "zh-Hant": "程式碼區塊的縮排方式",
+    "ja": "コードブロックのインデント"
+  },
+  "settings.codeColors": {
+    "en": "Code colors",
+    "zh-Hans": "代码配色",
+    "zh-Hant": "程式碼配色",
+    "ja": "コードの配色"
+  },
+  "settings.codeColorsHint": {
+    "en": "Applied immediately; preview shows JSON.",
+    "zh-Hans": "选择后立即应用，预览展示 JSON 代码。",
+    "zh-Hant": "選擇後立即套用，預覽顯示 JSON。",
+    "ja": "すぐに適用されます。プレビューは JSON です。"
+  },
+  "settings.codeColorsDetail": {
+    "en": "Choose syntax highlighting",
+    "zh-Hans": "选择语法高亮颜色",
+    "zh-Hant": "選擇語法突顯顏色",
+    "ja": "構文ハイライトの配色"
+  },
+  "settings.codeColorPreview": {
+    "en": "Code color preview",
+    "zh-Hans": "代码配色预览",
+    "zh-Hant": "程式碼配色預覽",
+    "ja": "コード配色のプレビュー"
+  },
+  "settings.accentColor": {
+    "en": "Accent color",
+    "zh-Hans": "界面主色",
+    "zh-Hant": "介面主色",
+    "ja": "アクセントカラー"
+  },
+  "settings.accentColorDetail": {
+    "en": "Choose the note window accent",
+    "zh-Hans": "设置笔记窗口的主色调",
+    "zh-Hant": "設定筆記視窗的主色調",
+    "ja": "ノートウインドウの色を選択"
+  },
+  "settings.changesApplyImmediately": {
+    "en": "Changes apply immediately.",
+    "zh-Hans": "更改后立即应用。",
+    "zh-Hant": "更改後立即套用。",
+    "ja": "変更はすぐに反映されます。"
+  },
+  "settings.windowOpacity": {
+    "en": "Window opacity",
+    "zh-Hans": "窗口不透明度",
+    "zh-Hant": "視窗不透明度",
+    "ja": "ウインドウの不透明度"
+  },
+  "settings.windowOpacityDetail": {
+    "en": "Adjust the note background",
+    "zh-Hans": "调整笔记背景的透明程度",
+    "zh-Hant": "調整筆記背景的透明程度",
+    "ja": "ノートの背景の透明度"
+  },
+  "settings.backgroundBlur": {
+    "en": "Background blur",
+    "zh-Hans": "背景模糊",
+    "zh-Hant": "背景模糊",
+    "ja": "背景のぼかし"
+  },
+  "settings.backgroundBlurDetail": {
+    "en": "Soften content behind the window",
+    "zh-Hans": "柔化窗口后方内容",
+    "zh-Hant": "柔化視窗後方內容",
+    "ja": "ウインドウ背後をぼかす"
+  },
+  "settings.backgroundBlurHint": {
+    "en": "Lower opacity to see the blur.",
+    "zh-Hans": "降低不透明度后可看到模糊效果。",
+    "zh-Hant": "降低不透明度後可看到模糊效果。",
+    "ja": "不透明度を下げるとぼかしが見えます。"
+  },
+  "settings.general": {
+    "en": "General",
+    "zh-Hans": "通用",
+    "zh-Hant": "一般",
+    "ja": "一般"
+  },
+  "settings.appearance": {
+    "en": "Appearance",
+    "zh-Hans": "外观",
+    "zh-Hant": "外觀",
+    "ja": "外観"
+  },
+  "settings.openHelp": {
+    "en": "Open help",
+    "zh-Hans": "打开使用帮助",
+    "zh-Hant": "開啟使用說明",
+    "ja": "ヘルプを開く"
+  },
+  "settings.launchAtLoginOn": {
+    "en": "Starts automatically at login.",
+    "zh-Hans": "已在登录时自动启动。",
+    "zh-Hant": "已在登入時自動啟動。",
+    "ja": "ログイン時に自動起動します。"
+  },
+  "settings.launchAtLoginNeedsApproval": {
+    "en": "Allow Inkflit in System Settings.",
+    "zh-Hans": "需要在系统设置中允许 Inkflit。",
+    "zh-Hant": "需要在系統設定中允許 Inkflit。",
+    "ja": "システム設定で Inkflit を許可してください。"
+  },
+  "settings.globalShortcutCleared": {
+    "en": "Global shortcut cleared.",
+    "zh-Hans": "全局快捷键已清除。",
+    "zh-Hant": "全域快捷鍵已清除。",
+    "ja": "グローバルショートカットを消去しました。"
+  },
+  "settings.defaultShortcutRestored": {
+    "en": "Default shortcut restored.",
+    "zh-Hans": "已恢复默认快捷键。",
+    "zh-Hant": "已恢復預設快捷鍵。",
+    "ja": "デフォルトのショートカットに戻しました。"
+  },
+  "settings.chooseNotesFolder": {
+    "en": "Choose a notes folder",
+    "zh-Hans": "选择笔记保存文件夹",
+    "zh-Hant": "選擇筆記儲存資料夾",
+    "ja": "ノートの保存フォルダを選択"
+  },
+  "settings.helpWindowTitle": {
+    "en": "Inkflit Help",
+    "zh-Hans": "Inkflit 使用帮助",
+    "zh-Hant": "Inkflit 使用說明",
+    "ja": "Inkflit ヘルプ"
+  },
+  "settings.themeWarmOrange": {
+    "en": "Warm orange",
+    "zh-Hans": "暖橙",
+    "zh-Hant": "暖橙",
+    "ja": "ウォームオレンジ"
+  },
+  "settings.themeOceanBlue": {
+    "en": "Ocean blue",
+    "zh-Hans": "海蓝",
+    "zh-Hant": "海藍",
+    "ja": "オーシャンブルー"
+  },
+  "settings.themeSage": {
+    "en": "Sage",
+    "zh-Hans": "鼠尾草",
+    "zh-Hant": "鼠尾草",
+    "ja": "セージ"
+  },
+  "settings.themeAmber": {
+    "en": "Amber",
+    "zh-Hans": "琥珀",
+    "zh-Hant": "琥珀",
+    "ja": "アンバー"
+  },
+  "settings.themeVivid": {
+    "en": "Vivid",
+    "zh-Hans": "鲜明",
+    "zh-Hant": "鮮明",
+    "ja": "ビビッド"
+  },
+  "settings.languageSystem": {
+    "en": "System",
+    "zh-Hans": "跟随系统",
+    "zh-Hant": "跟隨系統",
+    "ja": "システムに従う"
+  },
+  "settings.language": {
+    "en": "Language",
+    "zh-Hans": "语言",
+    "zh-Hant": "語言",
+    "ja": "言語"
+  },
+  "settings.languageDetail": {
+    "en": "Choose the interface language",
+    "zh-Hans": "选择应用界面语言",
+    "zh-Hant": "選擇應用程式介面語言",
+    "ja": "アプリの表示言語を選択"
+  },
+  "settings.languageHint": {
+    "en": "Uses the system language by default.",
+    "zh-Hans": "默认跟随系统语言。",
+    "zh-Hant": "預設跟隨系統語言。",
+    "ja": "デフォルトではシステム言語に従います。"
+  },
+  "settings.off": {
     "en": "Off",
     "zh-Hans": "关闭",
     "zh-Hant": "關閉",
     "ja": "オフ"
   },
-  "删除这条笔记？可在设置中的回收站恢复。": {
-    "en": "Delete this note? You can restore it from Trash in Settings.",
-    "zh-Hans": "删除这条笔记？可在设置中的回收站恢复。",
-    "zh-Hant": "刪除這則筆記？可在設定的回收站還原。",
-    "ja": "このノートを削除しますか？設定のゴミ箱から復元できます。"
-  },
-  "保留数量": {
+  "settings.backupLimited": {
     "en": "Limited",
     "zh-Hans": "保留数量",
     "zh-Hant": "保留數量",
     "ja": "件数を指定"
   },
-  "无限保留": {
+  "settings.backupUnlimited": {
     "en": "Unlimited",
     "zh-Hans": "无限保留",
     "zh-Hant": "無限保留",
     "ja": "無制限"
   },
-  "保留版本数": {
+  "settings.backupVersionCount": {
     "en": "Versions to keep",
     "zh-Hans": "保留版本数",
     "zh-Hant": "保留版本數",
     "ja": "保持するバージョン数"
   },
-  "自动备份": {
+  "settings.automaticBackups": {
     "en": "Automatic backups",
     "zh-Hans": "自动备份",
     "zh-Hant": "自動備份",
     "ja": "自動バックアップ"
   },
-  "每篇笔记的历史版本": {
+  "settings.automaticBackupsDetail": {
     "en": "Version history per note",
     "zh-Hans": "每篇笔记的历史版本",
     "zh-Hant": "每則筆記的歷史版本",
     "ja": "ノートごとの履歴"
   },
-  "每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。": {
+  "settings.automaticBackupsHint": {
     "en": "At most one version per note every five minutes. Turning this off keeps existing backups.",
     "zh-Hans": "每篇笔记最多每五分钟备份一次；关闭不会删除已有备份。",
     "zh-Hant": "每則筆記最多每五分鐘備份一次；關閉不會刪除既有備份。",
     "ja": "各ノートは最大5分に1回バックアップ。オフにしても既存のバックアップは残ります。"
   },
-  "恢复已删除笔记…": {
+  "settings.restoreDeletedNote": {
     "en": "Restore deleted note…",
     "zh-Hans": "恢复已删除笔记…",
     "zh-Hant": "還原已刪除筆記…",
     "ja": "削除したノートを復元…"
   },
-  "回收站": {
+  "settings.trash": {
     "en": "Trash",
     "zh-Hans": "回收站",
     "zh-Hant": "回收站",
     "ja": "ゴミ箱"
   },
-  "删除的笔记保存在本地": {
+  "settings.trashDetail": {
     "en": "Deleted notes are kept locally",
     "zh-Hans": "删除的笔记保存在本地",
     "zh-Hant": "刪除的筆記保存在本機",
     "ja": "削除したノートをローカルに保存"
   },
-  "恢复时会创建一篇新笔记，回收站文件仍会保留。": {
+  "settings.trashHint": {
     "en": "Restoring creates a new note and keeps the trash file.",
     "zh-Hans": "恢复时会创建一篇新笔记，回收站文件仍会保留。",
     "zh-Hant": "還原時會建立新筆記，回收站檔案仍會保留。",
     "ja": "復元すると新しいノートが作成され、ゴミ箱のファイルは残ります。"
   },
-  "请选择回收站中的 Markdown 文件。": {
-    "en": "Choose a Markdown file from the Trash folder.",
-    "zh-Hans": "请选择回收站中的 Markdown 文件。",
-    "zh-Hant": "請選擇回收站中的 Markdown 檔案。",
-    "ja": "ゴミ箱の Markdown ファイルを選択してください。"
-  },
-  "备份": {
+  "settings.backups": {
     "en": "Backups",
     "zh-Hans": "备份",
     "zh-Hant": "備份",
     "ja": "バックアップ"
   },
-  "恢复失败：": {
-    "en": "Restore failed: ",
-    "zh-Hans": "恢复失败：",
-    "zh-Hant": "還原失敗：",
-    "ja": "復元に失敗："
-  },
-  "笔记文件已在外部更改，请先保存当前内容并重新启动应用。": {
-    "en": "Notes changed outside Inkflit. Copy the current text elsewhere and restart the app.",
-    "zh-Hans": "笔记文件已在外部更改，请先保存当前内容并重新启动应用。",
-    "zh-Hant": "筆記檔案已在外部更改，請先將目前內容複製到別處，再重新啟動應用程式。",
-    "ja": "ノートが外部で変更されました。現在の内容を別の場所にコピーしてからアプリを再起動してください。"
-  },
-  "Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。": {
+  "settings.notesLocationHint": {
     "en": "Inkflit copies notes, backups and Trash to the new folder and keeps the originals.",
     "zh-Hans": "Inkflit 会将当前笔记、备份和回收站复制到新文件夹，原文件会保留。",
     "zh-Hant": "Inkflit 會將筆記、備份和回收站複製到新資料夾，並保留原檔。",
     "ja": "ノート、バックアップ、ゴミ箱を新しいフォルダにコピーし、元のファイルは保持します。"
   },
-  "恢复历史版本…": {
+  "settings.restorePreviousVersion": {
     "en": "Restore a previous version…",
     "zh-Hans": "恢复历史版本…",
     "zh-Hant": "還原歷史版本…",
     "ja": "以前のバージョンを復元…"
   },
-  "历史版本": {
+  "settings.previousVersions": {
     "en": "Previous versions",
     "zh-Hans": "历史版本",
     "zh-Hant": "歷史版本",
     "ja": "履歴"
   },
-  "从备份恢复笔记": {
+  "settings.previousVersionsDetail": {
     "en": "Restore a note from backup",
     "zh-Hans": "从备份恢复笔记",
     "zh-Hant": "從備份還原筆記",
     "ja": "バックアップからノートを復元"
   },
-  "恢复时会创建一篇新笔记，原版本仍会保留。": {
+  "settings.previousVersionsHint": {
     "en": "Restoring creates a new note and keeps the original version.",
     "zh-Hans": "恢复时会创建一篇新笔记，原版本仍会保留。",
     "zh-Hant": "還原時會建立新筆記，原版本仍會保留。",
     "ja": "復元すると新しいノートが作成され、元のバージョンは残ります。"
   },
-  "请选择备份或回收站中的 Markdown 文件。": {
-    "en": "Choose a Markdown file from the backup or Trash folder.",
-    "zh-Hans": "请选择备份或回收站中的 Markdown 文件。",
-    "zh-Hant": "請選擇備份或回收站中的 Markdown 檔案。",
-    "ja": "バックアップまたはゴミ箱の Markdown ファイルを選択してください。"
-  },
-  "重建索引…": {
+  "settings.rebuildIndex": {
     "en": "Rebuild index…",
     "zh-Hans": "重建索引…",
     "zh-Hant": "重建索引…",
     "ja": "インデックスを再構築…"
   },
-  "索引恢复": {
+  "settings.indexRecovery": {
     "en": "Index recovery",
     "zh-Hans": "索引恢复",
     "zh-Hant": "索引還原",
     "ja": "インデックス復旧"
   },
-  "索引损坏时使用": {
+  "settings.indexRecoveryDetail": {
     "en": "Use if the index is damaged",
     "zh-Hans": "索引损坏时使用",
     "zh-Hant": "索引損壞時使用",
     "ja": "インデックス破損時に使用"
   },
-  "根据笔记文件恢复，顺序可能变化。": {
+  "settings.indexRecoveryHint": {
     "en": "Rebuild from note files; the order may change.",
     "zh-Hans": "根据笔记文件恢复，顺序可能变化。",
     "zh-Hant": "根據筆記檔案還原，順序可能變更。",
     "ja": "ノートファイルから復元します。順序が変わる場合があります。"
   },
-  "重建笔记索引？": {
+  "settings.rebuildIndexTitle": {
     "en": "Rebuild the note index?",
     "zh-Hans": "重建笔记索引？",
     "zh-Hant": "重建筆記索引？",
     "ja": "ノートのインデックスを再構築しますか？"
   },
-  "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。": {
-    "en": "The index will be rebuilt from note files. Order may change and leftover files may reappear. The old index is kept.",
-    "zh-Hans": "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。",
-    "zh-Hant": "將依照現有筆記檔案重建索引，順序可能變更，遺留檔案也可能重新出現。原索引會保留。",
-    "ja": "ノートファイルからインデックスを再構築します。順序が変わり、残存ファイルが再表示される場合があります。古いインデックスは保持されます。"
-  },
-  "重建索引": {
+  "settings.rebuildIndexConfirm": {
     "en": "Rebuild index",
     "zh-Hans": "重建索引",
     "zh-Hant": "重建索引",
     "ja": "インデックスを再構築"
   },
-  "索引已重建。": {
+  "settings.indexRebuilt": {
     "en": "Index rebuilt.",
     "zh-Hans": "索引已重建。",
     "zh-Hant": "索引已重建。",
     "ja": "インデックスを再構築しました。"
   },
-  "目标位置已有笔记数据或内容不一致，未覆盖。": {
-    "en": "The destination already has note data or its contents differ; nothing was overwritten.",
-    "zh-Hans": "目标位置已有笔记数据或内容不一致，未覆盖。",
-    "zh-Hant": "目標位置已有筆記資料或內容不一致，未覆蓋。",
-    "ja": "保存先にノートデータがあるか内容が一致しません。上書きしていません。"
-  },
-  "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。": {
+  "settings.rebuildIndexMessage": {
     "en": "The index will be rebuilt from note files. Order may change and leftover files may reappear. The original index is kept. Copy any unsaved changes first.",
     "zh-Hans": "将根据现有笔记文件重建索引，顺序可能变化，也可能重新显示遗留文件。原索引会保留。请先复制未保存的内容。",
     "zh-Hant": "將依照現有筆記檔案重建索引，順序可能變更，遺留檔案也可能重新出現。原索引會保留。請先複製未儲存的內容。",
     "ja": "ノートファイルからインデックスを再構築します。順序が変わり、残存ファイルが再表示される場合があります。元のインデックスは保持されます。未保存の内容は先にコピーしてください。"
   },
-  "转为正文": {
-    "en": "Convert to text",
-    "zh-Hans": "转为正文",
-    "zh-Hant": "轉為正文",
-    "ja": "本文に変換"
-  },
-  "重新生成引导笔记": {
+  "settings.restoreGuideNotes": {
     "en": "Restore Guide Notes",
     "zh-Hans": "重新生成引导笔记",
     "zh-Hant": "重新產生引導筆記",
     "ja": "ガイドノートを再作成"
   },
-  "无法读取引导笔记。": {
-    "en": "Could not read guide notes.",
-    "zh-Hans": "无法读取引导笔记。",
-    "zh-Hant": "無法讀取引導筆記。",
-    "ja": "ガイドノートを読み込めません。"
-  },
-  "无法生成引导笔记": {
-    "en": "Could not create guide notes",
-    "zh-Hans": "无法生成引导笔记",
-    "zh-Hant": "無法產生引導筆記",
-    "ja": "ガイドノートを作成できません"
-  },
-  "Vim 模式": {
+  "settings.vimMode": {
     "en": "Vim Mode",
     "zh-Hans": "Vim 模式",
     "zh-Hant": "Vim 模式",
     "ja": "Vim モード"
   },
-  "使用 Vim 按键和模式": {
+  "settings.vimModeDetail": {
     "en": "Use Vim keys and modes",
     "zh-Hans": "使用 Vim 按键和模式",
     "zh-Hant": "使用 Vim 按鍵與模式",
     "ja": "Vim のキーとモードを使う"
   },
-  "关闭后可直接输入，Esc 收起窗口。": {
+  "settings.vimModeHint": {
     "en": "When off, type directly; Esc hides the window.",
     "zh-Hans": "关闭后可直接输入，Esc 收起窗口。",
     "zh-Hant": "關閉後可直接輸入，Esc 收起視窗。",
     "ja": "オフの場合は直接入力できます。Esc でウインドウを隠します。"
   },
-  "100% 为不透明；按住 Option 以 5% 为步长调整滑块。": {
+  "settings.windowOpacityHint": {
     "en": "100% is opaque; hold Option to adjust sliders in 5% steps.",
     "zh-Hans": "100% 为不透明；按住 Option 以 5% 为步长调整滑块。",
     "zh-Hant": "100% 為不透明；按住 Option 以 5% 為間距調整滑桿。",
     "ja": "100% は不透明です。Option を押すとスライダーが 5% 刻みになります。"
   },
-  "搜索笔记": { "en": "Search Notes", "zh-Hans": "搜索笔记", "zh-Hant": "搜尋筆記", "ja": "ノートを検索" },
-  "搜索所有笔记": { "en": "Search all notes", "zh-Hans": "搜索所有笔记", "zh-Hant": "搜尋所有筆記", "ja": "すべてのノートを検索" },
-  "没有匹配的笔记": { "en": "No matching notes", "zh-Hans": "没有匹配的笔记", "zh-Hant": "沒有符合的筆記", "ja": "一致するノートはありません" },
-  "输入关键词搜索笔记": { "en": "Type to search notes", "zh-Hans": "输入关键词搜索笔记", "zh-Hant": "輸入關鍵字搜尋筆記", "ja": "キーワードを入力" },
-  "空白笔记": { "en": "Empty note", "zh-Hans": "空白笔记", "zh-Hant": "空白筆記", "ja": "空のノート" },
-  "无效的备忘录链接": { "en": "Invalid note link", "zh-Hans": "无效的备忘录链接", "zh-Hant": "無效的筆記連結", "ja": "無効なノートリンク" },
-  "操作已完成，但无法返回结果。": { "en": "The operation completed, but its result could not be returned.", "zh-Hans": "操作已完成，但无法返回结果。", "zh-Hant": "操作已完成，但無法回傳結果。", "ja": "操作は完了しましたが、結果を返せませんでした。" },
-  "已删除": {"en": "Deleted", "zh-Hans": "已删除", "zh-Hant": "已刪除", "ja": "削除済み"},
-  "恢复": {"en": "Undo", "zh-Hans": "恢复", "zh-Hant": "復原", "ja": "元に戻す"},
-  "秒": {"en": "s", "zh-Hans": "秒", "zh-Hant": "秒", "ja": "秒"},
-  "笔记": {"en": "Notes", "zh-Hans": "笔记", "zh-Hant": "筆記", "ja": "ノート"},
-  "命令面板": {"en": "Command Palette", "zh-Hans": "命令面板", "zh-Hant": "命令面板", "ja": "コマンドパレット"},
-  "搜索命令": {"en": "Search commands", "zh-Hans": "搜索命令", "zh-Hant": "搜尋命令", "ja": "コマンドを検索"},
-  "选择命令": {"en": "Choose a command", "zh-Hans": "选择命令", "zh-Hant": "選擇命令", "ja": "コマンドを選択"},
-  "没有匹配的命令": {"en": "No matching commands", "zh-Hans": "没有匹配的命令", "zh-Hant": "沒有符合的命令", "ja": "一致するコマンドはありません"},
-  "打开设置": {"en": "Open Settings", "zh-Hans": "打开设置", "zh-Hant": "開啟設定", "ja": "設定を開く"},
-  "关闭 Vim 模式": {"en": "Disable Vim mode", "zh-Hans": "关闭 Vim 模式", "zh-Hant": "關閉 Vim 模式", "ja": "Vim モードをオフにする"},
-  "开启 Vim 模式": {"en": "Enable Vim mode", "zh-Hans": "开启 Vim 模式", "zh-Hant": "開啟 Vim 模式", "ja": "Vim モードをオンにする"},
-  "恢复最近删除的笔记": {"en": "Restore last deleted note", "zh-Hans": "恢复最近删除的笔记", "zh-Hant": "復原最近刪除的筆記", "ja": "最後に削除したノートを復元"}
+  "note.previous": {
+    "en": "Previous note",
+    "zh-Hans": "上一条笔记",
+    "zh-Hant": "上一則筆記",
+    "ja": "前のノート"
+  },
+  "note.next": {
+    "en": "Next note",
+    "zh-Hans": "下一条笔记",
+    "zh-Hant": "下一則筆記",
+    "ja": "次のノート"
+  },
+  "note.new": {
+    "en": "New note",
+    "zh-Hans": "新建笔记",
+    "zh-Hant": "新增筆記",
+    "ja": "新規ノート"
+  },
+  "note.delete": {
+    "en": "Delete note",
+    "zh-Hans": "删除笔记",
+    "zh-Hant": "刪除筆記",
+    "ja": "ノートを削除"
+  },
+  "note.empty": {
+    "en": "Empty note",
+    "zh-Hans": "空白笔记",
+    "zh-Hant": "空白筆記",
+    "ja": "空のノート"
+  },
+  "note.deleted": {
+    "en": "Deleted",
+    "zh-Hans": "已删除",
+    "zh-Hant": "已刪除",
+    "ja": "削除済み"
+  },
+  "note.undo": {
+    "en": "Undo",
+    "zh-Hans": "恢复",
+    "zh-Hant": "復原",
+    "ja": "元に戻す"
+  },
+  "note.secondsUnit": {
+    "en": "s",
+    "zh-Hans": "秒",
+    "zh-Hant": "秒",
+    "ja": "秒"
+  },
+  "note.notes": {
+    "en": "Notes",
+    "zh-Hans": "笔记",
+    "zh-Hant": "筆記",
+    "ja": "ノート"
+  },
+  "note.restoreLastDeleted": {
+    "en": "Restore last deleted note",
+    "zh-Hans": "恢复最近删除的笔记",
+    "zh-Hant": "復原最近刪除的筆記",
+    "ja": "最後に削除したノートを復元"
+  },
+  "palette.searchNotes": {
+    "en": "Search Notes",
+    "zh-Hans": "搜索笔记",
+    "zh-Hant": "搜尋筆記",
+    "ja": "ノートを検索"
+  },
+  "palette.searchAllNotes": {
+    "en": "Search all notes",
+    "zh-Hans": "搜索所有笔记",
+    "zh-Hant": "搜尋所有筆記",
+    "ja": "すべてのノートを検索"
+  },
+  "palette.noMatchingNotes": {
+    "en": "No matching notes",
+    "zh-Hans": "没有匹配的笔记",
+    "zh-Hant": "沒有符合的筆記",
+    "ja": "一致するノートはありません"
+  },
+  "palette.typeToSearch": {
+    "en": "Type to search notes",
+    "zh-Hans": "输入关键词搜索笔记",
+    "zh-Hant": "輸入關鍵字搜尋筆記",
+    "ja": "キーワードを入力"
+  },
+  "palette.commandPalette": {
+    "en": "Command Palette",
+    "zh-Hans": "命令面板",
+    "zh-Hant": "命令面板",
+    "ja": "コマンドパレット"
+  },
+  "palette.searchCommands": {
+    "en": "Search commands",
+    "zh-Hans": "搜索命令",
+    "zh-Hant": "搜尋命令",
+    "ja": "コマンドを検索"
+  },
+  "palette.chooseCommand": {
+    "en": "Choose a command",
+    "zh-Hans": "选择命令",
+    "zh-Hant": "選擇命令",
+    "ja": "コマンドを選択"
+  },
+  "palette.chooseNote": {
+    "en": "Choose a note",
+    "zh-Hans": "选择笔记",
+    "zh-Hant": "選擇筆記",
+    "ja": "ノートを選択"
+  },
+  "palette.chooseOption": {
+    "en": "Choose an option",
+    "zh-Hans": "选择选项",
+    "zh-Hant": "選擇選項",
+    "ja": "項目を選択"
+  },
+  "palette.chooseOrTypeNumber": {
+    "en": "Choose or type a number",
+    "zh-Hans": "选择或输入数值",
+    "zh-Hant": "選擇或輸入數值",
+    "ja": "選択するか数値を入力"
+  },
+  "palette.keepVersions": {
+    "en": "Keep %d versions",
+    "zh-Hans": "保留 %d 个版本",
+    "zh-Hant": "保留 %d 個版本",
+    "ja": "%d 個のバージョンを保持"
+  },
+  "palette.on": {
+    "en": "On",
+    "zh-Hans": "开启",
+    "zh-Hant": "開啟",
+    "ja": "オン"
+  },
+  "palette.noMatchingCommands": {
+    "en": "No matching commands",
+    "zh-Hans": "没有匹配的命令",
+    "zh-Hant": "沒有符合的命令",
+    "ja": "一致するコマンドはありません"
+  },
+  "palette.openSettings": {
+    "en": "Open Settings",
+    "zh-Hans": "打开设置",
+    "zh-Hant": "開啟設定",
+    "ja": "設定を開く"
+  },
+  "palette.disableVim": {
+    "en": "Disable Vim mode",
+    "zh-Hans": "关闭 Vim 模式",
+    "zh-Hant": "關閉 Vim 模式",
+    "ja": "Vim モードをオフにする"
+  },
+  "palette.enableVim": {
+    "en": "Enable Vim mode",
+    "zh-Hans": "开启 Vim 模式",
+    "zh-Hant": "開啟 Vim 模式",
+    "ja": "Vim モードをオンにする"
+  },
+  "block.checklist": {
+    "en": "Checklist",
+    "zh-Hans": "清单",
+    "zh-Hant": "清單",
+    "ja": "チェックリスト"
+  },
+  "block.math": {
+    "en": "Math",
+    "zh-Hans": "计算",
+    "zh-Hant": "計算",
+    "ja": "計算"
+  },
+  "block.sum": {
+    "en": "Sum",
+    "zh-Hans": "求和",
+    "zh-Hant": "加總",
+    "ja": "合計"
+  },
+  "block.average": {
+    "en": "Average",
+    "zh-Hans": "平均值",
+    "zh-Hant": "平均值",
+    "ja": "平均"
+  },
+  "block.count": {
+    "en": "Count",
+    "zh-Hans": "计数",
+    "zh-Hant": "計數",
+    "ja": "カウント"
+  },
+  "block.code": {
+    "en": "Code",
+    "zh-Hans": "代码",
+    "zh-Hant": "程式碼",
+    "ja": "コード"
+  },
+  "block.delete": {
+    "en": "Delete block",
+    "zh-Hans": "删除块",
+    "zh-Hant": "刪除區塊",
+    "ja": "ブロックを削除"
+  },
+  "block.checklistDetail": {
+    "en": "Show a checkbox on each line",
+    "zh-Hans": "逐行显示复选框",
+    "zh-Hant": "逐行顯示核取方塊",
+    "ja": "各行にチェックボックスを表示"
+  },
+  "block.mathDetail": {
+    "en": "Expressions, variables and conversions",
+    "zh-Hans": "算式、变量与单位换算",
+    "zh-Hant": "算式、變數與單位換算",
+    "ja": "数式、変数、単位変換"
+  },
+  "block.sumDetail": {
+    "en": "Add numbers in the block",
+    "zh-Hans": "汇总块中的数字",
+    "zh-Hant": "加總區塊中的數字",
+    "ja": "ブロック内の数値を合計"
+  },
+  "block.averageDetail": {
+    "en": "Average numbers in the block",
+    "zh-Hans": "计算块内数字平均值",
+    "zh-Hant": "計算區塊內數字平均值",
+    "ja": "ブロック内の数値の平均"
+  },
+  "block.countDetail": {
+    "en": "Count items, words and characters",
+    "zh-Hans": "统计项目、词和字符",
+    "zh-Hant": "統計項目、詞和字元",
+    "ja": "項目、単語、文字を数える"
+  },
+  "block.codeDetail": {
+    "en": "Highlight code by language",
+    "zh-Hans": "保留代码并按语言高亮",
+    "zh-Hant": "保留程式碼並依語言突顯",
+    "ja": "言語に応じてコードを強調表示"
+  },
+  "block.convertToTextDetail": {
+    "en": "Remove function, keep content",
+    "zh-Hans": "移除功能，保留内容",
+    "zh-Hant": "移除功能，保留內容",
+    "ja": "機能を解除して内容を保持"
+  },
+  "block.deleteDetail": {
+    "en": "Delete this block and its contents",
+    "zh-Hans": "删除当前块及内容",
+    "zh-Hant": "刪除目前區塊及內容",
+    "ja": "このブロックと内容を削除"
+  },
+  "block.noMatches": {
+    "en": "No matching blocks",
+    "zh-Hans": "没有匹配的功能块",
+    "zh-Hant": "沒有符合的功能區塊",
+    "ja": "一致するブロックがありません"
+  },
+  "block.menuLabel": {
+    "en": "Feature blocks",
+    "zh-Hans": "功能块",
+    "zh-Hant": "功能區塊",
+    "ja": "機能ブロック"
+  },
+  "block.exchangeRatesUnavailable": {
+    "en": "Exchange rates loading or unavailable",
+    "zh-Hans": "汇率加载中或不可用",
+    "zh-Hant": "匯率載入中或無法使用",
+    "ja": "為替レートを取得中、または利用できません"
+  },
+  "block.unsupportedCurrency": {
+    "en": "Unsupported currency",
+    "zh-Hans": "不支持的币种",
+    "zh-Hant": "不支援的幣別",
+    "ja": "未対応の通貨"
+  },
+  "block.countSummary": {
+    "en": "{items} items · {words} words · {chars} characters",
+    "zh-Hans": "{items} 项 · {words} 词 · {chars} 字符",
+    "zh-Hant": "{items} 項 · {words} 詞 · {chars} 字元",
+    "ja": "{items} 項目 · {words} 語 · {chars} 文字"
+  },
+  "block.sumSummary": {
+    "en": "Sum {total} · {count} numbers",
+    "zh-Hans": "合计 {total} · {count} 个数",
+    "zh-Hant": "合計 {total} · {count} 個數",
+    "ja": "合計 {total} · {count} 個"
+  },
+  "block.averageSummary": {
+    "en": "Average {total} · {count} numbers",
+    "zh-Hans": "平均 {total} · {count} 个数",
+    "zh-Hant": "平均 {total} · {count} 個數",
+    "ja": "平均 {total} · {count} 個"
+  },
+  "block.convertToText": {
+    "en": "Convert to text",
+    "zh-Hans": "转为正文",
+    "zh-Hant": "轉為正文",
+    "ja": "本文に変換"
+  },
+  "editor.plainText": {
+    "en": "Plain text",
+    "zh-Hans": "纯文本",
+    "zh-Hant": "純文字",
+    "ja": "プレーンテキスト"
+  },
+  "editor.codeLanguage": {
+    "en": "Code language",
+    "zh-Hans": "代码语言",
+    "zh-Hant": "程式語言",
+    "ja": "コード言語"
+  },
+  "editor.chooseCodeLanguage": {
+    "en": "Choose code language ⌘L",
+    "zh-Hans": "选择代码语言 ⌘L",
+    "zh-Hant": "選擇程式語言 ⌘L",
+    "ja": "コード言語を選択 ⌘L"
+  },
+  "editor.markIncomplete": {
+    "en": "Mark incomplete",
+    "zh-Hans": "标记为未完成",
+    "zh-Hant": "標記為未完成",
+    "ja": "未完了にする"
+  },
+  "editor.markComplete": {
+    "en": "Mark complete",
+    "zh-Hans": "标记为已完成",
+    "zh-Hant": "標記為已完成",
+    "ja": "完了にする"
+  },
+  "error.settingsUnavailable": {
+    "en": "Settings are unavailable.",
+    "zh-Hans": "设置窗口不可用。",
+    "zh-Hant": "設定視窗無法使用。",
+    "ja": "設定ウインドウを使用できません。"
+  },
+  "error.storageUnchanged": {
+    "en": "Could not read notes; location unchanged.",
+    "zh-Hans": "无法读取当前笔记，保存位置未更改。",
+    "zh-Hant": "無法讀取目前筆記，儲存位置未更改。",
+    "ja": "ノートを読み取れません。保存場所は変更されていません。"
+  },
+  "error.saveFailed": {
+    "en": "Save failed",
+    "zh-Hans": "保存失败",
+    "zh-Hant": "儲存失敗",
+    "ja": "保存に失敗しました"
+  },
+  "error.invalidNotesFile": {
+    "en": "Invalid notes file",
+    "zh-Hans": "笔记文件格式无效",
+    "zh-Hant": "筆記檔案格式無效",
+    "ja": "ノートファイルの形式が無効です"
+  },
+  "error.readFailed": {
+    "en": "Read failed: ",
+    "zh-Hans": "读取失败：",
+    "zh-Hant": "讀取失敗：",
+    "ja": "読み込みに失敗："
+  },
+  "error.notesFileUnavailableRestart": {
+    "en": "Notes file unavailable. Restore it and restart.",
+    "zh-Hans": "笔记文件不存在或位置不可用，请恢复文件后重新启动。",
+    "zh-Hant": "筆記檔案不存在或位置無法使用，請還原後重新啟動。",
+    "ja": "ノートファイルを利用できません。復元して再起動してください。"
+  },
+  "error.notesFileUnavailableRetry": {
+    "en": "Notes file unavailable. Restore it and retry.",
+    "zh-Hans": "笔记文件不存在或位置不可用，请恢复文件后重试。",
+    "zh-Hant": "筆記檔案不存在或位置無法使用，請還原後重試。",
+    "ja": "ノートファイルを利用できません。復元して再試行してください。"
+  },
+  "error.readNotes": {
+    "en": "Could not read notes: ",
+    "zh-Hans": "无法读取笔记：",
+    "zh-Hant": "無法讀取筆記：",
+    "ja": "ノートの読み込みに失敗："
+  },
+  "error.saveFailedDetail": {
+    "en": "Save failed: ",
+    "zh-Hans": "保存失败：",
+    "zh-Hant": "儲存失敗：",
+    "ja": "保存に失敗："
+  },
+  "error.loginItem": {
+    "en": "Could not change login item: ",
+    "zh-Hans": "无法更改开机启动：",
+    "zh-Hant": "無法更改登入時啟動：",
+    "ja": "ログイン時の起動を変更できません："
+  },
+  "error.restoreFailed": {
+    "en": "Restore failed: ",
+    "zh-Hans": "恢复失败：",
+    "zh-Hant": "還原失敗：",
+    "ja": "復元に失敗："
+  },
+  "error.notesChangedOutside": {
+    "en": "Notes changed outside Inkflit. Copy the current text elsewhere and restart the app.",
+    "zh-Hans": "笔记文件已在外部更改，请先保存当前内容并重新启动应用。",
+    "zh-Hant": "筆記檔案已在外部更改，請先將目前內容複製到別處，再重新啟動應用程式。",
+    "ja": "ノートが外部で変更されました。現在の内容を別の場所にコピーしてからアプリを再起動してください。"
+  },
+  "error.chooseRecoveryMarkdown": {
+    "en": "Choose a Markdown file from the backup or Trash folder.",
+    "zh-Hans": "请选择备份或回收站中的 Markdown 文件。",
+    "zh-Hant": "請選擇備份或回收站中的 Markdown 檔案。",
+    "ja": "バックアップまたはゴミ箱の Markdown ファイルを選択してください。"
+  },
+  "error.destinationExists": {
+    "en": "The destination already has note data or its contents differ; nothing was overwritten.",
+    "zh-Hans": "目标位置已有笔记数据或内容不一致，未覆盖。",
+    "zh-Hant": "目標位置已有筆記資料或內容不一致，未覆蓋。",
+    "ja": "保存先にノートデータがあるか内容が一致しません。上書きしていません。"
+  },
+  "error.readGuideNotes": {
+    "en": "Could not read guide notes.",
+    "zh-Hans": "无法读取引导笔记。",
+    "zh-Hant": "無法讀取引導筆記。",
+    "ja": "ガイドノートを読み込めません。"
+  },
+  "error.createGuideNotes": {
+    "en": "Could not create guide notes",
+    "zh-Hans": "无法生成引导笔记",
+    "zh-Hant": "無法產生引導筆記",
+    "ja": "ガイドノートを作成できません"
+  },
+  "error.invalidNoteLink": {
+    "en": "Invalid note link",
+    "zh-Hans": "无效的备忘录链接",
+    "zh-Hant": "無效的筆記連結",
+    "ja": "無効なノートリンク"
+  },
+  "error.resultUnavailable": {
+    "en": "The operation completed, but its result could not be returned.",
+    "zh-Hans": "操作已完成，但无法返回结果。",
+    "zh-Hant": "操作已完成，但無法回傳結果。",
+    "ja": "操作は完了しましたが、結果を返せませんでした。"
+  }
 }

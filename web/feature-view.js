@@ -27,7 +27,7 @@ class ListBox extends WidgetType {
   constructor(pos) { super(); this.pos=pos; }
   eq(other) { return this.pos===other.pos; }
   toDOM(view) {
-    const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label',t('标记为已完成'));
+    const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label',t('editor.markComplete'));
     b.addEventListener('mousedown', e=>{e.preventDefault();e.stopPropagation();});
     b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();view.dispatch({changes:{from:this.pos,insert:'[x] '},userEvent:'input.task.toggle'});view.focus();});
     return b;
@@ -35,18 +35,18 @@ class ListBox extends WidgetType {
   ignoreEvent() { return false; }
 }
 const pendingLanguages=new Set();
-const blockNames={list:'清单',math:'计算',sum:'求和',avg:'平均值',count:'计数',code:'代码'};
+const blockNames={list:'block.checklist',math:'block.math',sum:'block.sum',avg:'block.average',count:'block.count',code:'block.code'};
 class BlockHeader extends WidgetType {
   constructor(scope) {super();this.scope=scope;this.language=lang();}
   eq(other){return this.language===other.language && this.scope.start===other.scope.start && this.scope.mode===other.scope.mode && this.scope.language===other.scope.language && this.scope.end===other.scope.end;}
   toDOM(view) {
     const wrap=document.createElement('span');wrap.className='block-header';
-    const button=document.createElement('button');button.type='button';button.className='block-type';button.textContent=t(blockNames[this.scope.mode])+' ▾';button.setAttribute('aria-label',t('功能块')+': '+t(blockNames[this.scope.mode]));
+    const button=document.createElement('button');button.type='button';button.className='block-type';button.textContent=t(blockNames[this.scope.mode])+' ▾';button.setAttribute('aria-label',t('block.menuLabel')+': '+t(blockNames[this.scope.mode]));
     button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',e=>{e.preventDefault();openBlockMenu({from:view.state.doc.line(this.scope.start).from,scope:this.scope});});wrap.append(button);
     if(this.scope.mode==='code') {
       const language=document.createElement('button');language.type='button';language.className='block-language';language.tabIndex=-1;
-      const names={'':'纯文本',javascript:'JavaScript',typescript:'TypeScript',python:'Python',swift:'Swift',json:'JSON',html:'HTML',css:'CSS',sql:'SQL',shell:'Shell',markdown:'Markdown'};
-      language.textContent=t(names[this.scope.language||''] || this.scope.language);language.setAttribute('aria-label',t('代码语言'));language.setAttribute('aria-haspopup','listbox');language.setAttribute('aria-expanded','false');language.setAttribute('aria-controls','language-menu');language.title=t('选择代码语言 ⌘L');
+      const names={'':'editor.plainText',javascript:'JavaScript',typescript:'TypeScript',python:'Python',swift:'Swift',json:'JSON',html:'HTML',css:'CSS',sql:'SQL',shell:'Shell',markdown:'Markdown'};
+      language.textContent=t(names[this.scope.language||''] || this.scope.language);language.setAttribute('aria-label',t('editor.codeLanguage'));language.setAttribute('aria-haspopup','listbox');language.setAttribute('aria-expanded','false');language.setAttribute('aria-controls','language-menu');language.title=t('editor.chooseCodeLanguage');
       language.addEventListener('mousedown',event=>event.preventDefault());language.addEventListener('click',event=>{event.preventDefault();openLanguageMenu(view,this.scope,language);});wrap.append(language);
     }
     return wrap;

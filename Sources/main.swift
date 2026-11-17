@@ -159,21 +159,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let mainMenu = NSMenu()
         let appRoot = NSMenuItem(title: "Inkflit", action: nil, keyEquivalent: "")
         let appMenu = NSMenu(title: "Inkflit")
-        let settingsItem = appMenu.addItem(withTitle: L("设置…"), action: #selector(showSettings), keyEquivalent: ",")
+        let settingsItem = appMenu.addItem(withTitle: L("app.settingsMenu"), action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: L("退出 Inkflit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appRoot.submenu = appMenu; mainMenu.addItem(appRoot)
-        let editRoot = NSMenuItem(title: L("编辑"), action: nil, keyEquivalent: "")
-        let editMenu = NSMenu(title: L("编辑"))
-        editMenu.addItem(withTitle: L("剪切"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: L("复制"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: L("粘贴"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: L("全选"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editRoot = NSMenuItem(title: L("app.edit"), action: nil, keyEquivalent: "")
+        let editMenu = NSMenu(title: L("app.edit"))
+        editMenu.addItem(withTitle: L("app.cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: L("app.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L("app.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L("app.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editRoot.submenu = editMenu; mainMenu.addItem(editRoot)
-        let windowRoot = NSMenuItem(title: L("窗口"), action: nil, keyEquivalent: "")
-        let windowMenu = NSMenu(title: L("窗口"))
-        windowMenu.addItem(withTitle: L("关闭窗口"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let windowRoot = NSMenuItem(title: L("app.window"), action: nil, keyEquivalent: "")
+        let windowMenu = NSMenu(title: L("app.window"))
+        windowMenu.addItem(withTitle: L("app.closeWindow"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         windowRoot.submenu = windowMenu; mainMenu.addItem(windowRoot); NSApp.mainMenu = mainMenu
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "quicknote")
@@ -223,10 +223,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 button.title = ""
             }
             let menu = NSMenu()
-            menu.addItem(withTitle: L("打开 Inkflit"), action: #selector(showWindow), keyEquivalent: "")
-            menu.addItem(withTitle: L("搜索笔记"), action: #selector(showSearch), keyEquivalent: "")
-            hotKeyItem = menu.addItem(withTitle: L("设置…"), action: #selector(showSettings), keyEquivalent: ",")
-            menu.addItem(.separator()); menu.addItem(withTitle: L("退出 Inkflit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            menu.addItem(withTitle: L("app.open"), action: #selector(showWindow), keyEquivalent: "")
+            menu.addItem(withTitle: L("palette.searchNotes"), action: #selector(showSearch), keyEquivalent: "")
+            hotKeyItem = menu.addItem(withTitle: L("app.settingsMenu"), action: #selector(showSettings), keyEquivalent: ",")
+            menu.addItem(.separator()); menu.addItem(withTitle: L("app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
             var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
             let handlerStatus = InstallEventHandler(GetApplicationEventTarget(), { _, _, data in
@@ -257,14 +257,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let destination = NoteFiles.index(directory)
         if destination == storageURL.standardizedFileURL { completion(nil); return }
         requestFlush { [weak self] success, message in
-            guard let self else { completion(L("设置窗口不可用。")); return }
-            guard success else { completion(message ?? L("保存失败")); return }
+            guard let self else { completion(L("error.settingsUnavailable")); return }
+            guard success else { completion(message ?? L("error.saveFailed")); return }
             self.copyStorageDirectory(directory, destination: destination, completion: completion)
         }
     }
     private func copyStorageDirectory(_ directory: URL, destination: URL, completion: @escaping (String?) -> Void) {
         web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
-            guard let self else { completion(L("设置窗口不可用。")); return }
+            guard let self else { completion(L("error.settingsUnavailable")); return }
             guard error == nil, let json = value as? String, let data = json.data(using: .utf8) else { completion(NoteStorageError.invalidSnapshot.localizedDescription); return }
             do {
                 let snapshot = try NoteFiles.decode(data)
@@ -272,7 +272,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 if FileManager.default.fileExists(atPath: NoteFiles.index(source).path) {
                     try NoteFiles.copy(snapshot, from: source, to: directory)
                 } else if self.requireExistingStorage {
-                    throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+                    throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
                 } else { try NoteFiles.create(snapshot, in: directory) }
                 self.storageURL = destination; self.requireExistingStorage = true
                 self.loadedSnapshot = snapshot
@@ -286,19 +286,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         do { data = try JSONEncoder().encode(Onboarding.contents(language: Localization.current)) }
         catch { completion(error.localizedDescription); return }
         requestFlush { [weak self] success, message in
-            guard let self else { completion(L("设置窗口不可用。")); return }
-            guard success else { completion(message ?? L("保存失败")); return }
+            guard let self else { completion(L("error.settingsUnavailable")); return }
+            guard success else { completion(message ?? L("error.saveFailed")); return }
             do {
                 if let expected = self.loadedSnapshot, try NoteFiles.read(self.storageURL.deletingLastPathComponent()) != expected {
-                    completion(L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")); return
+                    completion(L("error.notesChangedOutside")); return
                 }
-            } catch { completion(L("无法读取笔记：") + error.localizedDescription); return }
+            } catch { completion(L("error.readNotes") + error.localizedDescription); return }
             self.web.evaluateJavaScript("window.addOnboardingNotesBase64('\(data.base64EncodedString())')") { [weak self] value, error in
-                guard let self else { completion(L("设置窗口不可用。")); return }
+                guard let self else { completion(L("error.settingsUnavailable")); return }
                 guard error == nil, (value as? NSNumber)?.intValue ?? 0 > 0 else {
                     completion(error?.localizedDescription ?? OnboardingError.unavailable.localizedDescription); return
                 }
-                self.requestFlush { success, message in completion(success ? nil : (message ?? L("保存失败"))) }
+                self.requestFlush { success, message in completion(success ? nil : (message ?? L("error.saveFailed"))) }
             }
         }
     }
@@ -334,19 +334,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         return text + (keys[hotKeyCode] ?? "Key \(hotKeyCode)")
     }
     func updateHotKeyLabel() {
-        let label = hotKeyDisabled ? L("未设置") : shortcutLabel()
-        status?.button?.toolTip = hotKeyDisabled ? L("全局快捷键未设置") : L("全局快捷键") + " " + label
-        hotKeyItem?.title = L("设置…")
+        let label = hotKeyDisabled ? L("app.notSet") : shortcutLabel()
+        status?.button?.toolTip = hotKeyDisabled ? L("app.globalShortcutNotSet") : L("settings.globalShortcut") + " " + label
+        hotKeyItem?.title = L("app.settingsMenu")
         if let data = try? JSONSerialization.data(withJSONObject: [label]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func reportHotKeyFailure() {
-        status?.button?.toolTip = L("全局快捷键不可用，请在设置中重新设置")
-        hotKeyItem?.title = L("设置…（快捷键不可用）")
-        if let data = try? JSONSerialization.data(withJSONObject: [L("快捷键不可用")]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
+        status?.button?.toolTip = L("app.shortcutUnavailableInSettings")
+        hotKeyItem?.title = L("app.settingsMenuShortcutUnavailable")
+        if let data = try? JSONSerialization.data(withJSONObject: [L("app.shortcutUnavailable")]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func saveShortcut(code: UInt32, modifiers: UInt32) -> String? {
         if code == hotKeyCode && modifiers == hotKeyModifiers && hotKey != nil { return nil }
-        guard registerHotKey(code: code, modifiers: modifiers) else { return L("这个快捷键不可用，请换一个。") }
+        guard registerHotKey(code: code, modifiers: modifiers) else { return L("app.shortcutUnavailableChooseAnother") }
         hotKeyDisabled = false
         let defaults = UserDefaults.standard
         defaults.set(Int(code), forKey: "hotKeyCode"); defaults.set(Int(modifiers), forKey: "hotKeyModifiers"); defaults.set(false, forKey: "hotKeyDisabled")
@@ -413,24 +413,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard let data = try? JSONSerialization.data(withJSONObject: [Localization.current]), let json = String(data: data, encoding: .utf8) else { return }
         web?.evaluateJavaScript("window.setLanguage?.(\(json)[0])", completionHandler: nil)
         if let menu = NSApp.mainMenu, menu.items.count >= 3 {
-            if let app = menu.items[0].submenu, app.items.count >= 3 { app.items[0].title = L("设置…"); app.items[2].title = L("退出 Inkflit") }
-            menu.items[1].title = L("编辑"); menu.items[1].submenu?.title = L("编辑")
-            if let edit = menu.items[1].submenu { for (i, key) in ["剪切", "复制", "粘贴", "全选"].enumerated() where i < edit.items.count { edit.items[i].title = L(key) } }
-            menu.items[2].title = L("窗口"); menu.items[2].submenu?.title = L("窗口"); menu.items[2].submenu?.items.first?.title = L("关闭窗口")
+            if let app = menu.items[0].submenu, app.items.count >= 3 { app.items[0].title = L("app.settingsMenu"); app.items[2].title = L("app.quit") }
+            menu.items[1].title = L("app.edit"); menu.items[1].submenu?.title = L("app.edit")
+            if let edit = menu.items[1].submenu { for (i, key) in ["app.cut", "app.copy", "app.paste", "app.selectAll"].enumerated() where i < edit.items.count { edit.items[i].title = L(key) } }
+            menu.items[2].title = L("app.window"); menu.items[2].submenu?.title = L("app.window"); menu.items[2].submenu?.items.first?.title = L("app.closeWindow")
         }
-        if let menu = status?.menu, menu.items.count >= 5 { menu.items[0].title = L("打开 Inkflit"); menu.items[1].title = L("搜索笔记"); menu.items[2].title = L("设置…"); menu.items[4].title = L("退出 Inkflit") }
+        if let menu = status?.menu, menu.items.count >= 5 { menu.items[0].title = L("app.open"); menu.items[1].title = L("palette.searchNotes"); menu.items[2].title = L("app.settingsMenu"); menu.items[4].title = L("app.quit") }
         if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
     }
     @objc func showSettings() {
         hideWindow()
+        makeSettingsController()
+        if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
+        settingsController?.show()
+    }
+    func loginItemStatus() -> SMAppService.Status {
+        isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? testLoginStatus : SMAppService.mainApp.status
+    }
+    func setLoginItem(_ enabled: Bool) -> String? {
+        if isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" { testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
+        do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
+        catch { return L("error.loginItem") + error.localizedDescription }
+    }
+    func makeSettingsController() {
         if settingsController == nil {
             settingsController = SettingsController(
                 getShortcut: { [weak self] in guard let self else { return "" }; return self.hotKeyDisabled ? "" : self.shortcutLabel() },
-                saveShortcut: { [weak self] code, modifiers in guard let self else { return L("设置窗口不可用。") }; return self.saveShortcut(code: code, modifiers: modifiers) },
+                saveShortcut: { [weak self] code, modifiers in guard let self else { return L("error.settingsUnavailable") }; return self.saveShortcut(code: code, modifiers: modifiers) },
                 clearShortcut: { [weak self] in self?.clearShortcut() },
-                resetShortcut: { [weak self] in guard let self else { return L("设置窗口不可用。") }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
+                resetShortcut: { [weak self] in guard let self else { return L("error.settingsUnavailable") }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
                 getStorage: { [weak self] in self?.storageURL.path ?? "" },
-                changeStorage: { [weak self] url, completion in guard let self else { completion(L("设置窗口不可用。")); return }; self.changeStorageDirectory(url, completion: completion) },
+                changeStorage: { [weak self] url, completion in guard let self else { completion(L("error.settingsUnavailable")); return }; self.changeStorageDirectory(url, completion: completion) },
                 getVimEnabled: { [weak self] in self?.vimEnabled() ?? true },
                 setVimEnabled: { [weak self] value in self?.updateVimEnabled(value) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
@@ -439,29 +452,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 setTheme: { [weak self] value in self?.updateCodeTheme(value) },
                 getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
                 setAppearance: { [weak self] value in self?.updateWindowAppearance(value) },
-                loginStatus: { [weak self] in guard let self else { return .notFound }; return self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" ? self.testLoginStatus : SMAppService.mainApp.status },
-                setLogin: { [weak self] enabled in
-                    guard let self else { return L("设置窗口不可用。") }
-                    if self.isolatedTest && ProcessInfo.processInfo.environment["QUICKNOTE_TEST_LOGIN_REAL"] != "1" { self.testLoginStatus = enabled ? .enabled : .notRegistered; return nil }
-                    do { if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; return nil }
-                    catch { return L("无法更改开机启动：") + error.localizedDescription }
-                })
+                loginStatus: { [weak self] in self?.loginItemStatus() ?? .notFound },
+                setLogin: { [weak self] enabled in self?.setLoginItem(enabled) ?? L("error.settingsUnavailable") })
             settingsController?.restoreNote = { [weak self] data in
                 guard let self else { return }
                 self.web.evaluateJavaScript("window.restoreNoteBase64('\(data.base64EncodedString())')") { [weak self] _, error in
-                    if let error { self?.showError(L("恢复失败：") + error.localizedDescription) }
+                    if let error { self?.showError(L("error.restoreFailed") + error.localizedDescription) }
                     else { self?.settingsController?.window?.orderOut(nil); self?.showWindow() }
                 }
             }
             settingsController?.generateOnboarding = { [weak self] completion in
-                guard let self else { completion(L("设置窗口不可用。")); return }
+                guard let self else { completion(L("error.settingsUnavailable")); return }
                 self.generateOnboarding { [weak self] error in
                     if error == nil { self?.settingsController?.window?.orderOut(nil); self?.showWindow() }
                     completion(error)
                 }
             }
             settingsController?.rebuildIndex = { [weak self] in
-                guard let self else { return L("设置窗口不可用。") }
+                guard let self else { return L("error.settingsUnavailable") }
                 do {
                     let snapshot = try NoteFiles.rebuildIndex(self.storageURL.deletingLastPathComponent())
                     let data = try JSONEncoder().encode(snapshot)
@@ -469,7 +477,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     self.web.evaluateJavaScript("window.loadNotesBase64('\(data.base64EncodedString())')", completionHandler: nil)
                     if !self.isolatedTest { UserDefaults.standard.set(self.storageURL.deletingLastPathComponent().path, forKey: "notesDirectory") }
                     return nil
-                } catch { return L("恢复失败：") + error.localizedDescription }
+                } catch { return L("error.restoreFailed") + error.localizedDescription }
             }
             settingsController?.languageChanged = { [weak self] in
                 guard let self else { return }
@@ -479,8 +487,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 DispatchQueue.main.async { [weak self] in self?.showSettings() }
             }
         }
-        if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
-        settingsController?.show()
     }
     @objc func showWindow() {
         hideGeneration += 1; hidePending = false
@@ -590,7 +596,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 let data = try Data(contentsOf: storageURL); let base64 = data.base64EncodedString()
                 web.evaluateJavaScript("window.loadNotesBase64('\(base64)')", completionHandler: nil)
             } else if requireExistingStorage {
-                showError(L("笔记文件不存在或位置不可用，请恢复文件后重新启动。"))
+                showError(L("error.notesFileUnavailableRestart"))
             } else if usesNoteFiles && (!isolatedTest || ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] == "1") {
                 var languages = Locale.preferredLanguages
                 #if INKFLIT_NATIVE_TEST
@@ -604,7 +610,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 web.evaluateJavaScript("window.loadNotesBase64('\(data.base64EncodedString())')", completionHandler: nil)
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
-        } catch { showError(L("无法读取笔记：") + error.localizedDescription) }
+        } catch { showError(L("error.readNotes") + error.localizedDescription) }
         web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
             guard let self else { return }
             guard error == nil, value is String else { return }
@@ -744,9 +750,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 if self.usesNoteFiles && self.requireExistingStorage {
                     do {
                         guard let expected=self.loadedSnapshot, try NoteFiles.read(self.storageURL.deletingLastPathComponent()) == expected else {
-                            finish(["error":L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")]); return
+                            finish(["error":L("error.notesChangedOutside")]); return
                         }
-                    } catch { finish(["error":L("笔记文件不存在或位置不可用，请恢复文件后重试。")]); return }
+                    } catch { finish(["error":L("error.notesFileUnavailableRetry")]); return }
                 }
                 execute()
             }
@@ -756,7 +762,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard let components=URLComponents(url:url,resolvingAgainstBaseURL:false), components.scheme?.lowercased()=="inkflit" else { return }
         let host=(components.host ?? "").lowercased(), path=components.path.split(separator:"/").map(String.init)
         let action=(host == "note" || host == "notes") ? (path.count == 1 ? path[0].lowercased() : "") : (path.isEmpty ? host : "")
-        func invalidLink() { showWindow(); showError(L("无效的备忘录链接")) }
+        func invalidLink() { showWindow(); showError(L("error.invalidNoteLink")) }
         guard ["list","get","search","create","append","replace","delete"].contains(action) else { invalidLink(); return }
         let items=components.queryItems ?? []
         guard Set(items.map(\.name)).count == items.count, items.allSatisfy({ ["index","id","content","query","position","x-success","x-error"].contains($0.name) }) else { invalidLink(); return }
@@ -778,7 +784,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 self.showWindow();self.showError(error);return
             }
             if let callback=callbacks["x-success"], let result=reply["result"] as? [String:Any] {
-                if !self.openAutomationCallback(callback,payload:result) { self.showWindow(); self.showError(L("操作已完成，但无法返回结果。")) }
+                if !self.openAutomationCallback(callback,payload:result) { self.showWindow(); self.showError(L("error.resultUnavailable")) }
                 return
             }
             self.showWindow()
@@ -801,7 +807,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         return NSWorkspace.shared.open(result)
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        let alert = NSAlert(); alert.messageText = message; alert.addButton(withTitle: L("删除")); alert.addButton(withTitle: L("取消"))
+        let alert = NSAlert(); alert.messageText = message; alert.addButton(withTitle: L("app.delete")); alert.addButton(withTitle: L("app.cancel"))
         completionHandler(alert.runModal() == .alertFirstButtonReturn)
     }
     func setEditorMode(_ mode: String) {
@@ -844,7 +850,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             reportSaveResult(true, error: nil, revision: pending.revision)
             return (true, nil)
         } catch {
-            let message = L("保存失败：") + error.localizedDescription
+            let message = L("error.saveFailedDetail") + error.localizedDescription
             reportSaveResult(false, error: message, revision: pending.revision)
             return (false, message)
         }
@@ -856,15 +862,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func requestFlush(_ completion: @escaping (Bool, String?) -> Void) {
         web.evaluateJavaScript("window.snapshotForFlush?.()") { [weak self] value, error in
-            guard let self else { completion(false, L("设置窗口不可用。")); return }
+            guard let self else { completion(false, L("error.settingsUnavailable")); return }
             if let error {
-                let message = L("保存失败：") + error.localizedDescription
+                let message = L("error.saveFailedDetail") + error.localizedDescription
                 self.showError(message); completion(false, message); return
             }
             if let snapshot = value as? [String: Any] {
                 guard let json = snapshot["json"] as? String, let revision = (snapshot["revision"] as? NSNumber)?.intValue,
                       revision >= 0, let data = json.data(using: .utf8) else {
-                    let message = L("无法读取当前笔记，保存位置未更改。")
+                    let message = L("error.storageUnchanged")
                     self.showError(message); completion(false, message); return
                 }
                 if revision > self.lastSavedRevision && (self.pendingSave == nil || revision >= self.pendingSave!.revision) {
@@ -872,7 +878,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     if self.firstPendingAt == nil { self.firstPendingAt = ProcessInfo.processInfo.systemUptime }
                 }
             } else if value != nil && !(value is NSNull) {
-                let message = L("无法读取当前笔记，保存位置未更改。")
+                let message = L("error.storageUnchanged")
                 self.showError(message); completion(false, message); return
             }
             let (success, message) = self.flushPending(); completion(success, message)
@@ -883,20 +889,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             let directory = storageURL.deletingLastPathComponent(), snapshot = try NoteFiles.decode(data)
             if FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
                 guard let expected = loadedSnapshot, try NoteFiles.read(directory) == expected else {
-                    throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")])
+                    throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("error.notesChangedOutside")])
                 }
                 let defaults = UserDefaults.standard
                 let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
                 try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
             } else if requireExistingStorage {
-                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+                throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
             } else { try NoteFiles.create(snapshot, in: directory) }
             loadedSnapshot = snapshot
             if !isolatedTest { UserDefaults.standard.set(directory.path, forKey: "notesDirectory") }
             requireExistingStorage = true; return
         }
         if requireExistingStorage && !FileManager.default.fileExists(atPath: storageURL.path) {
-            throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("笔记文件不存在或位置不可用，请恢复文件后重试。")])
+            throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
         }
         try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         try data.write(to: storageURL, options: .atomic)
@@ -929,6 +935,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 guard value == "system" || Localization.supported.contains(value) else { return }
                 UserDefaults.standard.set(value, forKey: "language"); syncLanguage()
                 settingsController?.window?.close(); settingsController = nil
+            case "opacity", "blur":
+                guard let number = Int(value) else { return }
+                var appearance = windowAppearance()
+                if action == "opacity" { appearance.opacity = number } else { appearance.blur = number }
+                updateWindowAppearance(appearance); settingsController?.refresh()
+            case "backup":
+                let defaults = UserDefaults.standard
+                if value == "off" { defaults.set(0, forKey: "backupVersionLimit") }
+                else if value == "unlimited" { defaults.set(-1, forKey: "backupVersionLimit") }
+                else if let count = Int(value), count > 0 {
+                    let limit = min(1_000_000, count)
+                    defaults.set(limit, forKey: "backupPreviousLimit"); defaults.set(limit, forKey: "backupVersionLimit")
+                } else { return }
+                settingsController?.refresh()
+            case "login":
+                guard value == "on" || value == "off" else { return }
+                if let error = setLoginItem(value == "on") { showError(error) }
+                else if value == "on" && loginItemStatus() == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+                settingsController?.refresh()
+            case "state":
+                let appearance = windowAppearance(), defaults = UserDefaults.standard
+                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+                let login = loginItemStatus()
+                let state: [String: String] = [
+                    "ui-theme": appearance.theme, "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
+                    "opacity": String(appearance.opacity), "blur": String(appearance.blur),
+                    "backup": limit == 0 ? "off" : limit < 0 ? "unlimited" : String(limit),
+                    "login": login == .enabled || login == .requiresApproval ? "on" : "off"]
+                if let data = try? JSONSerialization.data(withJSONObject: state), let text = String(data: data, encoding: .utf8) {
+                    web.evaluateJavaScript("window.setCommandState(\(text))", completionHandler: nil)
+                }
+            case "onboarding": generateOnboarding { [weak self] error in if let error { self?.showError(error) } }
+            case "help": makeSettingsController(); settingsController?.openHelpWindow()
             default: break
             }
             return
