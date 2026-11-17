@@ -928,7 +928,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("error.notesChangedOutside")])
                 }
                 let defaults = UserDefaults.standard
-                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
                 try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
             } else if requireExistingStorage {
                 throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
@@ -992,7 +992,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 settingsController?.refresh()
             case "state":
                 let appearance = windowAppearance(), defaults = UserDefaults.standard
-                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
+                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
                 let login = loginItemStatus()
                 let state: [String: String] = [
                     "ui-theme": appearance.theme, "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,

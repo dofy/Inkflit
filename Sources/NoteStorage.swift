@@ -46,6 +46,8 @@ private struct NoteIndex: Codable {
 
 enum NoteFiles {
     static let backupInterval: TimeInterval = 300
+    /// Versions kept per note until the user picks another limit in Settings → Data.
+    static let defaultBackupLimit = 12
     static var lastBackup: [String: Date] = [:]
     static let files = FileManager.default
     static func index(_ directory: URL) -> URL { directory.appendingPathComponent("index.json") }
