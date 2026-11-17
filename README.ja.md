@@ -74,6 +74,8 @@ codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 
 他の MCP クライアントでは `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}` を利用できます。1 回の書き込みは最大 1,000,000 UTF-16 コード単位です。
 
+`create_note` の任意の `position` に `"first"`、`"last"`、または 1 始まりの挿入位置（最大は現在のノート数 + 1）を指定できます。既定値は `"first"` です。例えば `{"content":"メモ","position":"last"}` は末尾に作成します。URL からの作成でも `position=last` または数値を指定できます。
+
 Claude Code では `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp` を実行します。Namo の接続設定でローカル MCP を追加し、同じ実行ファイルと引数 `["--mcp"]` を入力して接続をテストします。両アプリを同じ Mac で同じユーザーとして実行し、許可された対話メンバーがツールを使用できます。
 
 `inkflit://note/<action>` も利用できます。操作は `list`、`get`、`search`、`create`、`append`、`replace`、`delete` です。必要に応じて URL エンコードした `index` または `id`、`content`、`query` を指定します。

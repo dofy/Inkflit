@@ -140,8 +140,13 @@ final class NativeCodeEditingTest {
                                         let snapshot=try NoteFiles.read(app.storageURL.deletingLastPathComponent())
                                         guard snapshot.notes.count==1, snapshot.notes[0].content.isEmpty else { fail("deleting last note did not create a blank note") }
                                     } catch { fail("could not read final scheme state") }
-                                    print("PASS scheme create, append, replace, search, callbacks, cached editor and deletion with trash")
-                                    app.restoreInputSource();exit(0)
+                                    app.application(NSApp,open:[URL(string:"inkflit://note/create?content=Tail&position=last")!,URL(string:"inkflit://note/create?content=Head&position=1")!])
+                                    DispatchQueue.main.asyncAfter(deadline:.now()+0.6) { [self] in
+                                        do { let snapshot=try NoteFiles.read(app.storageURL.deletingLastPathComponent());guard snapshot.notes.map(\.content) == ["Head","","Tail"] else { fail("scheme create position was not persisted") } }
+                                        catch { fail("could not read scheme position test") }
+                                        print("PASS scheme create, position, append, replace, search, callbacks, cached editor and deletion with trash")
+                                        app.restoreInputSource();exit(0)
+                                    }
                                 }
                             }
                                 }

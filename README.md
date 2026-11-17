@@ -74,6 +74,8 @@ Restart the MCP client after configuring it. The tools are `list_notes`, `search
 
 Other MCP clients can use `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`. Each write accepts at most 1,000,000 UTF-16 code units of content.
 
+For `create_note`, optionally set `position` to `"first"`, `"last"`, or a 1-based insertion position up to the note count plus one. The default is `"first"`. For example, `{"content":"My note","position":"last"}` appends a new note. URL creation also accepts `position=last` or a numeric position.
+
 For Claude Code, run `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`. In Namo, select Settings → Connections → Add local MCP, enter the same executable and `["--mcp"]` as arguments, then test. Both apps must run as the same user on the same Mac; admitted Namo users can call these tools.
 
 Inkflit also registers `inkflit://note/<action>`, where action is `list`, `get`, `search`, `create`, `append`, `replace` or `delete`. Use percent-encoded query parameters `index` or `id`, `content`, and `query` as applicable. Examples:

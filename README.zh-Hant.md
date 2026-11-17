@@ -74,6 +74,8 @@ codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 
 其他 MCP 用戶端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。每次寫入最多 1,000,000 個 UTF-16 程式碼單元。
 
+新增筆記時，`create_note` 的選用 `position` 可設為 `"first"`、`"last"` 或從 1 開始的插入位置（最大為目前筆記數加 1）；預設 `"first"`。例如 `{"content":"我的筆記","position":"last"}` 在末尾新增。URL 新增也支援 `position=last` 或數字位置。
+
 Claude Code 可執行 `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`。在 Namo 的連線設定中新增本機 MCP，填入相同的執行檔與參數 `["--mcp"]`，儲存並測試。兩者須在同一台 Mac 以同一使用者執行；獲准對話的成員都能使用這些工具。
 
 應用程式也支援 `inkflit://note/<action>`，操作為 `list`、`get`、`search`、`create`、`append`、`replace` 或 `delete`。依需求提供 URL 編碼的 `index` 或 `id`、`content`、`query`：

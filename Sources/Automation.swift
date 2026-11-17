@@ -124,7 +124,7 @@ enum InkflitMCP {
         return [tool("list_notes","List current notes in displayed order.",[:]),
                 tool("search_notes","Search all current notes.",["query":["type":"string"]],["query"]),
                 tool("get_note","Read a note by its 1-based index or ID.",target),
-                tool("create_note","Create a new note.",["content":content],["content"]),
+                tool("create_note","Create a new note at the beginning (default), end, or a 1-based position.",["content":content,"position":["description":"first, last, or 1-based insertion position (up to note count + 1)","anyOf":[["type":"string","enum":["first","last"]],["type":"integer","minimum":1]]]], ["content"]),
                 tool("append_note","Append to a note by index or ID; omit both to create a new note.",write,["content"]),
                 tool("replace_note","Replace a note's contents; omit index and ID to create a new note.",write,["content"]),
                 tool("delete_note","Delete a note by index or ID; the previous content goes to Trash.",target)]

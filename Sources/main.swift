@@ -745,7 +745,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         func invalidLink() { showWindow(); showError(L("无效的备忘录链接")) }
         guard ["list","get","search","create","append","replace","delete"].contains(action) else { invalidLink(); return }
         let items=components.queryItems ?? []
-        guard Set(items.map(\.name)).count == items.count, items.allSatisfy({ ["index","id","content","query","x-success","x-error"].contains($0.name) }) else { invalidLink(); return }
+        guard Set(items.map(\.name)).count == items.count, items.allSatisfy({ ["index","id","content","query","position","x-success","x-error"].contains($0.name) }) else { invalidLink(); return }
         var callbacks: [String:URL] = [:]
         var request:[String:Any] = ["action":action]
         for item in items {
@@ -754,6 +754,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 guard let callback=URL(string:value), let scheme=callback.scheme?.lowercased(), !["http","https","file","inkflit"].contains(scheme) else { invalidLink(); return }
                 callbacks[item.name]=callback
             } else if item.name == "index" { guard let index=Int(value), index>0 else { invalidLink(); return };request["index"]=index }
+            else if item.name == "position" { if value == "first" || value == "last" { request["position"]=value } else { guard let position=Int(value), position>0 else { invalidLink(); return };request["position"]=position } }
             else { request[item.name]=value }
         }
         enqueueAutomation(request) { [weak self] reply in

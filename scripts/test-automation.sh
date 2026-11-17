@@ -100,6 +100,11 @@ try:
  made=call('append_note',{'content':'Created by append'})['result']['note']; assert made['index']==1
  made2=call('replace_note',{'content':'Created by replace'})['result']['note']; assert made2['index']==1
  made3=call('create_note',{'content':'Explicit creation'})['result']['note'];assert made3['index']==1
+ count=len(call('list_notes')['result']['notes'])
+ tail=call('create_note',{'content':'Tail','position':'last'})['result']['note'];assert tail['index']==count+1
+ middle=call('create_note',{'content':'Middle','position':2})['result']['note'];assert middle['index']==2
+ head=call('create_note',{'content':'Head','position':'first'})['result']['note'];assert head['index']==1
+ before=call('list_notes')['result']['notes'];assert 'error' in call('create_note',{'content':'bad','position':999},error=True);assert 'error' in call('create_note',{'content':'bad','position':'middle'},error=True);assert call('list_notes')['result']['notes']==before
  assert call('delete_note',{'id':made['id']})['result']['deleted']==made['id']
  assert any(p.read_text()=='Created by append' for p in (store/'trash'/filename(made['id'])[:-3]).glob('*.md'))
  assert 'error' in call('get_note',{'index':999},error=True)

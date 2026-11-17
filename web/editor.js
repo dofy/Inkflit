@@ -343,6 +343,15 @@ window.inkflitNotesOperation = async request => {
   if(action!=='delete' && (typeof request.content!=='string' || request.content.length>1_000_000))throw new Error('Content must be a string of at most 1000000 characters');
   let note=action==='create'?null:resolveNote(action==='delete');
   if(action==='create' && (id !== undefined || index !== undefined))throw new Error('Create does not take a note target');
+  if(action!=='create' && request.position !== undefined)throw new Error('Position is only valid when creating a note');
+  let insertion=0;
+  if(action==='create' && request.position !== undefined) {
+    const position=request.position;
+    if(position==='last') insertion=state.notes.length;
+    else if(position==='first') insertion=0;
+    else if(Number.isInteger(position) && position>=1 && position<=state.notes.length+1) insertion=position-1;
+    else throw new Error('Position must be first, last, or an insertion index from 1 through note count + 1');
+  }
   if(action==='delete') {
     const deleted=note.id, selected=state.selected===deleted, position=state.notes.indexOf(note);
     state.notes.splice(position,1);if(!state.notes.length)state.notes.push(newNote());
@@ -351,7 +360,7 @@ window.inkflitNotesOperation = async request => {
     await new Promise((resolve,reject)=>persist(true,ok=>ok?resolve():reject(new Error('Save failed; changes remain in the editor'))));
     return {deleted:deleted};
   }
-  if(!note) {note=newNote();note.content=request.content;state.notes.unshift(note);refreshNav();}
+  if(!note) {note=newNote();note.content=request.content;state.notes.splice(insertion,0,note);refreshNav();}
   else {
     const text=action==='append' ? note.content+(note.content && request.content && !note.content.endsWith('\n') && !request.content.startsWith('\n')?'\n':'')+request.content : request.content;
     if(text!==note.content) {
