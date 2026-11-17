@@ -190,6 +190,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         window.title = "Inkflit"; window.minSize = NSSize(width: min(300, defaultWidth), height: min(280, defaultWidth * 3 / 2))
         // Keep the note below system overlays such as macOS screenshot selection.
         window.isFloatingPanel = false; window.level = .normal; window.hidesOnDeactivate = false
+        // Join the active Space of the display it is shown on instead of pulling
+        // the user back to the Space where the note was last open.
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         window.isOpaque = false; window.backgroundColor = .clear; window.hasShadow = true
         let container = NSView(frame: NSRect(origin: .zero, size: window.frame.size))
         container.wantsLayer = true; container.layer?.cornerRadius = 12; container.layer?.masksToBounds = true
@@ -481,7 +484,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     @objc func showWindow() {
         hideGeneration += 1; hidePending = false
-        if !window.isVisible, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
+        if !window.isVisible || !window.isOnActiveSpace, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
             let source = window.screen?.visibleFrame ?? target.visibleFrame
             let anchor = savedWindowAnchor(source: source, size: window.frame.size) ?? WindowPlacement.anchor(window.frame, in: source)
             let frame = WindowPlacement.frame(size: window.frame.size, anchor: anchor, in: target.visibleFrame)
