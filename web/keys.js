@@ -1,7 +1,9 @@
 import { Vim, getCM } from '@replit/codemirror-vim';
+import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection } from '@codemirror/autocomplete';
 import { toggleLineComment } from '@codemirror/commands';
 import { app, nativeHandler } from './app.js';
 import { isEditing } from './editor-view.js';
+import { acceptBestSnippet } from './snippet-completion.js';
 import { commandPalette, searchPalette, openCommands, openSearch } from './palettes.js';
 import { lastDeletedId, restoreDeletedNote, deleteNote } from './delete-notices.js';
 import { createNote, navigate, selectAt } from './notes.js';
@@ -124,9 +126,30 @@ function escapeKey(event) {
   if (!pending) { consume(event); hide(); }
 }
 
+// While the snippet list is open, its keys belong to it (snippet-completion.js).
+// Handled here rather than by keymap, because Vim's keys take precedence over
+// CodeMirror keymaps. Esc only closes the list, so it neither hides the window
+// nor leaves insert mode.
+const completionKeys = {
+  Enter: acceptCompletion, Tab: acceptCompletion, Escape: closeCompletion,
+  ArrowDown: moveCompletionSelection(true), ArrowUp: moveCompletionSelection(false),
+  PageDown: moveCompletionSelection(true, 'page'), PageUp: moveCompletionSelection(false, 'page'),
+};
+function completionKey(event) {
+  const editor = app.editor, run = completionKeys[event.key];
+  if (!editor || !run || !plain(event) || event.shiftKey) return false;
+  const status = completionStatus(editor.state);
+  // 'pending': the list is still updating for the last keystroke.
+  if (status === 'pending' && run === acceptCompletion) { if (!acceptBestSnippet(editor)) return false; consume(event); return true; }
+  if (status !== 'active') return false;
+  consume(event); run(editor);
+  return true;
+}
+
 function onKeyDown(event) {
   if (!app.state || event.isComposing || event.keyCode === 229) return;
   if (palettesKey(event)) return;
+  if (completionKey(event)) return;
   const editor = app.editor, focused = !!editor?.hasFocus, menusClosed = () => !languageMenuOpen() && !blockMenuOpen();
 
   if (command(event, 'u')) {

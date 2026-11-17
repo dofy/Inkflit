@@ -54,6 +54,24 @@
     <li><b>コードフェンス：</b><code>```js</code> のようなコードフェンスは言語ごとに色分けされます。</li>
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
+  <h3>スニペット</h3>
+  <p><code>@</code> と入力すると値を挿入できます。一覧で各値をプレビューし、時刻の値は常に最新に保ちます。<kbd>Return</kbd> か <kbd>Tab</kbd> で挿入、<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <table>
+    <thead><tr><th>スニペット</th><th>挿入される内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日付、または分までの時刻</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>秒までの時刻、または秒までの日時</td></tr>
+      <tr><td><code>@datetime</code></td><td>分までの日時</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 時間（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>ランダムな UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>グローバルアドレス（挿入時に取得）</td></tr>
+      <tr><td><code>@localip</code></td><td>この Mac のローカルネットワークのアドレス</td></tr>
+      <tr><td><code>@mac</code></td><td>そのネットワークインターフェースの MAC アドレス</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>ホスト名、またはシステム設定のコンピュータ名</td></tr>
+      <tr><td><code>@whoami</code></td><td>ユーザー名</td></tr>
+    </tbody>
+  </table>
+  <p>グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
 </section>
 
 <section id="blocks">

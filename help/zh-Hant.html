@@ -54,6 +54,24 @@
     <li><b>程式碼圍欄：</b><code>```js</code> 這樣的程式碼圍欄會依語言突顯。</li>
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
+  <h3>片段</h3>
+  <p>輸入 <code>@</code> 插入常用值。清單會預覽每個值，時間類的值即時更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 關閉清單。</p>
+  <table>
+    <thead><tr><th>片段</th><th>插入內容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日期，或精確到分鐘的時間</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>含秒的時間，或含秒的日期和時間</td></tr>
+      <tr><td><code>@datetime</code></td><td>精確到分鐘的日期和時間</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 時間戳記（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>隨機 UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公用位址，插入時才查詢</td></tr>
+      <tr><td><code>@localip</code></td><td>這台 Mac 的區域網路位址</td></tr>
+      <tr><td><code>@mac</code></td><td>該網路卡的 MAC 位址</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>主機名稱，或系統設定裡的電腦名稱</td></tr>
+      <tr><td><code>@whoami</code></td><td>目前使用者名稱</td></tr>
+    </tbody>
+  </table>
+  <p>公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
 </section>
 
 <section id="blocks">

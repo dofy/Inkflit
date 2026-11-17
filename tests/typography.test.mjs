@@ -28,3 +28,17 @@ test('inline code gets a chip, fenced and block code do not', async () => {
   inlineCodeDecorations(state, [{from:0,to:doc.length}]).between(0,doc.length,(from,to) => { marked.push(doc.slice(from,to)); });
   assert.deepEqual(marked, ['`npm ci`','`npm test`']);
 });
+
+test('Enter after a list keeps an unindented continuation line unindented', async () => {
+  const { plainEnterAfterList } = await import('../web/editor-view.js');
+  const plan = doc => {
+    const text = doc.replace('|', ''), state = EditorState.create({ doc: text, selection: { anchor: doc.indexOf('|') }, extensions: [markdown()] });
+    const result = plainEnterAfterList(state);
+    return result ? state.update(result).state.doc.toString() : null;
+  };
+  assert.equal(plan('- list two\n104.28.158.198|'), '- list two\n104.28.158.198\n');
+  assert.equal(plan('- list two|'), null, 'list lines keep Markdown continuation');
+  assert.equal(plan('- list two\n  nested|'), null, 'indented lines keep Markdown indentation');
+  assert.equal(plan('para\nline|'), null, 'outside lists nothing changes');
+  assert.equal(plan('- item\n```\ncode|\n```'), null, 'code is left alone');
+});

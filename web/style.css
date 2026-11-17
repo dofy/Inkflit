@@ -72,3 +72,12 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .palette-row-check{flex:none;color:var(--ui-accent);font-weight:700}
 .editor .cm-content .inkflit-md-label{color:var(--ui-accent,#b95c1d)}
 .editor .cm-content .cm-note-inline-code{padding:1px 3px;border-radius:4px;background:color-mix(in srgb,var(--ui-ink,#302921) 9%,transparent)}
+/* Snippet list (@codemirror/autocomplete), in the palette's colors. */
+.editor .cm-tooltip.cm-tooltip-autocomplete{border:1px solid var(--ui-border);border-radius:8px;background:var(--ui-paper);box-shadow:0 8px 24px rgba(0,0,0,.16);overflow:hidden}
+.editor .cm-tooltip.cm-tooltip-autocomplete>ul{max-height:220px;padding:4px;font:13px ui-monospace,"SF Mono",Menlo,monospace}
+.editor .cm-tooltip.cm-tooltip-autocomplete>ul>li{display:flex;gap:16px;justify-content:space-between;padding:5px 9px;border-radius:5px;color:var(--ui-ink);line-height:1.5}
+.editor .cm-tooltip.cm-tooltip-autocomplete>ul>li[aria-selected]{background:var(--ui-bar);color:var(--ui-ink)}
+.editor .cm-tooltip-autocomplete .cm-completionLabel{color:var(--ui-accent)}
+.editor .cm-tooltip-autocomplete .cm-completionMatchedText{text-decoration:none;font-weight:700}
+.editor .cm-tooltip-autocomplete .cm-completionDetail{margin-left:0;font-style:normal;color:var(--ui-muted)}
+.editor .cm-content .cm-snippet-loading{opacity:.5;animation:inkflit-snippet-loading 1s ease-in-out infinite alternate}@keyframes inkflit-snippet-loading{to{opacity:.2}}

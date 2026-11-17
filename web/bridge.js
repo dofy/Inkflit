@@ -1,5 +1,5 @@
 import { t, setLanguage, lang } from './i18n.js';
-import { app, $, newNote } from './app.js';
+import { app, $, newNote, resolveNativeRequest } from './app.js';
 import { persist, saveResult, snapshotForFlush } from './persistence.js';
 import { changeEditor, setVimEnabled, refreshBlockResults } from './editor-view.js';
 import { applyToolbarLanguage } from './toolbar.js';
@@ -72,6 +72,7 @@ export function installBridge() {
     openCommands,
     openNoteSearch: openSearch,
     setCommandState,
+    resolveNativeRequest,
     setShortcutLabel: label => { $('shortcut').textContent = label; },
     // Settings
     setLanguage: applyLanguage,

@@ -1,8 +1,8 @@
-import { EditorState, Text, Transaction, Compartment } from '@codemirror/state';
+import { EditorState, Text, Transaction, Compartment, Prec } from '@codemirror/state';
 import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle, syntaxTree } from '@codemirror/language';
 import { classHighlighter, tags } from '@lezer/highlight';
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { app, $, current, nativeHandler } from './app.js';
@@ -14,8 +14,10 @@ import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-men
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
-import { noteComments } from './comments.js';
+import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode } from './typography.js';
+import { snippets } from './snippet-completion.js';
+import { completionStatus } from '@codemirror/autocomplete';
 
 // Markdown tokens that defaultHighlightStyle colors for light mode only
 // (#219 dark blue): give them theme colors. Scoped to Markdown, so code
@@ -29,7 +31,27 @@ const markdownColors = HighlightStyle.define([
 const vimCompartment = new Compartment();
 // Like Vim's scrolloff=3: keep three lines visible beyond the cursor while
 // there is content past the viewport; at the ends CodeMirror clamps naturally.
-const scrollOff = EditorView.scrollMargins.of(view => { const margin = view.defaultLineHeight * 3; return { top: margin, bottom: margin }; });
+// CodeMirror also hides tooltips inside these margins, so drop them while the
+// snippet list is open, or it would vanish near the top and bottom.
+const scrollOff = EditorView.scrollMargins.of(view => {
+  if (completionStatus(view.state)) return null;
+  const margin = view.defaultLineHeight * 3; return { top: margin, bottom: margin };
+});
+
+// An unindented line right after "- item" belongs to that item in Markdown
+// (a lazy continuation), so Markdown's Enter would indent the next line into
+// the item. Keep it unindented, as the line looks. List lines keep their
+// usual continuation.
+export function plainEnterAfterList(state) {
+  const selection = state.selection.main;
+  if (!selection.empty) return null;
+  const line = state.doc.lineAt(selection.head);
+  if (/^\s/.test(line.text) || /^(?:[-+*]|\d+[.)])(?:\s|$)/.test(line.text) || isCodeAt(state, selection.head)) return null;
+  let inList = false;
+  for (let node = syntaxTree(state).resolveInner(line.from, 1); node; node = node.parent) if (node.name === 'ListItem') { inList = true; break; }
+  return inList ? { changes: { from: selection.head, insert: '\n' }, selection: { anchor: selection.head + 1 }, scrollIntoView: true, userEvent: 'input' } : null;
+}
+const plainEnter = Prec.highest(keymap.of([{ key: 'Enter', run: view => { const plan = plainEnterAfterList(view.state); if (plan) view.dispatch(plan); return !!plan; } }]));
 
 // True when keystrokes insert text: Vim is off, or Vim is in insert mode.
 export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vim?.insertMode;
@@ -54,8 +76,8 @@ function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
     vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
     drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage }), tasks, features, noteComments, noteHeadings, noteInlineCode,
-    syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff,
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, snippets,
+    plainEnter, keymap.of([...defaultKeymap, ...historyKeymap]),
     saveOnChange
   ] });
   const position = taskContentPosition(initial, initial.selection.main.head);

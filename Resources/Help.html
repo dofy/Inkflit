@@ -150,6 +150,24 @@
     <li><b>Code fences:</b> <code>```js</code> fences are highlighted by language.</li>
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
+  <h3>Snippets</h3>
+  <p>Type <code>@</code> to insert a value. The list previews each value, and keeps clock values up to date; <kbd>Return</kbd> or <kbd>Tab</kbd> inserts, <kbd>Esc</kbd> closes the list.</p>
+  <table>
+    <thead><tr><th>Snippet</th><th>Inserts</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>Date, or time to the minute</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>Time, or date and time, with seconds</td></tr>
+      <tr><td><code>@datetime</code></td><td>Date and time to the minute</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix time in seconds</td></tr>
+      <tr><td><code>@uuid</code></td><td>A random UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>Your public address, looked up when inserted</td></tr>
+      <tr><td><code>@localip</code></td><td>Your Mac's address on the local network</td></tr>
+      <tr><td><code>@mac</code></td><td>MAC address of that network interface</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>Host name, or the computer name from System Settings</td></tr>
+      <tr><td><code>@whoami</code></td><td>Your account name</td></tr>
+    </tbody>
+  </table>
+  <p>The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
 </section>
 
 <section id="blocks">
@@ -335,6 +353,24 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>代码围栏：</b><code>```js</code> 这样的代码围栏会按语言高亮。</li>
   </ul>
   <p>在长笔记里移动光标时，光标上下始终保留三行可见。</p>
+  <h3>片段</h3>
+  <p>输入 <code>@</code> 插入常用值。列表会预览每个值，时间类的值实时更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 关闭列表。</p>
+  <table>
+    <thead><tr><th>片段</th><th>插入内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日期，或精确到分钟的时间</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>带秒的时间，或带秒的日期和时间</td></tr>
+      <tr><td><code>@datetime</code></td><td>精确到分钟的日期和时间</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 时间戳（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>随机 UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公网地址，插入时才查询</td></tr>
+      <tr><td><code>@localip</code></td><td>这台 Mac 的局域网地址</td></tr>
+      <tr><td><code>@mac</code></td><td>该网卡的 MAC 地址</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>主机名，或系统设置里的电脑名称</td></tr>
+      <tr><td><code>@whoami</code></td><td>当前用户名</td></tr>
+    </tbody>
+  </table>
+  <p>公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
 </section>
 
 <section id="blocks">
@@ -520,6 +556,24 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>程式碼圍欄：</b><code>```js</code> 這樣的程式碼圍欄會依語言突顯。</li>
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
+  <h3>片段</h3>
+  <p>輸入 <code>@</code> 插入常用值。清單會預覽每個值，時間類的值即時更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 關閉清單。</p>
+  <table>
+    <thead><tr><th>片段</th><th>插入內容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日期，或精確到分鐘的時間</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>含秒的時間，或含秒的日期和時間</td></tr>
+      <tr><td><code>@datetime</code></td><td>精確到分鐘的日期和時間</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 時間戳記（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>隨機 UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公用位址，插入時才查詢</td></tr>
+      <tr><td><code>@localip</code></td><td>這台 Mac 的區域網路位址</td></tr>
+      <tr><td><code>@mac</code></td><td>該網路卡的 MAC 位址</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>主機名稱，或系統設定裡的電腦名稱</td></tr>
+      <tr><td><code>@whoami</code></td><td>目前使用者名稱</td></tr>
+    </tbody>
+  </table>
+  <p>公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
 </section>
 
 <section id="blocks">
@@ -705,6 +759,24 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>コードフェンス：</b><code>```js</code> のようなコードフェンスは言語ごとに色分けされます。</li>
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
+  <h3>スニペット</h3>
+  <p><code>@</code> と入力すると値を挿入できます。一覧で各値をプレビューし、時刻の値は常に最新に保ちます。<kbd>Return</kbd> か <kbd>Tab</kbd> で挿入、<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <table>
+    <thead><tr><th>スニペット</th><th>挿入される内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日付、または分までの時刻</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>秒までの時刻、または秒までの日時</td></tr>
+      <tr><td><code>@datetime</code></td><td>分までの日時</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 時間（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>ランダムな UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>グローバルアドレス（挿入時に取得）</td></tr>
+      <tr><td><code>@localip</code></td><td>この Mac のローカルネットワークのアドレス</td></tr>
+      <tr><td><code>@mac</code></td><td>そのネットワークインターフェースの MAC アドレス</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>ホスト名、またはシステム設定のコンピュータ名</td></tr>
+      <tr><td><code>@whoami</code></td><td>ユーザー名</td></tr>
+    </tbody>
+  </table>
+  <p>グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
 </section>
 
 <section id="blocks">

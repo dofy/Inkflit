@@ -54,6 +54,24 @@
     <li><b>Code fences:</b> <code>```js</code> fences are highlighted by language.</li>
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
+  <h3>Snippets</h3>
+  <p>Type <code>@</code> to insert a value. The list previews each value, and keeps clock values up to date; <kbd>Return</kbd> or <kbd>Tab</kbd> inserts, <kbd>Esc</kbd> closes the list.</p>
+  <table>
+    <thead><tr><th>Snippet</th><th>Inserts</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>Date, or time to the minute</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>Time, or date and time, with seconds</td></tr>
+      <tr><td><code>@datetime</code></td><td>Date and time to the minute</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix time in seconds</td></tr>
+      <tr><td><code>@uuid</code></td><td>A random UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>Your public address, looked up when inserted</td></tr>
+      <tr><td><code>@localip</code></td><td>Your Mac's address on the local network</td></tr>
+      <tr><td><code>@mac</code></td><td>MAC address of that network interface</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>Host name, or the computer name from System Settings</td></tr>
+      <tr><td><code>@whoami</code></td><td>Your account name</td></tr>
+    </tbody>
+  </table>
+  <p>The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
 </section>
 
 <section id="blocks">

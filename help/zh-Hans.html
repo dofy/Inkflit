@@ -54,6 +54,24 @@
     <li><b>代码围栏：</b><code>```js</code> 这样的代码围栏会按语言高亮。</li>
   </ul>
   <p>在长笔记里移动光标时，光标上下始终保留三行可见。</p>
+  <h3>片段</h3>
+  <p>输入 <code>@</code> 插入常用值。列表会预览每个值，时间类的值实时更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 关闭列表。</p>
+  <table>
+    <thead><tr><th>片段</th><th>插入内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@date / @time</code></td><td>日期，或精确到分钟的时间</td></tr>
+      <tr><td><code>@timesec / @datetimesec</code></td><td>带秒的时间，或带秒的日期和时间</td></tr>
+      <tr><td><code>@datetime</code></td><td>精确到分钟的日期和时间</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 时间戳（秒）</td></tr>
+      <tr><td><code>@uuid</code></td><td>随机 UUID</td></tr>
+      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公网地址，插入时才查询</td></tr>
+      <tr><td><code>@localip</code></td><td>这台 Mac 的局域网地址</td></tr>
+      <tr><td><code>@mac</code></td><td>该网卡的 MAC 地址</td></tr>
+      <tr><td><code>@hostname / @computer</code></td><td>主机名，或系统设置里的电脑名称</td></tr>
+      <tr><td><code>@whoami</code></td><td>当前用户名</td></tr>
+    </tbody>
+  </table>
+  <p>公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
 </section>
 
 <section id="blocks">

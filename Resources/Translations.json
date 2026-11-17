@@ -953,6 +953,102 @@
     "zh-Hant": "標記為已完成",
     "ja": "完了にする"
   },
+  "snippet.date": {
+    "en": "Today's date",
+    "zh-Hans": "今天的日期",
+    "zh-Hant": "今天的日期",
+    "ja": "今日の日付"
+  },
+  "snippet.time": {
+    "en": "Current time",
+    "zh-Hans": "当前时间",
+    "zh-Hant": "目前時間",
+    "ja": "現在の時刻"
+  },
+  "snippet.datetime": {
+    "en": "Current date and time",
+    "zh-Hans": "当前日期和时间",
+    "zh-Hant": "目前日期和時間",
+    "ja": "現在の日時"
+  },
+  "snippet.timestamp": {
+    "en": "Unix timestamp in seconds",
+    "zh-Hans": "Unix 时间戳（秒）",
+    "zh-Hant": "Unix 時間戳記（秒）",
+    "ja": "Unix タイムスタンプ（秒）"
+  },
+  "snippet.timeSeconds": {
+    "en": "Current time with seconds",
+    "zh-Hans": "当前时间（含秒）",
+    "zh-Hant": "目前時間（含秒）",
+    "ja": "現在の時刻（秒まで）"
+  },
+  "snippet.datetimeSeconds": {
+    "en": "Current date and time with seconds",
+    "zh-Hans": "当前日期和时间（含秒）",
+    "zh-Hant": "目前日期和時間（含秒）",
+    "ja": "現在の日時（秒まで）"
+  },
+  "snippet.uuid": {
+    "en": "Random UUID",
+    "zh-Hans": "随机 UUID",
+    "zh-Hant": "隨機 UUID",
+    "ja": "ランダムな UUID"
+  },
+  "snippet.ip": {
+    "en": "Public IP address",
+    "zh-Hans": "公网 IP 地址",
+    "zh-Hant": "公用 IP 位址",
+    "ja": "グローバル IP アドレス"
+  },
+  "snippet.ipv4": {
+    "en": "Public IPv4 address",
+    "zh-Hans": "公网 IPv4 地址",
+    "zh-Hant": "公用 IPv4 位址",
+    "ja": "グローバル IPv4 アドレス"
+  },
+  "snippet.ipv6": {
+    "en": "Public IPv6 address",
+    "zh-Hans": "公网 IPv6 地址",
+    "zh-Hant": "公用 IPv6 位址",
+    "ja": "グローバル IPv6 アドレス"
+  },
+  "snippet.localIP": {
+    "en": "Local network IPv4 address",
+    "zh-Hans": "局域网 IPv4 地址",
+    "zh-Hant": "區域網路 IPv4 位址",
+    "ja": "ローカルネットワークの IPv4 アドレス"
+  },
+  "snippet.mac": {
+    "en": "MAC address of the network interface",
+    "zh-Hans": "网卡 MAC 地址",
+    "zh-Hant": "網路卡 MAC 位址",
+    "ja": "ネットワークインターフェースの MAC アドレス"
+  },
+  "snippet.hostname": {
+    "en": "Host name",
+    "zh-Hans": "主机名",
+    "zh-Hant": "主機名稱",
+    "ja": "ホスト名"
+  },
+  "snippet.computerName": {
+    "en": "Computer name",
+    "zh-Hans": "电脑名称",
+    "zh-Hant": "電腦名稱",
+    "ja": "コンピュータ名"
+  },
+  "snippet.whoami": {
+    "en": "Your account name",
+    "zh-Hans": "当前用户名",
+    "zh-Hant": "目前使用者名稱",
+    "ja": "ユーザー名"
+  },
+  "snippet.failed": {
+    "en": "Could not get {name}",
+    "zh-Hans": "无法获取 {name}",
+    "zh-Hant": "無法取得 {name}",
+    "ja": "{name} を取得できませんでした"
+  },
   "error.settingsUnavailable": {
     "en": "Settings are unavailable.",
     "zh-Hans": "设置窗口不可用。",

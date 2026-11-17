@@ -972,6 +972,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             return
         }
+        // Values the page cannot read itself; answered with window.resolveNativeRequest.
+        // Looked up off the main thread: the computer name can wait on name resolution.
+        if type == "request", let id = (body["id"] as? NSNumber)?.intValue, let action = body["action"] as? String {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let value = MachineInfo.value(for: action)
+                DispatchQueue.main.async {
+                    guard let self, let data = try? JSONSerialization.data(withJSONObject: [value ?? "Not available"]), let text = String(data: data, encoding: .utf8) else { return }
+                    self.web.evaluateJavaScript("window.resolveNativeRequest(\(id), \(value != nil), \(text)[0])", completionHandler: nil)
+                }
+            }
+            return
+        }
         if type == "hide" { hideWindow(); return }
         if type == "copyCode", let content = body["content"] as? String {
             NSPasteboard.general.clearContents()
@@ -988,6 +1000,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func showError(_ message: String) {
         if let data = try? JSONSerialization.data(withJSONObject: [message]), let text = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }
+    }
+}
+/// Values for snippets that the web page cannot read itself.
+enum MachineInfo {
+    static func value(for action: String) -> String? {
+        switch action {
+        case "local-ip": return primaryInterface()?.ipv4
+        case "mac": return primaryInterface().flatMap { macAddress(of: $0.name) }
+        case "hostname":
+            var name = [CChar](repeating: 0, count: 256)
+            return gethostname(&name, name.count) == 0 ? String(cString: name) : nil
+        case "computer-name": return Host.current().localizedName
+        case "whoami": return NSUserName()
+        default: return nil
+        }
+    }
+
+    /// The interface used on the local network: Wi-Fi or Ethernet (en0 first)
+    /// with an IPv4 address, skipping loopback, link-local and interfaces that are down.
+    static func primaryInterface() -> (name: String, ipv4: String)? {
+        var found: [(name: String, ipv4: String)] = []
+        forEachAddress { entry in
+            let flags = Int32(entry.ifa_flags)
+            guard let socket = entry.ifa_addr, socket.pointee.sa_family == UInt8(AF_INET), flags & IFF_UP != 0, flags & IFF_LOOPBACK == 0 else { return }
+            var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            guard getnameinfo(socket, socklen_t(socket.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 else { return }
+            let address = String(cString: host)
+            if !address.hasPrefix("169.254.") { found.append((String(cString: entry.ifa_name), address)) }
+        }
+        return found.first { $0.name == "en0" } ?? found.first { $0.name.hasPrefix("en") } ?? found.first
+    }
+
+    /// The hardware address of an interface, as aa:bb:cc:dd:ee:ff.
+    static func macAddress(of interface: String) -> String? {
+        var result: String?
+        forEachAddress { entry in
+            guard result == nil, String(cString: entry.ifa_name) == interface, let socket = entry.ifa_addr, socket.pointee.sa_family == UInt8(AF_LINK) else { return }
+            socket.withMemoryRebound(to: sockaddr_dl.self, capacity: 1) { link in
+                let length = Int(link.pointee.sdl_alen), offset = Int(link.pointee.sdl_nlen)
+                guard length == 6 else { return }
+                let bytes = withUnsafeBytes(of: link.pointee.sdl_data) { Array($0) }
+                guard offset + length <= bytes.count else { return }
+                result = bytes[offset..<(offset + length)].map { String(format: "%02x", $0) }.joined(separator: ":")
+            }
+        }
+        return result
+    }
+
+    private static func forEachAddress(_ body: (ifaddrs) -> Void) {
+        var list: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&list) == 0, let first = list else { return }
+        defer { freeifaddrs(list) }
+        for pointer in sequence(first: first, next: { $0.pointee.ifa_next }) { body(pointer.pointee) }
     }
 }
 if CommandLine.arguments.dropFirst().contains("--mcp") { InkflitMCP.run(); exit(0) }
