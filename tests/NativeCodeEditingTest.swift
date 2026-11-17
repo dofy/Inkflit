@@ -490,11 +490,47 @@ final class NativeCodeEditingTest {
                     expect(text,"xabc","normal mode Tab leaves editor usable")
                     key(32,"u"); later { [self] in content { [self] text in
                         expect(text,"abc","undo after normal mode Tab")
-                        key(30,"]","]",.command); later { [self] in testTrailingBlank("list") }
+                        testOpenPlainLines()
+
                     } }
                 } }
             }
         }
+    }
+    private func testOpenPlainLines() {
+        sequence([{ self.key(31,"o","o",.command) }, { self.key(7,"x") }, { self.key(53,"\u{1b}") }, { self.key(32,"u") }]) { [self] in content { [self] text in
+            expect(text,"abc","undo line opened below plain text")
+            key(15,"\u{12}","r",.control); later { [self] in content { [self] text in
+                expect(text,"abc\nx","redo line opened below plain text")
+                sequence([{ self.key(32,"u") }, { self.key(31,"O","o",[.command,.shift]) }, { self.key(16,"y") }, { self.key(53,"\u{1b}") }, { self.key(32,"u") }]) { [self] in content { [self] text in
+                    expect(text,"abc","undo line opened above plain text")
+                    key(15,"\u{12}","r",.control); later { [self] in content { [self] text in
+                        expect(text,"y\nabc","redo line opened above plain text")
+                        sequence([{ self.key(32,"u") }, { self.key(34,"i") }, { self.key(31,"o","o",.command) }, { self.key(8,"c") }, { self.key(53,"\u{1b}") }, { self.key(32,"u") }]) { [self] in content { [self] text in
+                            expect(text,"abc","undo plain line opened in insert mode")
+                            key(15,"\u{12}","r",.control); later { [self] in content { [self] text in
+                                expect(text,"abc\nc","redo plain line opened in insert mode")
+                                key(32,"u"); later { [self] in
+                                    app.web.evaluateJavaScript("window.setVimEnabled(false)") { [self] _,error in
+                                        guard error == nil else { fail("could not disable Vim for plain line test") }
+                                        sequence([{ self.key(31,"o","o",.command) }, { self.key(6,"z") }, { self.key(6,"z","z",.command) }]) { [self] in content { [self] text in
+                                            expect(text,"abc","undo plain line with Vim disabled")
+                                            key(6,"Z","z",[.command,.shift]);later { [self] in content { [self] text in
+                                                expect(text,"abc\nz","redo plain line with Vim disabled")
+                                                app.web.evaluateJavaScript("window.setVimEnabled(true)") { [self] _,error in
+                                                    guard error == nil else { fail("could not restore Vim") }
+                                                    key(30,"]","]",.command); later { [self] in testTrailingBlank("list") }
+                                                }
+                                            } }
+                                        } }
+                                    }
+                                }
+                            } }
+                        } }
+                    } }
+                } }
+            } }
+        } }
     }
     private func testTrailingBlank(_ mode: String) {
         let original=":::quicknote \(mode)\nfirst\n\n:::end", deleted=":::quicknote \(mode)\nfirst\n:::end"

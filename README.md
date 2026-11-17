@@ -33,7 +33,7 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | `⌘⇧D` | Delete the current feature block; this can be undone |
 | `⌘K` | Change the current block type |
 | `⌘L` | Choose a code block language |
-| `⌘O` / `⌘⇧O` | Insert an editable line below / above the current feature block |
+| `⌘O` / `⌘⇧O` | Insert an editable line below / above the current text line or feature block |
 | `⌘/` | Toggle comments on the current or selected lines |
 | `⌘⇧F` | Search all current notes |
 | `Esc` | In Vim mode, leave editing mode, then press again to hide; with Vim off, hide immediately |

@@ -7,7 +7,7 @@ import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle } from '@code
 import { vim, Vim, getCM } from '@replit/codemirror-vim';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText } from './block-protection.js';
-import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine } from './block-menu.js';
+import { initBlockMenu, blockMenuOpen, closeBlockMenu, trySlash, updateBlockMenu, handleBlockMenuKey, openMenuAfterInput, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine, planAdjacentTextLine } from './block-menu.js';
 import { initLanguageMenu, languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
@@ -196,12 +196,12 @@ document.addEventListener('keydown', event => {
     return;
   }
   if(event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='o' && editor?.hasFocus && !blockMenuOpen() && !languageMenuOpen()) {
-    let plan=planAdjacentBlockLine(editor.state,event.shiftKey);
+    let plan=planAdjacentBlockLine(editor.state,event.shiftKey) ?? planAdjacentTextLine(editor.state,event.shiftKey);
     if(plan) {
       event.preventDefault(); event.stopPropagation();
       if(event.repeat)return;
       const cm=getCM(editor);
-      if(cm?.state?.vim?.visualMode) { Vim.handleKey(cm,'<Esc>','user'); plan=planAdjacentBlockLine(editor.state,event.shiftKey); }
+      if(cm?.state?.vim?.visualMode) { Vim.handleKey(cm,'<Esc>','user'); plan=planAdjacentBlockLine(editor.state,event.shiftKey) ?? planAdjacentTextLine(editor.state,event.shiftKey); }
       if(!plan)return;
       editor.dispatch(plan);
       if(cm && !cm.state.vim?.insertMode) Vim.handleKey(cm,'i','user');

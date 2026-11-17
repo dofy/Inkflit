@@ -255,6 +255,30 @@ test('adjacent text lines can be opened above or below a feature block and undon
  state=EditorState.create({doc:':::quicknote code\nx',selection:{anchor:18}});assert.equal(planAdjacentBlockLine(state,false),null);
 });
 
+test('open plain text lines above and below without crossing block boundaries',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {history,undo,redo}=await import('@codemirror/commands');
+ const {planAdjacentTextLine}=await import('../web/block-menu.js');
+ for(const [doc,pos,above,expected,anchor] of [
+  ['first\nsecond',2,true,'\nfirst\nsecond',0],
+  ['first\nsecond',2,false,'first\n\nsecond',6],
+  ['first\nsecond',8,true,'first\n\nsecond',6],
+  ['first\nsecond',8,false,'first\nsecond\n',13],
+  ['',0,false,'\n',1],
+  ['中文\n末尾',1,false,'中文\n\n末尾',3]
+ ]) {
+  let state=EditorState.create({doc,selection:{anchor:pos},extensions:[history()]});const plan=planAdjacentTextLine(state,above);assert.ok(plan);state=state.update(plan).state;
+  assert.equal(state.doc.toString(),expected);assert.equal(state.selection.main.head,anchor);
+  let next=state;assert.equal(undo({state,dispatch:t=>next=t.state}),true);assert.equal(next.doc.toString(),doc);
+  state=next;assert.equal(redo({state,dispatch:t=>next=t.state}),true);assert.equal(next.doc.toString(),expected);
+ }
+ for(const doc of [':::quicknote code\nx\n:::end','```js\nx\n```',':::quicknote code\nx']) {
+  const state=EditorState.create({doc,selection:{anchor:doc.indexOf('x')}});assert.equal(planAdjacentTextLine(state,true),null);
+ }
+ const doc='first\n:::quicknote list\nitem\n:::end\nlast';
+ assert.equal(planAdjacentTextLine(EditorState.create({doc,selection:{anchor:0,head:doc.length}}),true),null);
+});
+
 test('task cursor skips checkbox marker while preserving code and plain text',async()=>{
  const {EditorState}=await import('@codemirror/state');
  const {markdown}=await import('@codemirror/lang-markdown');

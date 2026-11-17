@@ -71,6 +71,14 @@ export function planAdjacentBlockLine(state, above) {
   const pos=end.to===doc.length ? end.to : end.to+1;
   return {changes:{from:pos,insert:'\n'},selection:{anchor:end.to===doc.length ? pos+1 : pos},scrollIntoView:true,userEvent:'input.block.open'};
 }
+// Open a logical text line without changing or splitting a feature block or Markdown fence.
+export function planAdjacentTextLine(state, above) {
+  const doc=state.doc, selection=state.selection.main;
+  const start=doc.lineAt(selection.from).number, end=doc.lineAt(selection.to).number;
+  if(featureScopes(doc.toString()).some(scope=>!scope.global && start<=scope.end && end>=scope.start))return null;
+  const line=doc.lineAt(selection.head), pos=above ? line.from : line.to;
+  return {changes:{from:pos,insert:'\n'},selection:{anchor:above ? pos : pos+1},scrollIntoView:true,userEvent:'input.block.open'};
+}
 export function openCurrentBlockMenu(editor) {
   const scope=currentBlockScope(editor.state);
   if(!scope)return false;
