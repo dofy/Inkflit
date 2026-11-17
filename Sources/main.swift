@@ -196,7 +196,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         container.addSubview(backdrop); container.addSubview(web)
         toolbarDrag = ToolbarDragView(frame: NSRect(x: 0, y: container.bounds.height - 46, width: container.bounds.width, height: 46))
         toolbarDrag.autoresizingMask = [.width, .minYMargin]; container.addSubview(toolbarDrag)
-        window.contentView = container; window.delegate = self; window.center()
+        window.contentView = container; window.delegate = self
+        if let size = savedWindowSize() { window.setFrame(NSRect(origin: .zero, size: size), display: false) }
+        window.center()
         applyWindowAppearance()
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
@@ -523,9 +525,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     @objc func showWindow() {
         hideGeneration += 1; hidePending = false
         if !window.isVisible || !window.isOnActiveSpace, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
-            let source = window.screen?.visibleFrame ?? target.visibleFrame
-            let anchor = savedWindowAnchor(source: source, size: window.frame.size) ?? WindowPlacement.anchor(window.frame, in: source)
-            let frame = WindowPlacement.frame(size: window.frame.size, anchor: anchor, in: target.visibleFrame)
+            let source = window.screen?.visibleFrame ?? target.visibleFrame, size = savedWindowSize() ?? window.frame.size
+            let anchor = savedWindowAnchor(source: source, size: size) ?? WindowPlacement.anchor(window.frame, in: source)
+            let frame = WindowPlacement.frame(size: size, anchor: anchor, in: target.visibleFrame)
             if frame != window.frame { relocatingWindow = true; window.setFrame(frame, display: false); relocatingWindow = false }
         }
         NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil)
@@ -585,8 +587,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let anchor = WindowPlacement.anchor(window.frame, in: screen.visibleFrame)
         persistWindowAnchor(anchor)
     }
+    /// The size the user last gave the window, kept across launches. Each
+    /// screen gets this size, or as much of it as fits.
+    private func savedWindowSize() -> NSSize? {
+        guard let value = UserDefaults.standard.dictionary(forKey: "windowSize"),
+              let width = value["width"] as? Double, let height = value["height"] as? Double,
+              width.isFinite, height.isFinite, width > 0, height > 0 else { return nil }
+        return NSSize(width: max(window.minSize.width, width), height: max(window.minSize.height, height))
+    }
+    private func rememberWindowSize() {
+        guard !relocatingWindow, window.isVisible else { return }
+        UserDefaults.standard.set(["width": Double(window.frame.width), "height": Double(window.frame.height)], forKey: "windowSize")
+    }
     func windowDidMove(_ notification: Notification) { rememberWindowAnchor() }
-    func windowDidResize(_ notification: Notification) { rememberWindowAnchor() }
+    func windowDidResize(_ notification: Notification) { rememberWindowAnchor(); rememberWindowSize() }
     func applicationWillTerminate(_ notification: Notification) {
         if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
         automationServer?.stop()
