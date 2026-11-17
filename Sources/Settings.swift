@@ -202,6 +202,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let getStorage: () -> String
     private let changeStorage: (URL, @escaping (String?) -> Void) -> Void
     private var helpWindow: NSWindowController?
+    private let helpLinks = HelpLinks()
     private let getShortcut: () -> String
     private let saveShortcut: (UInt32, UInt32) -> String?
     private let clearShortcut: () -> Void
@@ -626,16 +627,21 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     // Entry points for the command palette.
     func openHelpWindow() { openHelp() }
     @objc private func openHelp() {
-        let resource = Localization.current == "zh-Hans" ? "Help" : "Help.\(Localization.current)"
-        guard let url = Bundle.main.url(forResource: resource, withExtension: "html") else { NSSound.beep(); return }
+        // One page holds every language; the query picks the language and accent.
+        guard let page = Bundle.main.url(forResource: "Help", withExtension: "html"),
+              var components = URLComponents(url: page, resolvingAgainstBaseURL: false) else { NSSound.beep(); return }
+        components.queryItems = [URLQueryItem(name: "lang", value: Localization.current), URLQueryItem(name: "theme", value: getAppearance().theme)]
+        guard let url = components.url else { NSSound.beep(); return }
         if helpWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = L("settings.helpWindowTitle"); window.isReleasedWhenClosed = false; window.center()
             let web = WKWebView(frame: .zero)
+            web.navigationDelegate = helpLinks
             window.contentView = web
-            web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
             helpWindow = NSWindowController(window: window)
         }
+        // Reload each time so a changed language or accent is picked up.
+        (helpWindow?.window?.contentView as? WKWebView)?.loadFileURL(url, allowingReadAccessTo: page.deletingLastPathComponent())
         helpWindow?.showWindow(nil); helpWindow?.window?.makeKeyAndOrderFront(nil)
     }
     func show() {
@@ -644,5 +650,15 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let value = ProcessInfo.processInfo.environment["INKFLIT_TEST_TAB"], let index = Int(value), index >= 0, index < tabs.numberOfTabViewItems { tabs.selectTabViewItem(at: index) }
         #endif
         showWindow(nil); NSApp.activate(ignoringOtherApps: true); window?.makeKeyAndOrderFront(nil)
+    }
+}
+
+/// Opens web links from the help page in the default browser instead of the help window.
+final class HelpLinks: NSObject, WKNavigationDelegate {
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if let url = action.request.url, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+            NSWorkspace.shared.open(url); decisionHandler(.cancel); return
+        }
+        decisionHandler(.allow)
     }
 }

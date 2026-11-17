@@ -1,33 +1,58 @@
 #!/usr/bin/env python3
-"""Generate offline help from the checked-in localized READMEs."""
-import html, re
+"""Build the offline help page, Resources/Help.html, from help/.
+
+help/template.html      page layout, styles and script
+help/<language>.html    one file per language: a JSON label block and <section>s
+help/shortcuts.json     the shortcut table, rendered into every language
+
+All languages go into one self-contained page as <template data-lang> blocks;
+the app opens it with ?lang=<language>. Run from the repository root.
+"""
+import html
+import json
+import re
 from pathlib import Path
 
-def inline(s):
-    s = html.escape(s)
-    s = re.sub(r'`([^`]+)`', r'<code>\1</code>', s)
-    s = re.sub(r'\[([^]]+)\]\((https?://[^)]+)\)', r'<a href="\2">\1</a>', s)
-    s = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', s)
-    return s
+LANGUAGES = ['en', 'zh-Hans', 'zh-Hant', 'ja']
+root = Path('help')
+version = json.loads(Path('package.json').read_text())['version']
 
-for language in ('en', 'zh-Hant', 'ja'):
-    source = Path('README.md' if language == 'en' else f'README.{language}.md')
-    lines = source.read_text().splitlines()
-    output = []
-    code = False
-    for line in lines:
-        if line.startswith('```'):
-            output.append('</code></pre>' if code else '<pre><code>'); code = not code; continue
-        if code: output.append(html.escape(line) + "\n"); continue
-        if re.fullmatch(r'\|[ :|\-]+\|', line): continue
-        if line.startswith('|'):
-            cells = line.strip('|').split('|')
-            output.append('<p>' + ' — '.join(inline(c.strip()) for c in cells) + '</p>'); continue
-        if not line: continue
-        if line.startswith('#'):
-            n = len(line)-len(line.lstrip('#')); output.append(f'<h{n}>' + inline(line[n:].strip()) + f'</h{n}>'); continue
-        if line.startswith('- '): output.append('<p>• ' + inline(line[2:]) + '</p>'); continue
-        if line.startswith('[English]') or line.startswith('English ·'): continue
-        output.append('<p>' + inline(line) + '</p>')
-    doc = f'''<!doctype html><html lang="{language}"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Inkflit</title><style>html{{color-scheme:light dark}}body{{font:15px/1.7 -apple-system,sans-serif;max-width:760px;margin:40px auto;padding:0 24px}}code,pre{{font-family:ui-monospace,monospace}}code{{overflow-wrap:anywhere}}pre{{padding:16px;border-radius:8px;background:color-mix(in srgb,CanvasText 7%,Canvas);overflow:auto}}pre code{{overflow-wrap:normal}}a{{color:#c56926}}</style><body>{''.join(output)}</body></html>'''
-    Path(f'Resources/Help.{language}.html').write_text(doc)
+
+def keys(row):
+    # "⌘1", "⌘9" with range: ⌘1–⌘9; otherwise alternatives: ⌘[ / ⌘]
+    combos = [f'<kbd>{html.escape(key)}</kbd>' for key in row['keys']]
+    return '–'.join(combos) if row.get('range') else ' / '.join(combos)
+
+
+def shortcut_table(language, data):
+    head = ''.join(f'<th>{html.escape(cell)}</th>' for cell in data['header'][language])
+    body = []
+    for group in data['groups']:
+        body.append(f'<tr class="group"><td colspan="2">{html.escape(group["title"][language])}</td></tr>')
+        body += [f'<tr><td>{keys(row)}</td><td>{html.escape(row[language])}</td></tr>' for row in group['rows']]
+    return f'<table><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>'
+
+
+def section_ids(text):
+    return re.findall(r'<section id="([^"]+)"', text)
+
+
+shortcuts = json.loads((root / 'shortcuts.json').read_text())
+expected = None
+blocks = []
+for language in LANGUAGES:
+    text = (root / f'{language}.html').read_text()
+    labels = json.loads(re.search(r'<script type="application/json">(.*?)</script>', text, re.S).group(1))
+    assert set(labels) == {'title', 'tagline', 'label', 'search', 'empty'}, f'{language}: label keys'
+    ids = section_ids(text)
+    expected = expected or ids
+    assert ids == expected, f'{language}: sections {ids} differ from {expected}'
+    assert text.count('%SHORTCUTS%') == 1, f'{language}: needs one %SHORTCUTS% placeholder'
+    text = text.replace('%SHORTCUTS%', shortcut_table(language, shortcuts))
+    blocks.append(f'<template data-lang="{language}">\n{text.strip()}\n</template>')
+
+page = (root / 'template.html').read_text()
+page = page.replace('%APP_VERSION%', version).replace('%LANGUAGES%', '\n'.join(blocks))
+for placeholder in ('%APP_VERSION%', '%LANGUAGES%', '%SHORTCUTS%'):
+    assert placeholder not in page, f'unfilled {placeholder}'
+Path('Resources/Help.html').write_text(page)

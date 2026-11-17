@@ -1,0 +1,183 @@
+<script type="application/json">{"title":"Inkflit 使用說明","tagline":"macOS 上的小巧浮動筆記：Markdown、Vim 與功能區塊，筆記只儲存在你的 Mac 上。","label":"說明","search":"搜尋說明","empty":"沒有符合的內容。"}</script>
+
+<section id="start">
+  <h2>開始使用</h2>
+  <p class="lead">Inkflit 常駐在選單列。按一個快捷鍵就能叫出來，記完隨手收起。輸入時自動儲存。</p>
+  <ol>
+    <li><b>開啟視窗：</b>按全域快捷鍵，預設為 <kbd>⌃⌥Space</kbd>（可在「設定 → 一般」中變更），或點選單列圖示，選擇「開啟 Inkflit」。</li>
+    <li><b>開始寫：</b>內容會自動儲存，沒有儲存按鈕。</li>
+    <li><b>收起視窗：</b>再按一次快捷鍵，或按 <kbd>Esc</kbd>。切換到其他應用程式時也會自動收起。</li>
+  </ol>
+  <h3>視窗出現在哪裡</h3>
+  <p>視窗會出現在滑鼠所在的顯示器、你目前所在的桌面上，不會把你拉回其他桌面。視窗位置會被記住，重新啟動後也一樣。</p>
+  <p>拖曳工具列中間的空白處可以移動視窗，拖曳邊緣可以調整大小。</p>
+  <h3>引導筆記</h3>
+  <p>第一次啟動時，Inkflit 會依你的語言建立四篇引導筆記，可以隨意修改或刪除。點設定視窗底部的「重新產生引導筆記」，會在最前面放一套新的引導，並開啟歡迎頁。</p>
+</section>
+
+<section id="notes">
+  <h2>筆記</h2>
+  <p>筆記像筆記本的書頁一樣排列：第一則是最早寫的，新增的筆記加在最後。工具列會顯示目前位置，例如 <code>2 / 5</code>。</p>
+  <ul>
+    <li><b>新增：</b><kbd>⌘N</kbd>，或工具列上的 <b>+</b>。</li>
+    <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。</li>
+    <li><b>跳到某一頁：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 開啟第 1 到第 9 則。</li>
+  </ul>
+  <p>底列顯示目前筆記的建立時間（本地時間）。在開始記錄建立時間之前就有的筆記不顯示日期。</p>
+  <h3>刪除與復原</h3>
+  <p><kbd>⌘D</kbd> 直接刪除目前筆記。提示會保留 12 秒，按 <kbd>⌘U</kbd> 或點擊提示就能找回。</p>
+  <p class="tip">刪除的筆記不會被真正抹除，而是放進回收站資料夾。在「設定 → 備份 → 還原已刪除筆記…」中可以把任何一則還原成新筆記。</p>
+</section>
+
+<section id="palette">
+  <h2>搜尋與命令</h2>
+  <p>兩個面板的按鍵一樣：輸入文字篩選，<kbd>↑</kbd> <kbd>↓</kbd> 選擇，<kbd>Return</kbd> 開啟，<kbd>Esc</kbd> 關閉。</p>
+  <h3>搜尋筆記 <kbd>⌘⇧F</kbd></h3>
+  <p>在所有目前筆記的內文中尋找，每則筆記列出一筆符合結果。輸入框為空時會列出全部筆記，可以當目錄使用。備份和回收站裡的內容不會被搜尋。</p>
+  <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
+  <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
+  <ul>
+    <li>帶 <b>›</b> 的命令會開啟第二層清單，例如介面主色、語言。目前生效的選項帶 <b>✓</b>。</li>
+    <li>不透明度、模糊和自動備份可以直接輸入數字，例如 <code>75</code>。</li>
+    <li>按 <kbd>Esc</kbd>，或在空白輸入框裡按 <kbd>⌫</kbd>，返回上一層，之前選取的項目仍然選取。</li>
+    <li>在第一層直接輸入，也能搜尋到第二層的選項，例如輸入 <code>english</code> 會出現「語言：English」。</li>
+  </ul>
+  <p>再按一次同一個快捷鍵關閉面板；按另一個快捷鍵則切換到另一個面板。</p>
+</section>
+
+<section id="writing">
+  <h2>書寫</h2>
+  <p>筆記就是一般的 Markdown。標題、清單、強調和連結會邊寫邊顯示樣式，原始檔用任何編輯器開啟都清楚易讀。</p>
+  <ul>
+    <li><b>核取方塊：</b><code>- [ ]</code> 和 <code>- [x]</code> 可以直接點擊勾選。</li>
+    <li><b>註解：</b>以 <code>//</code> 開頭的行是註解。<kbd>⌘/</kbd> 為目前行或選取的行加上或取消註解。</li>
+    <li><b>程式碼圍欄：</b><code>```js</code> 這樣的程式碼圍欄會依語言突顯。</li>
+  </ul>
+  <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
+</section>
+
+<section id="blocks">
+  <h2>功能區塊</h2>
+  <p>功能區塊把筆記的一部分變成小工具：清單、計算機、加總或一段程式碼。一則筆記裡可以放任意多個功能區塊。</p>
+  <h3>插入與修改功能區塊</h3>
+  <ol>
+    <li>在空行輸入 <code>/</code>。（Vim 模式下請先進入插入模式。）</li>
+    <li>用方向鍵和 <kbd>Return</kbd> 選擇，或直接點擊。</li>
+    <li>要離開功能區塊，在區塊的最後一個空行再按一次 <kbd>Return</kbd>。</li>
+  </ol>
+  <p>用區塊的標題列或 <kbd>⌘K</kbd> 變更類型、轉回一般文字或刪除。<kbd>⌘⇧D</kbd> 刪除目前區塊。這些操作都可以復原。<kbd>⌘O</kbd> 和 <kbd>⌘⇧O</kbd> 在目前行或區塊的下方、上方插入一個空行。</p>
+  <h3>功能區塊類型</h3>
+  <table>
+    <thead><tr><th>功能區塊</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td>清單</td><td>每行一個核取方塊。點擊勾選，或在行尾輸入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
+      <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果。支援百分比、函式、單位和變數，例如 <code>price: 80</code>。貨幣使用大寫代碼：<code>10 USD to TWD =</code>。</td></tr>
+      <tr><td>加總 / 平均值</td><td>對區塊裡的數字加總或求平均，不計算運算式。</td></tr>
+      <tr><td>計數</td><td>統計項目數、字數和字元數。</td></tr>
+      <tr><td>程式碼</td><td>依語言突顯程式碼，見<a href="#code">程式碼</a>。</td></tr>
+    </tbody>
+  </table>
+  <p>以 <code>//</code> 開頭的行不列入加總和計數。</p>
+  <p class="tip">匯率來自 Frankfurter。Inkflit 只下載公開匯率，不會上傳你的筆記。取得不到匯率時，功能區塊會直接提示，不會給出猜測的結果。</p>
+</section>
+
+<section id="code">
+  <h2>程式碼</h2>
+  <ul>
+    <li><kbd>⌘L</kbd> 選擇目前程式碼區塊的語言。</li>
+    <li>括號和引號會自動補上。<kbd>Return</kbd> 保持縮排，<kbd>Tab</kbd> 縮排，<kbd>⇧Tab</kbd> 取消縮排。</li>
+    <li>沒有選取內容時，<kbd>⌘C</kbd> 複製整個程式碼區塊。</li>
+  </ul>
+  <p>縮排方式（2 個空格、4 個空格或 Tab）和三種配色在「設定 → 編輯」中，可以即時預覽。</p>
+</section>
+
+<section id="vim">
+  <h2>Vim 模式</h2>
+  <p>Vim 按鍵預設開啟。編輯器先處於一般模式，按 <kbd>i</kbd> 開始輸入，按 <kbd>Esc</kbd> 回到一般模式。在一般模式下按 <kbd>Esc</kbd> 會收起視窗。</p>
+  <ul>
+    <li>一般模式下，Inkflit 會暫時切換到英文（ASCII）輸入法，讓命令鍵直接生效；開始輸入或離開視窗時恢復你原本的輸入法。</li>
+    <li>如果輸入法候選視窗還開著，按 <kbd>Esc</kbd> 會先取消候選，再離開插入模式。</li>
+    <li>每則筆記的復原記錄會保留到結束應用程式為止。</li>
+  </ul>
+  <p>這是編輯器裡的 Vim 模擬，不是 Neovim，不會讀取 vimrc。</p>
+  <p>在「設定 → 編輯 → Vim 模式」或命令面板裡可以關閉。關閉後直接輸入，<kbd>Esc</kbd> 收起視窗，<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> 復原和重做。</p>
+</section>
+
+<section id="settings">
+  <h2>設定</h2>
+  <p>按 <kbd>⌘,</kbd> 或透過選單列圖示開啟設定。大部分選項在命令面板裡也能修改。</p>
+  <table>
+    <thead><tr><th>分頁</th><th>選項</th></tr></thead>
+    <tbody>
+      <tr><td>一般</td><td>登入時啟動、全域快捷鍵、筆記儲存位置</td></tr>
+      <tr><td>外觀</td><td>介面主色、視窗不透明度、背景模糊。拖曳滑桿時按住 <kbd>⌥</kbd>，每次調整 5%。</td></tr>
+      <tr><td>編輯</td><td>Vim 模式、程式碼縮排、程式碼配色</td></tr>
+      <tr><td>語言</td><td>跟隨系統，或選擇 English、简体中文、繁體中文、日本語</td></tr>
+      <tr><td>備份</td><td>自動備份、歷史版本、回收站、索引還原</td></tr>
+    </tbody>
+  </table>
+  <p>淺色和深色外觀跟隨 macOS。</p>
+</section>
+
+<section id="shortcuts">
+  <h2>快捷鍵</h2>
+  <p>全域快捷鍵在任何應用程式裡都能使用，可以在設定中變更。其他快捷鍵在筆記視窗作用中時可用。</p>
+  %SHORTCUTS%
+</section>
+
+<section id="data">
+  <h2>資料</h2>
+  <p>所有內容都只儲存在你的 Mac 上。每則筆記是一個 UTF-8 編碼的 Markdown 檔案：</p>
+  <pre><code>~/Documents/Inkflit/
+  notes/       每則筆記一個 .md 檔案
+  index.json   筆記順序和目前選取的筆記
+  backups/     歷史版本
+  trash/       已刪除的筆記</code></pre>
+  <h3>儲存</h3>
+  <p>停止輸入半秒後儲存，連續輸入時至少每兩秒儲存一次。切換筆記、收起視窗或結束應用程式時會立即儲存。儲存失敗時底列會提示，並且在儲存成功之前無法結束應用程式。</p>
+  <h3>備份與還原</h3>
+  <ul>
+    <li>編輯時，每則筆記最多每五分鐘保留一個舊版本。保留幾個可以在「設定 → 備份」中選擇。</li>
+    <li>「還原歷史版本…」和「還原已刪除筆記…」都會新增一則筆記，原檔案保留不動。</li>
+    <li>如果 <code>index.json</code> 損壞，「重建索引…」會依筆記檔案重新產生索引，舊索引會保留。</li>
+  </ul>
+  <p>變更儲存位置時，會把整個儲存目錄複製過去，原目錄保留不動。</p>
+  <p class="tip">Inkflit 沒有雲端同步。請把筆記資料夾納入你自己的備份，或選擇一個同步服務已經涵蓋的資料夾。</p>
+</section>
+
+<section id="automation">
+  <h2>自動化</h2>
+  <p>其他應用程式和 AI 助理可以透過本機 MCP 服務或 <code>inkflit://</code> 連結讀寫筆記。兩種方式都經過正在執行的 Inkflit，儲存和備份照常進行。</p>
+  <h3>MCP</h3>
+  <p>把 Inkflit 加入你的 MCP 用戶端，然後重新啟動用戶端：</p>
+  <pre><code># Codex
+codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
+
+# Claude Code
+claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
+
+# 其他用戶端
+{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}</code></pre>
+  <p>工具：<code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code>、<code>delete_note</code>。</p>
+  <ul>
+    <li>用 <code>index</code>（Inkflit 裡顯示的序號）或穩定的 <code>id</code> 指定筆記。增刪筆記後序號會變動。</li>
+    <li>新筆記預設加在最後。<code>position</code> 可以設為 <code>"first"</code>、<code>"last"</code> 或一個數字，放到其他位置。</li>
+    <li>刪除的筆記進入回收站。</li>
+  </ul>
+  <h3>連結</h3>
+  <pre><code>open 'inkflit://note/append?index=2&amp;content=Remember%20milk'
+open 'inkflit://note/search?query=milk'
+open 'inkflit://note/get?index=1'</code></pre>
+  <p>可用的操作有 <code>list</code>、<code>get</code>、<code>search</code>、<code>create</code>、<code>append</code>、<code>replace</code> 和 <code>delete</code>。加上 <code>x-success</code> 和 <code>x-error</code> 回呼網址，可以收到 JSON 格式的結果。</p>
+  <p class="tip">寫入和刪除類的連結會立即執行，只開啟你信任的連結。</p>
+</section>
+
+<section id="trouble">
+  <h2>疑難排解</h2>
+  <h3>按快捷鍵沒有反應</h3>
+  <p>可能有其他應用程式佔用了這個快捷鍵。這時選單列裡會顯示「設定…（快捷鍵無法使用）」，請在「設定 → 一般」中換一個快捷鍵。</p>
+  <h3>登入時啟動無法開啟</h3>
+  <p>macOS 可能需要你授權。請在「系統設定 → 一般 → 登入項目」中允許 Inkflit。</p>
+  <h3>筆記在 Inkflit 之外被修改</h3>
+  <p>如果 Inkflit 執行時筆記檔案被其他應用程式改過，Inkflit 會拒絕覆寫這些檔案。請先把目前內容複製到安全的地方，然後重新啟動 Inkflit。</p>
+</section>

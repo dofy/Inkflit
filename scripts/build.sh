@@ -8,7 +8,8 @@ swiftc -target arm64-apple-macos13.0 -O -whole-module-optimization Sources/main.
 ln -sfn Inkflit "$APP/Contents/MacOS/Quicknote"
 cp Resources/Quicknote.icns "$APP/Contents/Resources/Quicknote.icns"
 python3 scripts/build-help.py
-cp Resources/Help*.html "$APP/Contents/Resources/"
+rm -f "$APP/Contents/Resources/"Help*.html
+cp Resources/Help.html "$APP/Contents/Resources/Help.html"
 cp Resources/CodeThemes.json "$APP/Contents/Resources/CodeThemes.json"
 cp Resources/Translations.json "$APP/Contents/Resources/Translations.json"
 cp Resources/UIThemes.json "$APP/Contents/Resources/UIThemes.json"
