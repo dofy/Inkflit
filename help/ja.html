@@ -55,23 +55,23 @@
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
   <h3>スニペット</h3>
-  <p><code>@</code> と入力すると値を挿入できます。一覧で各値をプレビューし、時刻の値は常に最新に保ちます。<kbd>Return</kbd> か <kbd>Tab</kbd> で挿入、<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <p><code>@</code> と単語を入力すると値を挿入できます。1 つの単語に複数の形式があり、<code>@date</code> ならすべての日付形式が一覧され、<kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選べます。単語の途中まで、または文字を順に入力しても（<code>@wk</code> で <code>@week</code>）、一致する単語のすべての形式を表示します。<code>@</code> だけのときは単語ごとに 1 行です。プレビューは挿入される内容そのもので、時刻の値は常に最新です。<kbd>Esc</kbd> で一覧を閉じます。</p>
   <table>
-    <thead><tr><th>スニペット</th><th>挿入される内容</th></tr></thead>
+    <thead><tr><th>単語</th><th>形式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日付、または分までの時刻</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>秒までの時刻、または秒までの日時</td></tr>
-      <tr><td><code>@datetime</code></td><td>分までの日時</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 時間（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>ランダムな UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>グローバルアドレス（挿入時に取得）</td></tr>
-      <tr><td><code>@localip</code></td><td>この Mac のローカルネットワークのアドレス</td></tr>
-      <tr><td><code>@mac</code></td><td>そのネットワークインターフェースの MAC アドレス</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>ホスト名、またはシステム設定のコンピュータ名</td></tr>
-      <tr><td><code>@whoami</code></td><td>ユーザー名</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、表示言語での長い日付と完全な日付</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、午前2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日時（<code>@datetime</code>）、秒まで（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、長い形式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、11月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、曜日（<code>@weekday</code>）、曜日の短縮形</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、ミリ秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>ランダムな UUID：小文字、大文字、ハイフンなし</td></tr>
+      <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
+      <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
+  <p>括弧内の単語を入力すると、その形式を直接挿入できます。グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
 </section>
 
 <section id="blocks">

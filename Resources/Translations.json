@@ -953,47 +953,23 @@
     "zh-Hant": "標記為已完成",
     "ja": "完了にする"
   },
-  "snippet.date": {
-    "en": "Today's date",
-    "zh-Hans": "今天的日期",
-    "zh-Hant": "今天的日期",
-    "ja": "今日の日付"
-  },
-  "snippet.time": {
-    "en": "Current time",
-    "zh-Hans": "当前时间",
-    "zh-Hant": "目前時間",
-    "ja": "現在の時刻"
-  },
-  "snippet.datetime": {
-    "en": "Current date and time",
-    "zh-Hans": "当前日期和时间",
-    "zh-Hant": "目前日期和時間",
-    "ja": "現在の日時"
-  },
-  "snippet.timestamp": {
-    "en": "Unix timestamp in seconds",
-    "zh-Hans": "Unix 时间戳（秒）",
-    "zh-Hant": "Unix 時間戳記（秒）",
-    "ja": "Unix タイムスタンプ（秒）"
-  },
-  "snippet.timeSeconds": {
-    "en": "Current time with seconds",
-    "zh-Hans": "当前时间（含秒）",
-    "zh-Hant": "目前時間（含秒）",
-    "ja": "現在の時刻（秒まで）"
-  },
-  "snippet.datetimeSeconds": {
-    "en": "Current date and time with seconds",
-    "zh-Hans": "当前日期和时间（含秒）",
-    "zh-Hant": "目前日期和時間（含秒）",
-    "ja": "現在の日時（秒まで）"
-  },
   "snippet.uuid": {
     "en": "Random UUID",
     "zh-Hans": "随机 UUID",
     "zh-Hant": "隨機 UUID",
     "ja": "ランダムな UUID"
+  },
+  "snippet.uuidUpper": {
+    "en": "Random UUID, uppercase",
+    "zh-Hans": "随机 UUID（大写）",
+    "zh-Hant": "隨機 UUID（大寫）",
+    "ja": "ランダムな UUID（大文字）"
+  },
+  "snippet.uuidCompact": {
+    "en": "Random UUID without hyphens",
+    "zh-Hans": "随机 UUID（无横线）",
+    "zh-Hant": "隨機 UUID（無連字號）",
+    "ja": "ランダムな UUID（ハイフンなし）"
   },
   "snippet.ip": {
     "en": "Public IP address",
@@ -1042,6 +1018,48 @@
     "zh-Hans": "当前用户名",
     "zh-Hant": "目前使用者名稱",
     "ja": "ユーザー名"
+  },
+  "snippet.hintPublic": {
+    "en": "Public",
+    "zh-Hans": "公网",
+    "zh-Hant": "公用",
+    "ja": "グローバル"
+  },
+  "snippet.hintIPv4": {
+    "en": "IPv4",
+    "zh-Hans": "IPv4",
+    "zh-Hant": "IPv4",
+    "ja": "IPv4"
+  },
+  "snippet.hintIPv6": {
+    "en": "IPv6",
+    "zh-Hans": "IPv6",
+    "zh-Hant": "IPv6",
+    "ja": "IPv6"
+  },
+  "snippet.hintLAN": {
+    "en": "LAN",
+    "zh-Hans": "局域网",
+    "zh-Hant": "區域網路",
+    "ja": "LAN"
+  },
+  "snippet.hintHost": {
+    "en": "Host",
+    "zh-Hans": "主机名",
+    "zh-Hant": "主機名稱",
+    "ja": "ホスト名"
+  },
+  "snippet.hintComputer": {
+    "en": "Computer",
+    "zh-Hans": "电脑名称",
+    "zh-Hant": "電腦名稱",
+    "ja": "コンピュータ名"
+  },
+  "snippet.hintUser": {
+    "en": "User",
+    "zh-Hans": "用户名",
+    "zh-Hant": "使用者",
+    "ja": "ユーザー"
   },
   "snippet.failed": {
     "en": "Could not get {name}",

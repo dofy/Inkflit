@@ -2,12 +2,12 @@ import { autocompletion, CompletionContext, closeCompletion } from '@codemirror/
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
-import { t } from './i18n.js';
+import { t, lang } from './i18n.js';
 import { nativeRequest } from './app.js';
 import { isCodeAt } from './comments.js';
 import { matchSnippets, snippetContext } from './snippets.js';
 
-const context = () => snippetContext({ native: nativeRequest });
+const currentContext = () => snippetContext({ native: nativeRequest, locale: lang() });
 
 // Editor side of snippets: typing "@" offers matching snippets; Return or Tab
 // replaces "@name" with the value. Not inside code, and not after a word
@@ -48,13 +48,13 @@ const loading = Decoration.mark({ class: 'cm-snippet-loading' });
 function reportFailure(snippet) {
   const footer = document.getElementById('save');
   if (!footer) return;
-  footer.textContent = t('snippet.failed').replace('{name}', `@${snippet.name}`);
+  footer.textContent = t('snippet.failed').replace('{name}', `@${snippet.trigger}`);
   footer.className = 'error'; footer.title = footer.textContent;
 }
 
 export function applySnippet(view, snippet, from, to) {
   let value;
-  try { value = snippet.expand(context()); } catch { reportFailure(snippet); return; }
+  try { value = snippet.expand(currentContext()); } catch { reportFailure(snippet); return; }
   if (typeof value === 'string') {
     view.dispatch({ changes: { from, to, insert: value }, selection: { anchor: from + value.length }, userEvent: 'input.complete' });
     return;
@@ -74,9 +74,19 @@ export function snippetCompletions(context) {
   const word = context.matchBefore(/@[\w-]*/);
   if (!word) return null;
   if (/[\w@]/.test(context.state.sliceDoc(word.from - 1, word.from)) || inCode(context.state, word.from)) return null;
-  const options = matchSnippets(word.text.slice(1)).map(snippet => ({
-    label: `@${snippet.name}`, snippet,
-    apply: (view, completion, from, to) => applySnippet(view, snippet, from, to),
+  // Formats that look the same in this language (English has no 年 or 日, so
+  // "2026" and "18" repeat) are listed once.
+  const now = currentContext(), shown = new Set();
+  const matches = matchSnippets(word.text.slice(1)).filter(({ row }) => {
+    if (!row.live) return true;
+    let value; try { value = row.preview(now); } catch { return true; }
+    const key = `${row.trigger}:${value}`;
+    if (shown.has(key)) return false;
+    shown.add(key); return true;
+  });
+  const options = matches.map(({ row, alias }) => ({
+    label: `@${alias || row.trigger}`, snippet: row,
+    apply: (view, completion, from, to) => applySnippet(view, row, from, to),
   }));
   // filter: false because matchSnippets already filtered, including aliases.
   return options.length ? { from: word.from, options, filter: false } : null;
@@ -85,16 +95,24 @@ export function snippetCompletions(context) {
 // The right-hand column: the value a snippet will insert, or its description
 // when there is no preview. Live previews (the clock) tick every second for
 // as long as the row is on screen.
+// A short label for rows of a group that would otherwise look alike.
+function renderHint(completion) {
+  if (!completion.snippet.hint) return null;
+  const element = document.createElement('span');
+  element.className = 'cm-snippet-hint'; element.textContent = t(completion.snippet.hint);
+  return element;
+}
+
 // Async previews (IP, machine values) are shared while fresh, so every
 // keystroke that re-renders the list does not ask again.
 const previews = new Map();
 function cachedPreview(snippet) {
-  const cached = previews.get(snippet.name);
+  const cached = previews.get(snippet.id);
   if (cached && Date.now() - cached.time < snippet.previewTTL) return cached.value;
   // Failures are not kept, so the next render asks again.
-  const forget = () => { if (previews.get(snippet.name)?.value === value) previews.delete(snippet.name); return null; };
-  const value = Promise.resolve().then(() => snippet.preview(context())).then(text => typeof text === 'string' ? text : forget(), forget);
-  previews.set(snippet.name, { value, time: Date.now() });
+  const forget = () => { if (previews.get(snippet.id)?.value === value) previews.delete(snippet.id); return null; };
+  const value = Promise.resolve().then(() => snippet.preview(currentContext())).then(text => typeof text === 'string' ? text : forget(), forget);
+  previews.set(snippet.id, { value, time: Date.now() });
   return value;
 }
 function renderPreview(completion) {
@@ -104,12 +122,17 @@ function renderPreview(completion) {
   const describe = () => { element.textContent = snippet.description ? t(snippet.description) : ''; };
   if (snippet.previewTTL) {
     describe();
-    cachedPreview(snippet).then(text => { if (text) element.textContent = text; });
+    // One retry while the row is still shown, since the list may stay open.
+    const show = retry => cachedPreview(snippet).then(text => {
+      if (text) element.textContent = text;
+      else if (retry) setTimeout(() => { if (element.isConnected) show(false); }, 1500);
+    });
+    show(true);
     return element;
   }
   const update = () => {
     let preview = null;
-    try { preview = snippet.preview?.(context()) ?? null; } catch {}
+    try { preview = snippet.preview?.(currentContext()) ?? null; } catch {}
     if (typeof preview === 'string') element.textContent = preview; else describe();
   };
   update();
@@ -136,5 +159,5 @@ export const snippets = [
   // No typing or interaction delays: the source is cheap, and a quick Tab right
   // after typing a name should accept it rather than be ignored.
   autocompletion({ override: [snippetCompletions], icons: false, closeOnBlur: true, defaultKeymap: false, activateOnTypingDelay: 0, interactionDelay: 0,
-    addToOptions: [{ render: renderPreview, position: 80 }] }),
+    addToOptions: [{ render: renderHint, position: 70 }, { render: renderPreview, position: 80 }] }),
 ];

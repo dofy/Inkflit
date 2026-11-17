@@ -699,6 +699,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
             NativeCodeEditingTest.startBlockCalculation(self)
         }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_SNIPPETS_TEST"] == "1" {
+            NativeCodeEditingTest.startSnippets(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_COMMAND_TEST"] == "1" {
             NativeCodeEditingTest.startCommandPalette(self)
         }

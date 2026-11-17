@@ -55,23 +55,23 @@
   </ul>
   <p>在长笔记里移动光标时，光标上下始终保留三行可见。</p>
   <h3>片段</h3>
-  <p>输入 <code>@</code> 插入常用值。列表会预览每个值，时间类的值实时更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 关闭列表。</p>
+  <p>输入 <code>@</code> 加一个词插入常用值。一个词可以有多种格式：<code>@date</code> 会列出所有日期格式，<kbd>Return</kbd> 插入第一种，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 选择其他格式。只输入词的一部分，或按顺序输入其中几个字母（<code>@wk</code> 能找到 <code>@week</code>），也会列出匹配词的全部格式；只输入 <code>@</code> 时每个词显示一行。预览就是将要插入的内容，时间类的值实时更新；<kbd>Esc</kbd> 关闭列表。</p>
   <table>
-    <thead><tr><th>片段</th><th>插入内容</th></tr></thead>
+    <thead><tr><th>词</th><th>格式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日期，或精确到分钟的时间</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>带秒的时间，或带秒的日期和时间</td></tr>
-      <tr><td><code>@datetime</code></td><td>精确到分钟的日期和时间</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 时间戳（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>随机 UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公网地址，插入时才查询</td></tr>
-      <tr><td><code>@localip</code></td><td>这台 Mac 的局域网地址</td></tr>
-      <tr><td><code>@mac</code></td><td>该网卡的 MAC 地址</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>主机名，或系统设置里的电脑名称</td></tr>
-      <tr><td><code>@whoami</code></td><td>当前用户名</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、按界面语言显示的长日期和完整日期</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、上午2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日期和时间（<code>@datetime</code>）、带秒（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、长格式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、十一月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、星期几（<code>@weekday</code>）、星期几简写</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、毫秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>随机 UUID：小写、大写、无横线</td></tr>
+      <tr><td><code>@ip</code></td><td>公网地址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、局域网（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>网卡 MAC 地址</td></tr>
+      <tr><td><code>@host</code></td><td>主机名（<code>@hostname</code>）、电脑名称（<code>@computer</code>）、当前用户名（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
+  <p>括号里的词可以直接插入那一种格式。公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
 </section>
 
 <section id="blocks">

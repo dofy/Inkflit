@@ -151,23 +151,23 @@
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
   <h3>Snippets</h3>
-  <p>Type <code>@</code> to insert a value. The list previews each value, and keeps clock values up to date; <kbd>Return</kbd> or <kbd>Tab</kbd> inserts, <kbd>Esc</kbd> closes the list.</p>
+  <p>Type <code>@</code> and a word to insert a value. A word can have several formats: <code>@date</code> lists every date format, and <kbd>Return</kbd> inserts the first, or choose another with <kbd>↑</kbd> <kbd>↓</kbd>. Each matching word lists all of its formats, also when you type only part of it or letters in order (<code>@wk</code> finds <code>@week</code>); <code>@</code> alone lists one row per word. Previews show exactly what will be inserted, and clock values stay up to date; <kbd>Esc</kbd> closes the list.</p>
   <table>
-    <thead><tr><th>Snippet</th><th>Inserts</th></tr></thead>
+    <thead><tr><th>Word</th><th>Formats</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>Date, or time to the minute</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>Time, or date and time, with seconds</td></tr>
-      <tr><td><code>@datetime</code></td><td>Date and time to the minute</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix time in seconds</td></tr>
-      <tr><td><code>@uuid</code></td><td>A random UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>Your public address, looked up when inserted</td></tr>
-      <tr><td><code>@localip</code></td><td>Your Mac's address on the local network</td></tr>
-      <tr><td><code>@mac</code></td><td>MAC address of that network interface</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>Host name, or the computer name from System Settings</td></tr>
-      <tr><td><code>@whoami</code></td><td>Your account name</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18, 2026/11/18, 20261118, long and full dates in your language</td></tr>
+      <tr><td><code>@time</code></td><td>14:05, 14:05:30 (<code>@timesec</code>), 2:05 PM</td></tr>
+      <tr><td><code>@now</code></td><td>Date and time (<code>@datetime</code>), with seconds (<code>@datetimesec</code>), ISO 8601 (<code>@iso</code>), long form</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026; 2026-11, 11, November; 18, November 18</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47, W47, weekday (<code>@weekday</code>), short weekday</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix seconds (<code>@unix</code>), milliseconds (<code>@ms</code>)</td></tr>
+      <tr><td><code>@uuid</code></td><td>Random UUID: lowercase, uppercase, without hyphens</td></tr>
+      <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
+      <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
+      <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
     </tbody>
   </table>
-  <p>The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
+  <p>Words in parentheses insert that one format directly. The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
 </section>
 
 <section id="blocks">
@@ -354,23 +354,23 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>在长笔记里移动光标时，光标上下始终保留三行可见。</p>
   <h3>片段</h3>
-  <p>输入 <code>@</code> 插入常用值。列表会预览每个值，时间类的值实时更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 关闭列表。</p>
+  <p>输入 <code>@</code> 加一个词插入常用值。一个词可以有多种格式：<code>@date</code> 会列出所有日期格式，<kbd>Return</kbd> 插入第一种，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 选择其他格式。只输入词的一部分，或按顺序输入其中几个字母（<code>@wk</code> 能找到 <code>@week</code>），也会列出匹配词的全部格式；只输入 <code>@</code> 时每个词显示一行。预览就是将要插入的内容，时间类的值实时更新；<kbd>Esc</kbd> 关闭列表。</p>
   <table>
-    <thead><tr><th>片段</th><th>插入内容</th></tr></thead>
+    <thead><tr><th>词</th><th>格式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日期，或精确到分钟的时间</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>带秒的时间，或带秒的日期和时间</td></tr>
-      <tr><td><code>@datetime</code></td><td>精确到分钟的日期和时间</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 时间戳（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>随机 UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公网地址，插入时才查询</td></tr>
-      <tr><td><code>@localip</code></td><td>这台 Mac 的局域网地址</td></tr>
-      <tr><td><code>@mac</code></td><td>该网卡的 MAC 地址</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>主机名，或系统设置里的电脑名称</td></tr>
-      <tr><td><code>@whoami</code></td><td>当前用户名</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、按界面语言显示的长日期和完整日期</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、上午2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日期和时间（<code>@datetime</code>）、带秒（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、长格式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、十一月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、星期几（<code>@weekday</code>）、星期几简写</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、毫秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>随机 UUID：小写、大写、无横线</td></tr>
+      <tr><td><code>@ip</code></td><td>公网地址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、局域网（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>网卡 MAC 地址</td></tr>
+      <tr><td><code>@host</code></td><td>主机名（<code>@hostname</code>）、电脑名称（<code>@computer</code>）、当前用户名（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
+  <p>括号里的词可以直接插入那一种格式。公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
 </section>
 
 <section id="blocks">
@@ -557,23 +557,23 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
   <h3>片段</h3>
-  <p>輸入 <code>@</code> 插入常用值。清單會預覽每個值，時間類的值即時更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 關閉清單。</p>
+  <p>輸入 <code>@</code> 加一個詞插入常用值。一個詞可以有多種格式：<code>@date</code> 會列出所有日期格式，<kbd>Return</kbd> 插入第一種，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 選擇其他格式。只輸入詞的一部分，或依序輸入其中幾個字母（<code>@wk</code> 能找到 <code>@week</code>），也會列出符合詞的全部格式；只輸入 <code>@</code> 時每個詞顯示一行。預覽就是將要插入的內容，時間類的值即時更新；<kbd>Esc</kbd> 關閉清單。</p>
   <table>
-    <thead><tr><th>片段</th><th>插入內容</th></tr></thead>
+    <thead><tr><th>詞</th><th>格式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日期，或精確到分鐘的時間</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>含秒的時間，或含秒的日期和時間</td></tr>
-      <tr><td><code>@datetime</code></td><td>精確到分鐘的日期和時間</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 時間戳記（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>隨機 UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公用位址，插入時才查詢</td></tr>
-      <tr><td><code>@localip</code></td><td>這台 Mac 的區域網路位址</td></tr>
-      <tr><td><code>@mac</code></td><td>該網路卡的 MAC 位址</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>主機名稱，或系統設定裡的電腦名稱</td></tr>
-      <tr><td><code>@whoami</code></td><td>目前使用者名稱</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、依介面語言顯示的長日期和完整日期</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、上午2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日期和時間（<code>@datetime</code>）、含秒（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、長格式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、十一月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、星期幾（<code>@weekday</code>）、星期幾簡寫</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、毫秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>隨機 UUID：小寫、大寫、無連字號</td></tr>
+      <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
+      <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
+  <p>括號裡的詞可以直接插入那一種格式。公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
 </section>
 
 <section id="blocks">
@@ -760,23 +760,23 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
   <h3>スニペット</h3>
-  <p><code>@</code> と入力すると値を挿入できます。一覧で各値をプレビューし、時刻の値は常に最新に保ちます。<kbd>Return</kbd> か <kbd>Tab</kbd> で挿入、<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <p><code>@</code> と単語を入力すると値を挿入できます。1 つの単語に複数の形式があり、<code>@date</code> ならすべての日付形式が一覧され、<kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選べます。単語の途中まで、または文字を順に入力しても（<code>@wk</code> で <code>@week</code>）、一致する単語のすべての形式を表示します。<code>@</code> だけのときは単語ごとに 1 行です。プレビューは挿入される内容そのもので、時刻の値は常に最新です。<kbd>Esc</kbd> で一覧を閉じます。</p>
   <table>
-    <thead><tr><th>スニペット</th><th>挿入される内容</th></tr></thead>
+    <thead><tr><th>単語</th><th>形式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日付、または分までの時刻</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>秒までの時刻、または秒までの日時</td></tr>
-      <tr><td><code>@datetime</code></td><td>分までの日時</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 時間（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>ランダムな UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>グローバルアドレス（挿入時に取得）</td></tr>
-      <tr><td><code>@localip</code></td><td>この Mac のローカルネットワークのアドレス</td></tr>
-      <tr><td><code>@mac</code></td><td>そのネットワークインターフェースの MAC アドレス</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>ホスト名、またはシステム設定のコンピュータ名</td></tr>
-      <tr><td><code>@whoami</code></td><td>ユーザー名</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、表示言語での長い日付と完全な日付</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、午前2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日時（<code>@datetime</code>）、秒まで（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、長い形式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、11月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、曜日（<code>@weekday</code>）、曜日の短縮形</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、ミリ秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>ランダムな UUID：小文字、大文字、ハイフンなし</td></tr>
+      <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
+      <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
+  <p>括弧内の単語を入力すると、その形式を直接挿入できます。グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
 </section>
 
 <section id="blocks">

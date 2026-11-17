@@ -55,23 +55,23 @@
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
   <h3>片段</h3>
-  <p>輸入 <code>@</code> 插入常用值。清單會預覽每個值，時間類的值即時更新；<kbd>Return</kbd> 或 <kbd>Tab</kbd> 插入，<kbd>Esc</kbd> 關閉清單。</p>
+  <p>輸入 <code>@</code> 加一個詞插入常用值。一個詞可以有多種格式：<code>@date</code> 會列出所有日期格式，<kbd>Return</kbd> 插入第一種，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 選擇其他格式。只輸入詞的一部分，或依序輸入其中幾個字母（<code>@wk</code> 能找到 <code>@week</code>），也會列出符合詞的全部格式；只輸入 <code>@</code> 時每個詞顯示一行。預覽就是將要插入的內容，時間類的值即時更新；<kbd>Esc</kbd> 關閉清單。</p>
   <table>
-    <thead><tr><th>片段</th><th>插入內容</th></tr></thead>
+    <thead><tr><th>詞</th><th>格式</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>日期，或精確到分鐘的時間</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>含秒的時間，或含秒的日期和時間</td></tr>
-      <tr><td><code>@datetime</code></td><td>精確到分鐘的日期和時間</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix 時間戳記（秒）</td></tr>
-      <tr><td><code>@uuid</code></td><td>隨機 UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>公用位址，插入時才查詢</td></tr>
-      <tr><td><code>@localip</code></td><td>這台 Mac 的區域網路位址</td></tr>
-      <tr><td><code>@mac</code></td><td>該網路卡的 MAC 位址</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>主機名稱，或系統設定裡的電腦名稱</td></tr>
-      <tr><td><code>@whoami</code></td><td>目前使用者名稱</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18、2026/11/18、20261118、依介面語言顯示的長日期和完整日期</td></tr>
+      <tr><td><code>@time</code></td><td>14:05、14:05:30（<code>@timesec</code>）、上午2:05</td></tr>
+      <tr><td><code>@now</code></td><td>日期和時間（<code>@datetime</code>）、含秒（<code>@datetimesec</code>）、ISO 8601（<code>@iso</code>）、長格式</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026；2026-11、11、十一月；18、11月18日</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47、W47、星期幾（<code>@weekday</code>）、星期幾簡寫</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix 秒（<code>@unix</code>）、毫秒（<code>@ms</code>）</td></tr>
+      <tr><td><code>@uuid</code></td><td>隨機 UUID：小寫、大寫、無連字號</td></tr>
+      <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
+      <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
+      <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
     </tbody>
   </table>
-  <p>公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
+  <p>括號裡的詞可以直接插入那一種格式。公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
 </section>
 
 <section id="blocks">

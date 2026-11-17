@@ -55,23 +55,23 @@
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
   <h3>Snippets</h3>
-  <p>Type <code>@</code> to insert a value. The list previews each value, and keeps clock values up to date; <kbd>Return</kbd> or <kbd>Tab</kbd> inserts, <kbd>Esc</kbd> closes the list.</p>
+  <p>Type <code>@</code> and a word to insert a value. A word can have several formats: <code>@date</code> lists every date format, and <kbd>Return</kbd> inserts the first, or choose another with <kbd>↑</kbd> <kbd>↓</kbd>. Each matching word lists all of its formats, also when you type only part of it or letters in order (<code>@wk</code> finds <code>@week</code>); <code>@</code> alone lists one row per word. Previews show exactly what will be inserted, and clock values stay up to date; <kbd>Esc</kbd> closes the list.</p>
   <table>
-    <thead><tr><th>Snippet</th><th>Inserts</th></tr></thead>
+    <thead><tr><th>Word</th><th>Formats</th></tr></thead>
     <tbody>
-      <tr><td><code>@date / @time</code></td><td>Date, or time to the minute</td></tr>
-      <tr><td><code>@timesec / @datetimesec</code></td><td>Time, or date and time, with seconds</td></tr>
-      <tr><td><code>@datetime</code></td><td>Date and time to the minute</td></tr>
-      <tr><td><code>@timestamp</code></td><td>Unix time in seconds</td></tr>
-      <tr><td><code>@uuid</code></td><td>A random UUID</td></tr>
-      <tr><td><code>@ip / @ipv4 / @ipv6</code></td><td>Your public address, looked up when inserted</td></tr>
-      <tr><td><code>@localip</code></td><td>Your Mac's address on the local network</td></tr>
-      <tr><td><code>@mac</code></td><td>MAC address of that network interface</td></tr>
-      <tr><td><code>@hostname / @computer</code></td><td>Host name, or the computer name from System Settings</td></tr>
-      <tr><td><code>@whoami</code></td><td>Your account name</td></tr>
+      <tr><td><code>@date</code></td><td>2026-11-18, 2026/11/18, 20261118, long and full dates in your language</td></tr>
+      <tr><td><code>@time</code></td><td>14:05, 14:05:30 (<code>@timesec</code>), 2:05 PM</td></tr>
+      <tr><td><code>@now</code></td><td>Date and time (<code>@datetime</code>), with seconds (<code>@datetimesec</code>), ISO 8601 (<code>@iso</code>), long form</td></tr>
+      <tr><td><code>@year @month @day</code></td><td>2026; 2026-11, 11, November; 18, November 18</td></tr>
+      <tr><td><code>@week</code></td><td>2026-W47, W47, weekday (<code>@weekday</code>), short weekday</td></tr>
+      <tr><td><code>@timestamp</code></td><td>Unix seconds (<code>@unix</code>), milliseconds (<code>@ms</code>)</td></tr>
+      <tr><td><code>@uuid</code></td><td>Random UUID: lowercase, uppercase, without hyphens</td></tr>
+      <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
+      <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
+      <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
     </tbody>
   </table>
-  <p>The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
+  <p>Words in parentheses insert that one format directly. The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
 </section>
 
 <section id="blocks">

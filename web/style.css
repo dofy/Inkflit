@@ -81,3 +81,4 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .editor .cm-tooltip-autocomplete .cm-completionMatchedText{text-decoration:none;font-weight:700}
 .editor .cm-tooltip-autocomplete .cm-completionDetail{margin-left:0;font-style:normal;color:var(--ui-muted)}
 .editor .cm-content .cm-snippet-loading{opacity:.5;animation:inkflit-snippet-loading 1s ease-in-out infinite alternate}@keyframes inkflit-snippet-loading{to{opacity:.2}}
+.editor .cm-tooltip-autocomplete .cm-snippet-hint{flex:none;padding:0 5px;border-radius:4px;background:var(--ui-bar);color:var(--ui-muted);font:11px/1.6 -apple-system,BlinkMacSystemFont,sans-serif}.editor .cm-tooltip-autocomplete .cm-completionLabel{flex:none}.editor .cm-tooltip-autocomplete .cm-completionDetail{flex:1;text-align:right}

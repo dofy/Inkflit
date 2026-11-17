@@ -478,6 +478,27 @@ final class NativeCodeEditingTest {
             }
         }
     }
+    static func startSnippets(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app);app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testSnippets() }
+    }
+    /// Types "@ip" in the real page: previews must come from the network and from
+    /// the app, not only in a browser.
+    private func testSnippets() {
+        let rows = "[...document.querySelectorAll('.cm-tooltip-autocomplete li')].map(li=>[li.querySelector('.cm-completionLabel')?.textContent,li.querySelector('.cm-completionDetail')?.textContent])"
+        sequence([{ self.key(34,"i") }, { self.key(19,"@","2",.shift) }, { self.key(34,"i") }, { self.key(35,"p") }]) { [self] in
+            DispatchQueue.main.asyncAfter(deadline:.now()+4) { [self] in
+                app.web.evaluateJavaScript(rows) { [self] value,error in
+                    print("snippet rows: \(String(describing: value)) error: \(String(describing: error))")
+                    // "@ip" opens the whole group; one of its rows previews the public IPv4.
+                    guard error == nil, let list = value as? [[Any]], list.count == 4,
+                          list.contains(where: { ($0.last as? String)?.range(of: #"^\d+\.\d+\.\d+\.\d+$"#, options: .regularExpression) != nil }) else { fail("@ip previews missing in the app") }
+                    print("PASS native public IP preview")
+                    app.restoreInputSource(); exit(0)
+                }
+            }
+        }
+    }
     static func startCommandPalette(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
         DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testCommandPalette() }

@@ -1,36 +1,55 @@
-// Snippets: typing @name offers a value to insert in its place.
+// Snippets: typing @trigger offers values to insert in its place.
 //
-// A snippet is {name, description?, aliases?, expand(context), preview?(context), live?}:
-//   name         lowercase word typed after "@"
-//   description  i18n key shown when there is no preview
-//   aliases      other names that find it
+// Like macOS text replacements, a snippet is one row: a trigger and what it
+// inserts. Rows that share a trigger form a group, the way several "addr"
+// replacements do; the first row is the default. Built-ins and user-defined
+// snippets have the same shape:
+//
+//   {trigger, expand(context), preview?(context), live?, previewTTL?, description?, aliases?}
+//   trigger      lowercase word typed after "@"
 //   expand       returns the text to insert, or a Promise of it, for values
 //                that need I/O (an IP lookup, for example)
 //   preview      value shown in the list, or a Promise of it; leave it out
 //                when the value is random (uuid)
 //   live         the preview changes with time and is refreshed while shown
 //   previewTTL   milliseconds an async preview is reused before asking again
+//   description  i18n key shown when there is no preview
+//   hint         short i18n label shown beside the preview, when rows of a
+//                group would otherwise look alike (IPv4 vs IPv6)
+//   aliases      other words that find this row directly, such as "timesec"
 //
 // The context carries everything a snippet may use, so this module has no
 // side effects and tests can replace any of it:
-//   now          Date
-//   fetch        window.fetch, for public lookups
-//   native       (action) => Promise, for values only the app can read
-//   randomUUID   () => string
+//   now, locale (app language, for Intl), fetch, native(action), randomUUID
 //
-// Snippets come from sources, so built-ins and later user-defined snippets
-// share one list. A source is a function returning snippets; register one
-// with addSnippetSource(). The editor integration is in snippet-completion.js.
+// Rows come from sources: built-ins, plus each addSnippetSource(). A later
+// source's rows go first in their group, so a user's own "date" row becomes
+// the default. The editor integration is in snippet-completion.js.
 
 const pad = value => String(value).padStart(2, '0');
 export const formatDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 export const formatTime = (date, seconds = false) => `${pad(date.getHours())}:${pad(date.getMinutes())}${seconds ? `:${pad(date.getSeconds())}` : ''}`;
+const intl = (context, options) => new Intl.DateTimeFormat(context.locale, options).format(context.now);
+function utcOffset(date) {
+  const minutes = -date.getTimezoneOffset(), sign = minutes >= 0 ? '+' : '-';
+  return `${sign}${pad(Math.floor(Math.abs(minutes) / 60))}:${pad(Math.abs(minutes) % 60)}`;
+}
+// ISO 8601 week: weeks start on Monday; week 1 holds the year's first Thursday.
+export function isoWeek(date) {
+  const day = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  day.setUTCDate(day.getUTCDate() + 4 - (day.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(day.getUTCFullYear(), 0, 1));
+  return { year: day.getUTCFullYear(), week: Math.ceil(((day - yearStart) / 86400000 + 1) / 7) };
+}
 
-// Clock snippets preview the value they will insert and refresh it while the
-// list is open.
-const clock = (name, description, value, aliases = []) => ({ name, description, aliases, expand: value, preview: value, live: true });
-
-// Public addresses come from ipify, only when a snippet is inserted.
+// Clock rows preview the value they insert and refresh it while shown.
+const clock = (trigger, value, extra = {}) => ({ trigger, expand: value, preview: value, live: true, ...extra });
+// Values read through the network or the app: previewed, but reused for a
+// while so typing does not repeat the request.
+const MINUTE = 60_000;
+const lookedUp = (trigger, description, hint, expand, previewTTL, extra = {}) => ({ trigger, description, hint, expand, preview: expand, previewTTL, ...extra });
+const native = action => ({ native }) => native(action);
+// Public addresses come from ipify.
 const lookup = url => async ({ fetch }) => {
   const response = await fetch(url, { referrerPolicy: 'no-referrer', cache: 'no-store', signal: AbortSignal.timeout(5000) });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -39,89 +58,148 @@ const lookup = url => async ({ fetch }) => {
   return text;
 };
 
-// A value read through the network or the app: previewed too, but reused for
-// a while so typing does not repeat the request.
-const lookedUp = (name, description, expand, previewTTL, aliases = []) => ({ name, description, aliases, expand, preview: expand, previewTTL });
-const native = action => ({ native }) => native(action);
-const MINUTE = 60_000;
-
 export const builtinSnippets = [
-  clock('date', 'snippet.date', ({ now }) => formatDate(now)),
-  clock('time', 'snippet.time', ({ now }) => formatTime(now)),
-  clock('timesec', 'snippet.timeSeconds', ({ now }) => formatTime(now, true), ['seconds', 'hms']),
-  clock('datetime', 'snippet.datetime', ({ now }) => `${formatDate(now)} ${formatTime(now)}`, ['now']),
-  clock('datetimesec', 'snippet.datetimeSeconds', ({ now }) => `${formatDate(now)} ${formatTime(now, true)}`),
-  clock('timestamp', 'snippet.timestamp', ({ now }) => String(Math.floor(now.getTime() / 1000)), ['unix', 'epoch']),
-  { name: 'uuid', description: 'snippet.uuid', aliases: ['guid'], expand: ({ randomUUID }) => randomUUID() },
-  lookedUp('ip', 'snippet.ip', lookup('https://api64.ipify.org'), 5 * MINUTE),
-  lookedUp('ipv4', 'snippet.ipv4', lookup('https://api.ipify.org'), 5 * MINUTE),
-  lookedUp('ipv6', 'snippet.ipv6', lookup('https://api6.ipify.org'), 5 * MINUTE),
-  lookedUp('localip', 'snippet.localIP', native('local-ip'), MINUTE, ['lan']),
-  lookedUp('mac', 'snippet.mac', native('mac'), MINUTE, ['ether']),
-  lookedUp('hostname', 'snippet.hostname', native('hostname'), MINUTE, ['host']),
-  lookedUp('computer', 'snippet.computerName', native('computer-name'), MINUTE, ['computername', 'machine']),
-  lookedUp('whoami', 'snippet.whoami', native('whoami'), MINUTE, ['user', 'username']),
+  clock('date', ({ now }) => formatDate(now)),
+  clock('date', ({ now }) => formatDate(now).replaceAll('-', '/')),
+  clock('date', ({ now }) => formatDate(now).replaceAll('-', '')),
+  clock('date', context => intl(context, { dateStyle: 'long' })),
+  clock('date', context => intl(context, { dateStyle: 'full' })),
+
+  clock('time', ({ now }) => formatTime(now)),
+  clock('time', ({ now }) => formatTime(now, true), { aliases: ['timesec', 'hms'] }),
+  clock('time', context => intl(context, { hour: 'numeric', minute: '2-digit', hour12: true })),
+
+  clock('now', ({ now }) => `${formatDate(now)} ${formatTime(now)}`, { aliases: ['datetime'] }),
+  clock('now', ({ now }) => `${formatDate(now)} ${formatTime(now, true)}`, { aliases: ['datetimesec'] }),
+  clock('now', ({ now }) => `${formatDate(now)}T${formatTime(now, true)}${utcOffset(now)}`, { aliases: ['iso'] }),
+  clock('now', context => intl(context, { dateStyle: 'long', timeStyle: 'short' })),
+
+  clock('year', ({ now }) => String(now.getFullYear())),
+  clock('year', context => intl(context, { year: 'numeric' })),
+  clock('month', ({ now }) => `${now.getFullYear()}-${pad(now.getMonth() + 1)}`),
+  clock('month', ({ now }) => pad(now.getMonth() + 1)),
+  clock('month', context => intl(context, { month: 'long' })),
+  clock('month', context => intl(context, { year: 'numeric', month: 'long' })),
+  clock('day', ({ now }) => pad(now.getDate())),
+  clock('day', context => intl(context, { day: 'numeric' })),
+  clock('day', context => intl(context, { month: 'long', day: 'numeric' })),
+  clock('week', ({ now }) => { const { year, week } = isoWeek(now); return `${year}-W${pad(week)}`; }),
+  clock('week', ({ now }) => `W${pad(isoWeek(now).week)}`),
+  clock('week', context => intl(context, { weekday: 'long' }), { aliases: ['weekday'] }),
+  clock('week', context => intl(context, { weekday: 'short' })),
+
+  clock('timestamp', ({ now }) => String(Math.floor(now.getTime() / 1000)), { aliases: ['unix', 'epoch'] }),
+  clock('timestamp', ({ now }) => String(now.getTime()), { aliases: ['ms'] }),
+
+  // Random, so not previewed.
+  { trigger: 'uuid', description: 'snippet.uuid', expand: ({ randomUUID }) => randomUUID(), aliases: ['guid'] },
+  { trigger: 'uuid', description: 'snippet.uuidUpper', expand: ({ randomUUID }) => randomUUID().toUpperCase() },
+  { trigger: 'uuid', description: 'snippet.uuidCompact', expand: ({ randomUUID }) => randomUUID().replaceAll('-', '') },
+
+  lookedUp('ip', 'snippet.ip', 'snippet.hintPublic', lookup('https://api64.ipify.org'), 5 * MINUTE),
+  lookedUp('ip', 'snippet.ipv4', 'snippet.hintIPv4', lookup('https://api.ipify.org'), 5 * MINUTE, { aliases: ['ipv4'] }),
+  lookedUp('ip', 'snippet.ipv6', 'snippet.hintIPv6', lookup('https://api6.ipify.org'), 5 * MINUTE, { aliases: ['ipv6'] }),
+  lookedUp('ip', 'snippet.localIP', 'snippet.hintLAN', native('local-ip'), MINUTE, { aliases: ['localip', 'lan'] }),
+  lookedUp('mac', 'snippet.mac', null, native('mac'), MINUTE, { aliases: ['ether'] }),
+  lookedUp('host', 'snippet.hostname', 'snippet.hintHost', native('hostname'), MINUTE, { aliases: ['hostname'] }),
+  lookedUp('host', 'snippet.computerName', 'snippet.hintComputer', native('computer-name'), MINUTE, { aliases: ['computer', 'computername'] }),
+  lookedUp('host', 'snippet.whoami', 'snippet.hintUser', native('whoami'), MINUTE, { aliases: ['whoami', 'user', 'username'] }),
 ];
 
-const sources = [() => builtinSnippets];
+const sources = [];
 export function addSnippetSource(source) {
   sources.push(source);
   return () => { const at = sources.indexOf(source); if (at >= 0) sources.splice(at, 1); };
 }
 
-// Later sources win on a name clash, so a user snippet can replace a built-in.
-// Snippets in `except` are skipped, so a name falls back to what they replaced.
+// Every row, later sources first, so their rows lead their groups. Each row
+// gets a stable id (trigger#position) for caching previews. Rows in `except`
+// are skipped.
 export function allSnippets(except = new Set()) {
-  const byName = new Map();
-  for (const source of sources) for (const snippet of source()) if (!except.has(snippet)) byName.set(snippet.name, snippet);
-  return [...byName.values()];
+  const rows = [...[...sources].reverse().flatMap(source => source()), ...builtinSnippets].filter(row => !except.has(row));
+  const counts = new Map();
+  return rows.map(row => {
+    const position = counts.get(row.trigger) || 0; counts.set(row.trigger, position + 1);
+    return { ...row, id: row.id ?? `${row.trigger}#${position}` };
+  });
 }
 
-// Snippets whose name or an alias starts with `prefix`: exact names first,
-// then name matches, then alias matches, each in definition order.
-export function matchSnippets(prefix, snippets = allSnippets()) {
+// Letters of `query` appear in `word` in order, starting with its first
+// letter: "wk" fits "week", but "ip" does not fit "timestamp".
+export function fuzzy(query, word) {
+  if (word[0] !== query[0]) return false;
+  let at = 0; for (const letter of word) if (letter === query[at]) at++;
+  return at === query.length;
+}
+
+// What the list shows for the text typed after "@":
+//   nothing           the first row of each trigger, as an overview
+//   a whole alias     that row
+//   anything else     every row of each matching trigger, triggers that start
+//                     with it before those that fuzzily fit it; then rows whose
+//                     alias starts with it, then rows whose alias fits it
+// Returns [{row, alias?}] in definition order within each step; `alias` is
+// the alias that matched.
+export function matchSnippets(prefix, rows = allSnippets()) {
   const query = prefix.toLowerCase();
-  const rank = snippet => snippet.name === query ? 0 : snippet.name.startsWith(query) ? 1 : 2;
-  return snippets
-    .filter(snippet => [snippet.name, ...(snippet.aliases || [])].some(name => name.startsWith(query)))
-    .map((snippet, order) => ({ snippet, order }))
-    .sort((a, b) => rank(a.snippet) - rank(b.snippet) || a.order - b.order)
-    .map(({ snippet }) => snippet);
+  if (!query) {
+    const seen = new Set();
+    return rows.filter(row => !seen.has(row.trigger) && seen.add(row.trigger)).map(row => ({ row }));
+  }
+  if (!rows.some(row => row.trigger === query)) {
+    const exact = rows.find(row => row.aliases?.includes(query));
+    if (exact) return [{ row: exact, alias: query }];
+  }
+  const starts = rows.filter(row => row.trigger.startsWith(query));
+  const fits = rows.filter(row => !row.trigger.startsWith(query) && fuzzy(query, row.trigger));
+  // Aliases of rows not already listed with their group, each alias once.
+  const groups = new Set([...starts, ...fits].map(row => row.trigger)), aliases = new Set();
+  const aliasMatches = test => rows.flatMap(row => {
+    if (groups.has(row.trigger)) return [];
+    const alias = row.aliases?.find(name => !aliases.has(name) && test(name));
+    if (!alias) return [];
+    aliases.add(alias); return [{ row, alias }];
+  });
+  const aliasStarts = aliasMatches(name => name.startsWith(query));
+  const aliasFits = aliasMatches(name => fuzzy(query, name));
+  return [...starts.map(row => ({ row })), ...fits.map(row => ({ row })), ...aliasStarts, ...aliasFits];
 }
 
 export const snippetContext = (overrides = {}) => ({
   now: new Date(),
+  locale: 'en',
   fetch: (...args) => globalThis.fetch(...args),
   native: () => Promise.reject(new Error('Only available in the app')),
   randomUUID: () => crypto.randomUUID(),
   ...overrides,
 });
 
-// Templates let data define snippets: "Meeting {date} {time}" expands the
-// named snippets inside braces. Unknown names stay as written; "{{" is a
-// literal brace. Nested async snippets are awaited.
-export async function expandTemplate(template, context = snippetContext(), snippets = allSnippets()) {
-  const byName = new Map(snippets.map(snippet => [snippet.name, snippet]));
+// Templates let data define snippets: "Meeting {date} {time}" inserts the
+// default row of each trigger in braces. Unknown names stay as written; "{{"
+// is a literal brace. Async rows are awaited.
+export async function expandTemplate(template, context = snippetContext(), rows = allSnippets()) {
+  const first = new Map();
+  for (const row of rows) if (!first.has(row.trigger)) first.set(row.trigger, row);
   const parts = template.split(/(\{\{|\{[a-z][\w-]*\})/);
   const values = await Promise.all(parts.map(part => {
     if (part === '{{') return '{';
-    const snippet = /^\{[a-z][\w-]*\}$/.test(part) && byName.get(part.slice(1, -1));
-    return snippet ? snippet.expand(context) : part;
+    const row = /^\{[a-z][\w-]*\}$/.test(part) && first.get(part.slice(1, -1));
+    return row ? row.expand(context) : part;
   }));
   return values.join('');
 }
 
-// A snippet built from a template, the shape user-defined snippets will take.
-// While it expands, it and the templates expanding it are hidden, so
-// "{date}" in a template named date means the built-in date, and templates
-// that refer to each other stop instead of looping.
-export function templateSnippet(name, template, extra = {}) {
-  const snippet = {
-    name, ...extra,
+// A row built from a template, the shape user-defined snippets take. While it
+// expands, it and the rows expanding it are hidden, so "{date}" in a user's
+// own date row means the next date row, and rows that refer to each other
+// stop instead of looping.
+export function templateSnippet(trigger, template, extra = {}) {
+  const row = {
+    trigger, ...extra,
     expand: context => {
-      const expanding = new Set([...(context.expanding || []), snippet]);
+      const expanding = new Set([...(context.expanding || []), row]);
       return expandTemplate(template, { ...context, expanding }, allSnippets(expanding));
     },
   };
-  return snippet;
+  return row;
 }
