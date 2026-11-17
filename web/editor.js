@@ -19,6 +19,7 @@ import { planListIndent } from './list-editing.js';
 import { classHighlighter, tags } from '@lezer/highlight';
 import { applyCodeTheme } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
+import { searchNotes, notePreview } from './note-search.js';
 
 const $ = id => document.getElementById(id);
 const markdownColors=HighlightStyle.define([
@@ -36,6 +37,19 @@ const isEditing = () => !vimEnabled || !!getCM(editor)?.state?.vim?.insertMode;
 const editorStates = new Map();
 const newNote = () => ({ id: crypto.randomUUID(), content: '', updated: new Date().toISOString() });
 const current = () => state.notes.find(n => n.id === state.selected);
+function reportToolbarRegions() {
+  const handler=window.webkit?.messageHandlers?.quicknote;
+  if(!handler)return;
+  const rects=['previous','next','new','delete','search'].map(id=>{
+    const r=$(id).getBoundingClientRect();
+    return {x:r.x,y:r.y,width:r.width,height:r.height};
+  });
+  handler.postMessage({type:'toolbarRegions',width:document.documentElement.clientWidth,rects});
+}
+const toolbarObserver=new ResizeObserver(reportToolbarRegions);
+for(const element of document.querySelectorAll('header, .nav, .actions, header button, #position')) toolbarObserver.observe(element);
+window.addEventListener('resize',reportToolbarRegions);
+reportToolbarRegions();
 function persist(force=false, onResult=null) {
   const revision=++saveRevision, json=JSON.stringify(state);
   if(onResult) saveCallbacks.set(revision,onResult);
@@ -53,10 +67,11 @@ window.snapshotForFlush = () => state ? {json:JSON.stringify(state), revision:sa
 window.setShortcutLabel = label => { $('shortcut').textContent = label; };
 window.setLanguage = value => {
   setLanguage(value); document.documentElement.lang=lang();
-  for(const [id,key,shortcut] of [['previous','上一条笔记','⌘['],['next','下一条笔记','⌘]'],['new','新建笔记','⌘N'],['delete','删除笔记','⌘D']]) {
+  for(const [id,key,shortcut] of [['previous','上一条笔记','⌘['],['next','下一条笔记','⌘]'],['new','新建笔记','⌘N'],['delete','删除笔记','⌘D'],['search','搜索笔记','⌘⇧F']]) {
     $(id).setAttribute('aria-label',t(key)); $(id).title=t(key)+' '+shortcut;
   }
   $('block-menu').setAttribute('aria-label',t('功能块')); $('language-menu').setAttribute('aria-label',t('代码语言'));
+  $('search-panel').setAttribute('aria-label',t('搜索笔记')); $('search-input').placeholder=t('搜索所有笔记'); $('search-input').setAttribute('aria-label',t('搜索所有笔记')); $('search-close').setAttribute('aria-label',t('关闭'));
   document.querySelectorAll('.task-checkbox').forEach(box=>box.setAttribute('aria-label',t(box.getAttribute('aria-checked')==='true'?'标记为未完成':'标记为已完成')));
   if(editor) { closeBlockMenu(); closeLanguageMenu(); editor.dispatch({effects:rateEffect.of(null)}); refreshInsights(); }
 };
@@ -126,6 +141,34 @@ function deleteNote() {
   saveBeforeDelete();
 }
 function navigate(direction) { if (!state) return; const index = state.notes.findIndex(n => n.id === state.selected); const next = index + direction; if (next >= 0 && next < state.notes.length) select(state.notes[next].id); }
+let searchResults=[], searchIndex=0;
+function renderSearch() {
+  const list=$('search-results'), query=$('search-input').value;
+  searchResults=query.trim()?searchNotes(state?.notes||[],query):(state?.notes||[]).map((note,index)=>({id:note.id,index:index+1,at:0,length:0,snippet:notePreview(note.content) || t('空白笔记')}));
+  searchIndex=Math.min(searchIndex,Math.max(0,searchResults.length-1));
+  list.replaceChildren();
+  if(!searchResults.length) { const empty=document.createElement('div');empty.className='search-empty';empty.textContent=t($('search-input').value.trim()?'没有匹配的笔记':'输入关键词搜索笔记');list.append(empty);return; }
+  searchResults.forEach((result,index)=>{
+    const button=document.createElement('button');button.type='button';button.className='search-result';button.setAttribute('role','option');button.setAttribute('aria-selected',String(index===searchIndex));
+    const number=document.createElement('span');number.className='search-result-index';number.textContent=String(result.index);
+    const snippet=document.createElement('span');snippet.className='search-result-snippet';snippet.textContent=result.snippet;
+    button.append(number,snippet);button.addEventListener('click',()=>chooseSearch(index));list.append(button);
+  });
+  list.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'});
+}
+function openSearch(query='') { if(!state)return;closeBlockMenu();closeLanguageMenu();$('search-panel').hidden=false;$('search-input').value=query;searchIndex=0;renderSearch();$('search-input').focus(); }
+function closeSearch() { $('search-panel').hidden=true;editor?.focus(); }
+function chooseSearch(index) {
+  const result=searchResults[index];if(!result)return;
+  closeSearch();select(result.id);
+  const from=Math.min(result.at,editor.state.doc.length),to=Math.min(from+result.length,editor.state.doc.length);
+  editor.dispatch({selection:{anchor:from,head:to},scrollIntoView:true});editor.focus();
+}
+window.openNoteSearch=openSearch;
+window.inkflitSelectNote=id=>{if(state?.notes.some(note=>note.id===id)){select(id);return true;}return false;};
+$('search').onclick=()=>openSearch();
+$('search-close').onclick=closeSearch;
+$('search-input').addEventListener('input',()=>{searchIndex=0;renderSearch();});
 function hide() { if (window.webkit?.messageHandlers?.quicknote) window.webkit.messageHandlers.quicknote.postMessage({type:'hide'}); else window.quicknoteHideRequested = (window.quicknoteHideRequested || 0) + 1; }
 $('new').onclick = createNote; $('delete').onclick = deleteNote; $('previous').onclick = () => navigate(-1); $('next').onclick = () => navigate(1);
 function refreshInsights() {
@@ -136,6 +179,13 @@ function refreshInsights() {
 setRateListener(()=>{ if(editor) {editor.dispatch({effects:rateEffect.of(null)}); refreshInsights();} });
 document.addEventListener('keydown', event => {
   if (!state || event.isComposing || event.keyCode === 229) return;
+  if(event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='f') { event.preventDefault();event.stopPropagation();openSearch();return; }
+  if(!$('search-panel').hidden) {
+    if(event.key==='Escape') {event.preventDefault();event.stopPropagation();closeSearch();return;}
+    if(event.key==='ArrowDown'||event.key==='ArrowUp') {event.preventDefault();event.stopPropagation();if(searchResults.length){searchIndex=(searchIndex+(event.key==='ArrowDown'?1:-1)+searchResults.length)%searchResults.length;renderSearch();}return;}
+    if(event.key==='Enter') {event.preventDefault();event.stopPropagation();chooseSearch(searchIndex);return;}
+    return;
+  }
   keyStartDoc = editor?.state.doc;
   if(event.metaKey && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase()==='l' && editor?.hasFocus) {
     if(!event.repeat && openCurrentLanguageMenu(editor)) {event.preventDefault();event.stopPropagation();}
@@ -265,6 +315,54 @@ globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change
 });
 applyUIAppearance('orange',100);
 window.exportNotesJSON = () => state ? JSON.stringify(state) : null;
+// All external callers use the live editor state and the normal save pipeline.
+window.inkflitNotesOperation = async request => {
+  if(!state || !request || typeof request !== 'object') throw new Error('Notes are not ready');
+  const action=request.action, id=request.id, index=request.index;
+  if(id !== undefined && index !== undefined) throw new Error('Specify either id or index, not both');
+  const resolveNote=required=>{
+    if(id !== undefined) {
+      if(typeof id !== 'string' || !id)throw new Error('Invalid note id');
+      const note=state.notes.find(n=>n.id===id);if(!note)throw new Error('Note not found');return note;
+    }
+    if(index !== undefined) {
+      if(!Number.isInteger(index) || index<1 || index>state.notes.length)throw new Error('Note index out of range');
+      return state.notes[index-1];
+    }
+    if(required)throw new Error('A note id or 1-based index is required');
+    return null;
+  };
+  const describe=note=>({id:note.id,index:state.notes.indexOf(note)+1,content:note.content,updated:note.updated});
+  if(action==='list') return {notes:state.notes.map(describe)};
+  if(action==='get') return {note:describe(resolveNote(true))};
+  if(action==='search') {
+    if(typeof request.query!=='string' || !request.query.trim())throw new Error('A search query is required');
+    return {results:searchNotes(state.notes,request.query)};
+  }
+  if(!['create','append','replace','delete'].includes(action))throw new Error('Unknown note operation');
+  if(action!=='delete' && (typeof request.content!=='string' || request.content.length>1_000_000))throw new Error('Content must be a string of at most 1000000 characters');
+  let note=action==='create'?null:resolveNote(action==='delete');
+  if(action==='create' && (id !== undefined || index !== undefined))throw new Error('Create does not take a note target');
+  if(action==='delete') {
+    const deleted=note.id, selected=state.selected===deleted, position=state.notes.indexOf(note);
+    state.notes.splice(position,1);if(!state.notes.length)state.notes.push(newNote());
+    if(selected)changeEditor(state.notes[Math.min(position,state.notes.length-1)].id);
+    editorStates.delete(deleted);
+    await new Promise((resolve,reject)=>persist(true,ok=>ok?resolve():reject(new Error('Save failed; changes remain in the editor'))));
+    return {deleted:deleted};
+  }
+  if(!note) {note=newNote();note.content=request.content;state.notes.unshift(note);refreshNav();}
+  else {
+    const text=action==='append' ? note.content+(note.content && request.content && !note.content.endsWith('\n') && !request.content.startsWith('\n')?'\n':'')+request.content : request.content;
+    if(text!==note.content) {
+      const spec={changes:{from:0,to:note.content.length,insert:text},annotations:Transaction.userEvent.of('input.external'),filter:false};
+      if(note.id===state.selected) editor.dispatch(spec);
+      else {const cached=editorStates.get(note.id);if(cached)editorStates.set(note.id,cached.update(spec).state);note.content=text;note.updated=new Date().toISOString();}
+    }
+  }
+  await new Promise((resolve,reject)=>persist(true,ok=>ok?resolve():reject(new Error('Save failed; changes remain in the editor'))));
+  return {note:describe(note)};
+};
 window.restoreNoteBase64 = value => {
   if (!state) throw new Error('No note state');
   const content = new TextDecoder('utf-8', {fatal:true}).decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)));

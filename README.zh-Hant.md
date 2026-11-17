@@ -20,6 +20,8 @@ open build/Inkflit.app
 
 應用程式常駐選單列，按 `Control + Option + Space` 顯示或收起筆記，切換至其他應用程式時自動收起。拖曳視窗頂部或工具列中央空白處可移動視窗。預設寬高比為 2:3，可自由調整大小。選單列或 `⌘,` 可開啟設定，調整快捷鍵、登入時啟動、儲存位置、主色、不透明度、背景模糊、程式碼配色與縮排；介面自動配合 macOS 淺色／深色模式。語言預設跟隨系統，也可選英語、簡體中文、繁體中文或日語。設定內附離線使用說明。
 
+喚起時，視窗會出現在滑鼠所在螢幕，並以視窗可移動範圍（螢幕可用尺寸減去視窗尺寸）的百分比記住上下左右的相對位置，重新啟動後也會還原。調整不透明度或背景模糊時，按住 `Option` 可吸附至每 5% 一格。
+
 ## 快捷鍵
 
 | 快捷鍵 | 功能 |
@@ -33,6 +35,7 @@ open build/Inkflit.app
 | `⌘L` | 選擇程式碼區塊語言 |
 | `⌘O` / `⌘⇧O` | 在目前功能區塊下方／上方新增可編輯的文字行 |
 | `⌘/` | 切換目前或選取行的註解 |
+| `⌘⇧F` | 搜尋所有目前筆記 |
 | `Esc` | Vim 模式先退出編輯模式，普通模式再按一次收起；關閉 Vim 時直接收起 |
 
 Vim 模式預設開啟，可在「設定 → 編輯」關閉。關閉後可直接輸入，`Esc` 收起視窗，使用 `⌘Z` / `⌘⇧Z` 復原和重做。
@@ -56,3 +59,29 @@ Vim 由 CodeMirror 和 `@replit/codemirror-vim` 提供，並非 Neovim，也不�
 筆記預設分別儲存在 `~/Documents/Inkflit/notes/` 的 UTF-8 Markdown 檔案中，`index.json` 記錄順序與選取狀態。設定可指定位置、備份版本數（關閉、指定數量或無限保留），並還原歷史版本或回收站筆記，以及重建損壞的索引。編輯時每則筆記最多每五分鐘備份一次舊版本；調整數量不會立即刪除既有版本，而是在新版本建立時套用上限。刪除的筆記保留在 `trash/`，還原會建立新筆記並保留原檔。變更位置會複製整個儲存目錄並保留原檔。Inkflit 不提供雲端同步，請定期將整個目錄備份到其他位置。 連續輸入停止約 0.5 秒後儲存，持續輸入時通常最多約 2 秒儲存一次；切換筆記、收起視窗、更改儲存位置或退出應用程式會立即儲存。儲存失敗時會顯示錯誤並阻止退出；應用程式異常崩潰時可能遺失尚未儲存的最近修改。
 
 Markdown 核取方塊（`[ ]`、`[x]`、`- [ ]`）可在編輯器點擊，原始內容仍為 Markdown。行首 `//` 為註解；標明語言的 Markdown 程式碼圍欄會突顯語法。
+
+## 搜尋與自動化
+
+點擊頂部搜尋按鈕、按 `⌘⇧F` 或從選單列選擇「搜尋筆記」，可搜尋所有目前筆記；方向鍵選擇，Return 開啟，Esc 關閉。搜尋不包含備份及回收站。
+
+Inkflit 提供本機 stdio MCP 服務。Codex 可執行：
+
+```sh
+codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
+```
+
+設定後重新啟動 MCP 用戶端。工具包括 `list_notes`、`search_notes`、`get_note`、`create_note`、`append_note`、`replace_note` 和 `delete_note`。使用從 1 開始、與畫面一致的 `index` 或穩定的 `id` 指定筆記；增刪筆記後編號會變化。追加及覆寫未指定目標時會新增筆記，追加時會按需要加入換行；刪除進入回收站。操作經由應用程式儲存並備份，必要時服務會啟動 Inkflit。
+
+其他 MCP 用戶端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。每次寫入最多 1,000,000 個 UTF-16 程式碼單元。
+
+Claude Code 可執行 `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`。在 Namo 的連線設定中新增本機 MCP，填入相同的執行檔與參數 `["--mcp"]`，儲存並測試。兩者須在同一台 Mac 以同一使用者執行；獲准對話的成員都能使用這些工具。
+
+應用程式也支援 `inkflit://note/<action>`，操作為 `list`、`get`、`search`、`create`、`append`、`replace` 或 `delete`。依需求提供 URL 編碼的 `index` 或 `id`、`content`、`query`：
+
+```sh
+open 'inkflit://note/append?index=2&content=Remember%20milk'
+open 'inkflit://note/search?query=milk'
+open 'inkflit://note/get?index=1'
+```
+
+追加及覆寫未指定目標時會新增；讀取及刪除必須指定目標。沒有回呼時，讀取會開啟筆記，列表與搜尋會開啟搜尋畫面。選用的 `x-success` / `x-error` 可指定 URL 編碼的自訂 scheme 回呼，`result` 參數包含 JSON；不接受 HTTP、HTTPS、file 或 Inkflit 回呼，JSON 上限為 48 KB。scheme 寫入及刪除會立即執行，請只開啟可信連結。

@@ -1,5 +1,6 @@
 import AppKit
 import WebKit
+import ApplicationServices
 
 // Compiled only by scripts/test-native.sh. Drives the real app's NSWindow and
 // WKWebView with AppKit keyboard events while using an isolated data file.
@@ -44,6 +45,364 @@ final class NativeCodeEditingTest {
     static func start(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
+    }
+    static func startAutomationEdit(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app);app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.6) { running?.testAutomationEdit() }
+    }
+    private func testAutomationEdit() {
+        sequence([{ self.key(34,"i") }, { self.key(7,"x") }, { self.key(53,"\u{1b}") }]) { [self] in
+            guard let path=ProcessInfo.processInfo.environment["INKFLIT_EDIT_READY_PATH"] else { fail("missing test ready path") }
+            do { try "ready".write(toFile:path,atomically:true,encoding:.utf8) } catch { fail("could not signal editing") }
+            if let hiddenPath=ProcessInfo.processInfo.environment["INKFLIT_HIDDEN_READY_PATH"] {
+                DispatchQueue.main.asyncAfter(deadline:.now()+1) { [self] in
+                    app.hideWindow()
+                    DispatchQueue.main.asyncAfter(deadline:.now()+0.5) { [self] in
+                        guard !app.window.isVisible else { fail("test window did not hide") }
+                        do { try "hidden".write(toFile:hiddenPath,atomically:true,encoding:.utf8) } catch { fail("could not signal hidden window") }
+                    }
+                }
+            }
+        }
+    }
+    static func startAutomationUI(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app);app.window.setContentSize(NSSize(width:360,height:560));app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.8) { running?.testAutomationUI() }
+    }
+    private func testAutomationUI() {
+        key(3,"F","f",[.command,.shift]); later { [self] in
+            app.web.evaluateJavaScript("[document.getElementById('search-panel').hidden,document.activeElement.id]") { [self] value,error in
+                guard error == nil, let result=value as? [Any], result[0] as? Bool == false, result[1] as? String == "search-input" else { fail("search shortcut did not open focused search") }
+                sequence([{ self.key(11,"b") }, { self.key(14,"e") }, { self.key(17,"t") }, { self.key(0,"a") }]) { [self] in
+                    app.web.evaluateJavaScript("[...document.querySelectorAll('.search-result')].map(e=>e.textContent)") { [self] value,error in
+                        guard error == nil, let rows=value as? [String], rows.count==1, rows[0].contains("Beta") else { fail("search results: \(String(describing:value))") }
+                        captureSearchIfRequested { [self] in
+                        key(36,"\r"); later { [self] in
+                            app.web.evaluateJavaScript("[JSON.parse(window.exportNotesJSON()).selected,document.getElementById('search-panel').hidden]") { [self] value,error in
+                                guard error == nil, let result=value as? [Any], result[0] as? String == "second", result[1] as? Bool == true else { fail("search did not open matching note") }
+                                key(3,"F","f",[.command,.shift]);key(53,"\u{1b}");later { [self] in
+                                    guard app.window.isVisible else { fail("Escape closed window instead of search") }
+                                    print("PASS native search shortcut, live filtering, selection and Escape")
+                                    testAutomationScheme()
+                                }
+                            }
+                        }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func captureSearchIfRequested(_ completion: @escaping () -> Void) {
+        guard let path=ProcessInfo.processInfo.environment["INKFLIT_SEARCH_CAPTURE"] else { completion();return }
+        app.web.takeSnapshot(with:nil) { [self] image,error in
+            guard error == nil, let tiff=image?.tiffRepresentation, let rep=NSBitmapImageRep(data:tiff),
+                  let png=rep.representation(using:.png,properties:[:]) else { fail("could not capture search") }
+            do { try png.write(to:URL(fileURLWithPath:path));completion() } catch { fail("could not save search capture") }
+        }
+    }
+    private func testAutomationScheme() {
+        let urls=["inkflit://note/create?content=Scheme%20first", "inkflit://note/append?index=1&content=Scheme%20append", "inkflit://note/replace?index=2&content=Scheme%20replace"]
+        app.application(NSApp,open:urls.compactMap(URL.init(string:)))
+        DispatchQueue.main.asyncAfter(deadline:.now()+1) { [self] in
+            app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)") { [self] value,error in
+                guard error == nil, let texts=value as? [String], texts == ["Scheme first\nScheme append","Scheme replace","Beta note"] else { fail("scheme mutations: \(String(describing:value))") }
+                app.application(NSApp,open:[URL(string:"inkflit://note/search?query=Beta")!])
+                later { [self] in
+                    app.web.evaluateJavaScript("[document.getElementById('search-input').value,document.querySelectorAll('.search-result').length]") { [self] value,error in
+                        guard error == nil, let result=value as? [Any], result[0] as? String == "Beta", result[1] as? Int == 1 else { fail("scheme search") }
+                        app.application(NSApp,open:[URL(string:"inkflit://note/get?index=3&x-success=shortcuts%3A%2F%2Fdone")!])
+                        later { [self] in
+                            guard let callback=app.testAutomationCallbacks.last, let encoded=URLComponents(url:callback,resolvingAgainstBaseURL:false)?.queryItems?.first(where:{$0.name=="result"})?.value,
+                                  let data=encoded.data(using:.utf8), let value=(try? JSONSerialization.jsonObject(with:data)) as? [String:Any],
+                                  let note=value["note"] as? [String:Any], note["content"] as? String == "Beta note" else { fail("scheme get callback") }
+                            app.application(NSApp,open:[URL(string:"inkflit://note/get?index=999&x-error=shortcuts%3A%2F%2Ferror")!])
+                            later { [self] in
+                                guard app.testAutomationCallbacks.count==2, let callback=app.testAutomationCallbacks.last,
+                                      let encoded=URLComponents(url:callback,resolvingAgainstBaseURL:false)?.queryItems?.first(where:{$0.name=="result"})?.value,
+                                      let data=encoded.data(using:.utf8), let value=(try? JSONSerialization.jsonObject(with:data)) as? [String:Any], value["error"] is String else { fail("scheme error callback") }
+                                app.application(NSApp,open:[URL(string:"inkflit://note/get?index=1")!])
+                                later { [self] in
+                                app.application(NSApp,open:[URL(string:"inkflit://note/delete?index=1")!])
+                                DispatchQueue.main.asyncAfter(deadline:.now()+0.5) { [self] in
+                            do {
+                                let snapshot=try NoteFiles.read(app.storageURL.deletingLastPathComponent())
+                                guard snapshot.notes.map(\.content) == ["Scheme replace","Beta note"] else { fail("scheme delete not persisted") }
+                                let trash=app.storageURL.deletingLastPathComponent().appendingPathComponent("trash")
+                                guard !(try FileManager.default.contentsOfDirectory(atPath:trash.path)).isEmpty else { fail("scheme deletion bypassed trash") }
+                            } catch { fail("could not read scheme test files: \(error)") }
+                            app.web.evaluateJavaScript("document.querySelector('.cm-content')?.textContent") { [self] value,error in
+                                guard error == nil, let text=value as? String, text.contains("Scheme replace") else { fail("cached editor did not reflect external replacement") }
+                                let delete=URL(string:"inkflit://note/delete?index=1")!
+                                app.application(NSApp,open:[delete,delete])
+                                DispatchQueue.main.asyncAfter(deadline:.now()+0.6) { [self] in
+                                    do {
+                                        let snapshot=try NoteFiles.read(app.storageURL.deletingLastPathComponent())
+                                        guard snapshot.notes.count==1, snapshot.notes[0].content.isEmpty else { fail("deleting last note did not create a blank note") }
+                                    } catch { fail("could not read final scheme state") }
+                                    print("PASS scheme create, append, replace, search, callbacks, cached editor and deletion with trash")
+                                    app.restoreInputSource();exit(0)
+                                }
+                            }
+                                }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    static func startPlacement(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app)
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.8) { running?.testPlacement() }
+    }
+    private func testPlacement() {
+        if ["legacy", "v2"].contains(ProcessInfo.processInfo.environment["INKFLIT_PLACEMENT_RESTART"] ?? "") {
+            guard let screen=app.window.screen, let target=NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) else { fail("legacy placement screen unavailable") }
+            let source=screen.visibleFrame, size=app.window.frame.size
+            let version=ProcessInfo.processInfo.environment["INKFLIT_PLACEMENT_RESTART"] == "legacy" ? 1 : 2
+            UserDefaults.standard.set(["version":version,"right":true,"top":true,"horizontal":version == 1 ? 45.0 : 45/source.width,"vertical":version == 1 ? 35.0 : 35/source.height],forKey:"windowAnchor")
+            app.window.orderOut(nil); app.showWindow()
+            let x=45/(source.width-size.width), y=35/(source.height-size.height)
+            let anchor=WindowPlacement.Anchor(left:1-x,right:x,bottom:1-y,top:y)
+            let expected=WindowPlacement.frame(size:size,anchor:anchor,in:target.visibleFrame), actual=app.window.frame
+            guard abs(actual.minX-expected.minX)<2, abs(actual.minY-expected.minY)<2,
+                  UserDefaults.standard.dictionary(forKey:"windowAnchor")?["version"] as? Int == 3 else { fail("legacy window position migration") }
+            print("PASS previous edge position converts to percentages"); app.restoreInputSource(); exit(0)
+        }
+        if ProcessInfo.processInfo.environment["INKFLIT_PLACEMENT_RESTART"] == "1" {
+            guard UserDefaults.standard.bool(forKey:"testHasMultipleScreens") else { print("SKIP placement restart: only one display"); exit(0) }
+            guard let target=NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) else { fail("mouse screen unavailable") }
+            let frame=app.window.frame, visible=target.visibleFrame
+            let xRatio=UserDefaults.standard.double(forKey:"testHorizontalRatio"), yRatio=UserDefaults.standard.double(forKey:"testVerticalRatio")
+            guard abs(visible.maxX-frame.maxX-xRatio*(visible.width-frame.width))<2, abs(visible.maxY-frame.maxY-yRatio*(visible.height-frame.height))<2 else { fail("remembered edge position after restart: \(frame)") }
+            print("PASS window edge position is restored after restart"); app.restoreInputSource(); exit(0)
+        }
+        let source=NSRect(x:0,y:0,width:1000,height:800), target=NSRect(x:-1200,y:100,width:1200,height:900)
+        let leftBottom=WindowPlacement.onScreen(NSRect(x:50,y:90,width:200,height:300),from:source,to:target)
+        guard leftBottom == NSRect(x:-1137.5,y:208,width:200,height:300) else { fail("left/bottom anchor incorrect: \(leftBottom)") }
+        let rightTop=WindowPlacement.onScreen(NSRect(x:740,y:460,width:200,height:300),from:source,to:target)
+        guard rightTop == NSRect(x:-275,y:652,width:200,height:300) else { fail("right/top anchor incorrect: \(rightTop)") }
+        for x in [CGFloat(0), 150, 400, 650, 800] {
+            for y in [CGFloat(0), 100, 250, 400, 500] {
+                let original=NSRect(x:x,y:y,width:200,height:300)
+                let before=WindowPlacement.anchor(original,in:source)
+                let mapped=WindowPlacement.onScreen(original,from:source,to:target)
+                let after=WindowPlacement.anchor(mapped,in:target)
+                guard abs(before.left-after.left)<0.000001, abs(before.right-after.right)<0.000001,
+                      abs(before.top-after.top)<0.000001, abs(before.bottom-after.bottom)<0.000001 else { fail("four edge proportions changed after screen switch") }
+                let restored=WindowPlacement.onScreen(mapped,from:target,to:source)
+                guard abs(restored.minX-original.minX)<0.001, abs(restored.minY-original.minY)<0.001 else { fail("window position drifted after screen round trip") }
+            }
+        }
+        let fill=WindowPlacement.anchor(NSRect(x:0,y:0,width:1000,height:800),in:source)
+        guard fill.left==0.5, fill.right==0.5, fill.top==0.5, fill.bottom==0.5 else { fail("zero travel range is not handled") }
+        let tiny=NSRect(x:30,y:-30,width:100,height:120)
+        let fitted=WindowPlacement.onScreen(NSRect(x:740,y:460,width:200,height:300),from:source,to:tiny)
+        guard tiny.contains(fitted), fitted.size == tiny.size else { fail("small screen fitting incorrect") }
+        for value in 0...100 {
+            guard SettingsController.sliderValue(value,optionPressed:false)==value,
+                  SettingsController.sliderValue(value,optionPressed:true)%5==0,
+                  abs(SettingsController.sliderValue(value,optionPressed:true)-value)<=2 else { fail("Option snap calculation for \(value)") }
+        }
+        print("PASS four screen edges, fitting and 5% slider snap")
+        if let destination=NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }),
+           let other=NSScreen.screens.first(where: { $0 !== destination && $0.frame != destination.frame }) {
+            let screen=other.visibleFrame
+            let frame=NSRect(x:screen.maxX-360-45,y:screen.maxY-480-35,width:360,height:480)
+            app.window.setFrame(frame,display:false)
+            guard app.window.screen?.frame == other.frame else { fail("could not move isolated window to another screen") }
+            DispatchQueue.main.asyncAfter(deadline:.now()+0.3) { [self] in
+                guard let saved=UserDefaults.standard.dictionary(forKey:"windowAnchor"),
+                      abs((saved["right"] as? Double ?? -1)-45/(screen.width-360))<0.001,
+                      abs((saved["top"] as? Double ?? -1)-35/(screen.height-480))<0.001,
+                      abs((saved["left"] as? Double ?? -1)+(saved["right"] as? Double ?? -1)-1)<0.001,
+                      abs((saved["bottom"] as? Double ?? -1)+(saved["top"] as? Double ?? -1)-1)<0.001 else { fail("window edge position was not saved: \(String(describing: UserDefaults.standard.dictionary(forKey: "windowAnchor"))) screen \(screen)") }
+                UserDefaults.standard.set(true,forKey:"testHasMultipleScreens")
+                UserDefaults.standard.set(45/(screen.width-360),forKey:"testHorizontalRatio"); UserDefaults.standard.set(35/(screen.height-480),forKey:"testVerticalRatio")
+                app.window.orderOut(nil)
+                let expected=WindowPlacement.onScreen(frame,from:screen,to:destination.visibleFrame)
+                app.showWindow()
+                let actual=app.window.frame
+                guard abs(actual.minX-expected.minX)<2, abs(actual.minY-expected.minY)<2 else { fail("mouse-screen placement: expected \(expected), got \(actual)") }
+                print("PASS actual multi-screen summon preserves edge percentages")
+                testPlacementSliders()
+            }
+            return
+        } else { print("SKIP real multi-screen summon: only one display available") }
+        testPlacementSliders()
+    }
+    private func testPlacementSliders() {
+        app.showSettings()
+        guard let settings=app.settingsController else { fail("settings missing") }
+        settings.testSelectSettingsTab(1)
+        for blur in [false,true] {
+            guard let free=settings.testClickSlider(blur:blur,option:false), let snapped=settings.testClickSlider(blur:blur,option:true) else { fail("could not click slider") }
+            guard free%5 != 0, snapped%5 == 0, abs(snapped-free)<=3 else { fail("Option slider mouse interaction: free \(free), snapped \(snapped)") }
+            guard let freeDrag=settings.testDragSlider(blur:blur,option:false), let snappedDrag=settings.testDragSlider(blur:blur,option:true),
+                  freeDrag%5 != 0, snappedDrag%5 == 0, abs(snappedDrag-freeDrag)<=3 else { fail("Option slider drag interaction") }
+        }
+        print("PASS opacity and blur slider clicks and drags with and without Option")
+        app.restoreInputSource(); exit(0)
+    }
+    static func startToolbarCursor(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+1) { running?.testToolbarCursor(0,original:CGEvent(source:nil)?.location ?? .zero) }
+    }
+    private func testToolbarCursor(_ index: Int, original: CGPoint) {
+        guard AXIsProcessTrusted() else { print("SKIP native cursor test: Accessibility permission unavailable"); exit(0) }
+        guard let root=app.window.contentView, let primary=NSScreen.screens.first else { CGWarpMouseCursorPosition(original); fail("cursor test screen unavailable") }
+        guard app.toolbarDrag.buttonRects.count == 5 else { CGWarpMouseCursorPosition(original); fail("cursor test button regions unavailable") }
+        let button=app.toolbarDrag.buttonRects[2]
+        let points=[NSPoint(x:root.bounds.midX,y:root.bounds.height-110), NSPoint(x:root.bounds.midX,y:root.bounds.height-25), NSPoint(x:button.midX,y:root.bounds.height-button.midY), NSPoint(x:root.bounds.midX,y:root.bounds.height-110)]
+        guard index < points.count else { CGWarpMouseCursorPosition(original); print("PASS pointer switches between editor and toolbar"); app.restoreInputSource(); exit(0) }
+        let screen=app.window.convertPoint(toScreen:points[index]), location=CGPoint(x:screen.x,y:primary.frame.maxY-screen.y)
+        CGEvent(mouseEventSource:nil,mouseType:.mouseMoved,mouseCursorPosition:location,mouseButton:.left)?.post(tap:.cghidEventTap)
+        DispatchQueue.main.asyncAfter(deadline:.now()+0.4) { [self] in
+            guard let cursor=NSCursor.currentSystem else { CGWarpMouseCursorPosition(original); fail("system pointer unavailable") }
+            let data=cursor.image.tiffRepresentation
+            let expected=(index == 1 ? NSCursor.arrow : index == 2 ? NSCursor.pointingHand : NSCursor.iBeam).image.tiffRepresentation
+            guard data == expected else {
+                let kind=index == 1 ? "arrow" : index == 2 ? "hand" : "text"; CGWarpMouseCursorPosition(original)
+                fail("expected \(kind) pointer at step \(index), system hotspot \(cursor.hotSpot), size \(cursor.image.size)")
+            }
+            testToolbarCursor(index+1,original:original)
+        }
+    }
+    static func startRealToolbarDrag(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline:.now()+1) { running?.testRealToolbarDrag(0, original: CGEvent(source:nil)?.location ?? .zero) }
+    }
+    private func testRealToolbarDrag(_ index: Int, original: CGPoint) {
+        guard AXIsProcessTrusted() else { print("SKIP real toolbar drag: Accessibility permission unavailable"); exit(0) }
+        guard index<6 else { CGWarpMouseCursorPosition(original); print("PASS real mouse drags across toolbar gaps, top strip and page number"); app.restoreInputSource(); exit(0) }
+        guard let root=app.window.contentView, let screen=app.window.screen, let primary=NSScreen.screens.first else { CGWarpMouseCursorPosition(original); fail("screen not available") }
+        let buttons=app.toolbarDrag.buttonRects
+        guard buttons.count==5 else { CGWarpMouseCursorPosition(original); fail("toolbar buttons unavailable") }
+        let positions: [CGPoint] = [CGPoint(x:8,y:28), CGPoint(x:(buttons[0].maxX+buttons[1].minX)/2,y:28), CGPoint(x:root.bounds.midX,y:28), CGPoint(x:(buttons[2].maxX+buttons[3].minX)/2,y:28), CGPoint(x:root.bounds.midX,y:5), CGPoint(x:root.bounds.maxX-8,y:28)]
+        let point=positions[index]
+        guard root.hitTest(NSPoint(x:point.x,y:root.bounds.height-point.y)) is ToolbarDragView else { CGWarpMouseCursorPosition(original); fail("real drag start is not draggable") }
+        let before=app.window.frame, viewPoint=NSPoint(x:point.x,y:root.bounds.height-point.y)
+        let appKitPoint=app.window.convertPoint(toScreen:viewPoint)
+        let start=CGPoint(x:appKitPoint.x,y:primary.frame.maxY-appKitPoint.y)
+        let dx: CGFloat = before.maxX+36 < screen.visibleFrame.maxX ? 30 : -30
+        let dy: CGFloat = before.minY-24 > screen.visibleFrame.minY ? 18 : -18
+        DispatchQueue.global(qos:.userInitiated).async {
+            func post(_ type: CGEventType, _ position: CGPoint) { CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:position,mouseButton:.left)?.post(tap:.cghidEventTap) }
+            post(.mouseMoved,start); usleep(100_000); post(.leftMouseDown,start); usleep(100_000)
+            for step in 1...6 { post(.leftMouseDragged,CGPoint(x:start.x+dx*CGFloat(step)/6,y:start.y+dy*CGFloat(step)/6)); usleep(50_000) }
+            post(.leftMouseUp,CGPoint(x:start.x+dx,y:start.y+dy))
+            DispatchQueue.main.asyncAfter(deadline:.now()+0.35) { [self] in
+                let after=app.window.frame
+                guard abs(after.minX-before.minX)>10 || abs(after.minY-before.minY)>10 else { CGWarpMouseCursorPosition(original); fail("real drag did not move window at \(point)") }
+                testRealToolbarDrag(index+1,original:original)
+            }
+        }
+    }
+    static func startHeaderDrag(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app); app.showWindow()
+        DispatchQueue.main.asyncAfter(deadline: .now()+0.8) { running?.testHeaderHitRegions(0) }
+    }
+    private func testHeaderHitRegions(_ index: Int) {
+        let widths: [CGFloat] = [300, 480, 680]
+        guard index < widths.count else { testToolbarDynamicLayout(); return }
+        app.window.setContentSize(NSSize(width:widths[index],height:500))
+        DispatchQueue.main.asyncAfter(deadline: .now()+0.4) { [self] in
+            guard let root=app.window.contentView else { fail("missing window content") }
+            let overlay=app.toolbarDrag!
+            guard overlay.buttonRects.count==5, abs(overlay.measuredWidth-root.bounds.width)<1 else { fail("toolbar layout not synchronized") }
+            var draggable=0, buttons=0
+            for y in stride(from: CGFloat(2), through: 44, by: 4) {
+                for x in stride(from: CGFloat(2), through: root.bounds.width-2, by: 4) {
+                    let local=NSPoint(x:x,y:y), expectedButton=overlay.buttonRects.contains { $0.insetBy(dx: -0.3, dy: -0.3).contains(local) }
+                    let closeToButton=overlay.buttonRects.contains { $0.insetBy(dx: -1.5, dy: -1.5).contains(local) && !$0.insetBy(dx: 1.5, dy: 1.5).contains(local) }
+                    if closeToButton { continue }
+                    let hit=root.hitTest(NSPoint(x:x,y:root.bounds.height-y))
+                    if expectedButton { buttons += 1; if hit is ToolbarDragView { fail("button covered at \(x), \(y)") } }
+                    else { draggable += 1; if !(hit is ToolbarDragView) { fail("toolbar gap cannot drag at \(x), \(y)") } }
+                }
+            }
+            guard buttons>20 && draggable>100 else { fail("toolbar test did not cover regions") }
+            print("PASS toolbar button and drag regions at width \(Int(widths[index]))")
+            testHeaderHitRegions(index+1)
+        }
+    }
+    private func testToolbarDynamicLayout() {
+        app.web.evaluateJavaScript("document.getElementById('position').textContent = '100000 / 100000'") { [self] _,error in
+            guard error == nil else { fail("could not enlarge page number") }
+            DispatchQueue.main.asyncAfter(deadline:.now()+0.3) { [self] in
+                app.web.evaluateJavaScript("document.getElementById('next').getBoundingClientRect().x") { [self] value,error in
+                    guard error == nil, let x=value as? Double, abs(app.toolbarDrag.buttonRects[1].minX-x)<0.5 else { fail("toolbar button region did not follow page number width") }
+                    print("PASS toolbar regions track changing page-number width")
+                    app.web.evaluateJavaScript("document.getElementById('position').textContent = '1 / 2'") { [self] _,error in
+                        guard error == nil else { fail("could not restore page number") }
+                        DispatchQueue.main.asyncAfter(deadline:.now()+0.3) { [self] in testToolbarClicks() }
+                    }
+                }
+            }
+        }
+    }
+    private func clickToolbarButton(_ index: Int) {
+        let rect=app.toolbarDrag.buttonRects[index], root=app.window.contentView!
+        let pos=NSPoint(x:rect.midX,y:root.bounds.height-rect.midY)
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            guard let event=NSEvent.mouseEvent(with:type,location:pos,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:app.window.windowNumber,context:nil,eventNumber:1,clickCount:1,pressure:1) else { fail("cannot create mouse event") }
+            app.window.sendEvent(event)
+        }
+    }
+    private func testToolbarClicks() {
+        clickToolbarButton(1)
+        later { [self] in
+            app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).selected") { [self] value,error in
+                guard error == nil, value as? String == "second" else { fail("next button click: \(String(describing:value))") }
+                clickToolbarButton(0); later { [self] in
+                    app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).selected") { [self] value,error in
+                        guard error == nil, value as? String == "first" else { fail("previous button click: \(String(describing:value))") }
+                        clickToolbarButton(2); later { [self] in
+                            app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).notes.length") { [self] value,error in
+                                guard error == nil, value as? Int == 3 else { fail("new button click: \(String(describing:value))") }
+                                app.web.evaluateJavaScript("window.confirm = () => { window.__deleteAsked = true; return false; }; true") { [self] _,error in
+                                    guard error == nil else { fail("could not set up delete confirmation") }
+                                    clickToolbarButton(3); later { [self] in
+                                        app.web.evaluateJavaScript("[window.__deleteAsked === true, JSON.parse(window.exportNotesJSON()).notes.length]") { [self] value,error in
+                                            guard error == nil, let result=value as? [Any], result.count==2, result[0] as? Bool == true, result[1] as? Int == 3 else { fail("delete button did not open confirmation") }
+                                            clickToolbarButton(4); later { [self] in
+                                                app.web.evaluateJavaScript("document.getElementById('search-panel').hidden") { [self] value,error in
+                                                    guard error == nil, value as? Bool == false else { fail("search button did not open search") }
+                                                    print("PASS native toolbar mouse clicks, search and delete confirmation"); app.restoreInputSource(); exit(0)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    static func startSettingsAccent(_ app: AppDelegate) {
+        running=NativeCodeEditingTest(app)
+        DispatchQueue.main.asyncAfter(deadline: .now()+0.8) { running?.testSettingsAccent() }
+    }
+    private func testSettingsAccent() {
+        app.showSettings()
+        guard let settings=app.settingsController else { fail("settings unavailable") }
+        settings.testSelectSettingsTab(1)
+        for theme in ["orange", "blue", "green"] {
+            guard settings.testSetAppearance(WindowAppearance(theme: theme, opacity: 85, blur: 75)),
+                  settings.testAppearanceControls(theme) else { fail("accent or ticks not updated: \(theme)") }
+            guard settings.testSetSliderValues(opacity: 83, blur: 37),
+                  app.windowAppearance().opacity == 83, app.windowAppearance().blur == 37 else { fail("slider values did not persist continuously: \(theme)") }
+            settings.refresh()
+            guard settings.testAppearanceControls(theme) else { fail("accent not retained on refresh: \(theme)") }
+            print("PASS \(theme) settings accents, tick marks and continuous values")
+        }
+        let capture=ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE"]
+        if let capture, !settings.testSaveSettingsScreenshot(capture) { fail("settings capture failed") }
+        app.restoreInputSource(); exit(0)
     }
     static func startBlockCalculation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()

@@ -10,13 +10,85 @@ final class NotePanel: NSPanel {
 final class DragWebView: WKWebView {
     override var isOpaque: Bool { false }
 }
-final class WindowDragView: NSView {
-    override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
+class WindowDragView: NSView {
+    private var dragStart: NSPoint?
+    private var windowStart: NSPoint?
+    override func mouseDown(with event: NSEvent) {
+        guard let window else { return }
+        dragStart = window.convertPoint(toScreen: event.locationInWindow)
+        windowStart = window.frame.origin
+    }
+    override func mouseDragged(with event: NSEvent) {
+        guard let window, let dragStart, let windowStart else { return }
+        let point = window.convertPoint(toScreen: event.locationInWindow)
+        window.setFrameOrigin(NSPoint(x: windowStart.x + point.x - dragStart.x,
+                                      y: windowStart.y + point.y - dragStart.y))
+    }
+    override func mouseUp(with event: NSEvent) { dragStart = nil; windowStart = nil }
+}
+final class ToolbarDragView: WindowDragView {
+    var buttonRects: [NSRect] = [] { didSet { window?.invalidateCursorRects(for: self) } }
+    var measuredWidth: CGFloat = 0 { didSet { window?.invalidateCursorRects(for: self) } }
+    override var isFlipped: Bool { true }
+    private var buttonExclusions: [NSRect] {
+        if buttonRects.count == 5 && abs(measuredWidth - bounds.width) <= 1 { return buttonRects }
+        return [NSRect(x: 0, y: 10, width: 130, height: max(0, bounds.height - 10)),
+                NSRect(x: max(0, bounds.width - 130), y: 10, width: 130, height: max(0, bounds.height - 10))]
+    }
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let local = convert(point, from: superview)
+        guard bounds.contains(local) else { return nil }
+        // Until WebKit reports its current layout, leave both button groups alone.
+        if buttonExclusions.contains(where: { $0.contains(local) }) { return nil }
+        return self
+    }
+    override func resetCursorRects() {
+        var areas = [bounds]
+        for button in buttonExclusions {
+            areas = areas.flatMap { area -> [NSRect] in
+                let overlap = area.intersection(button)
+                guard !overlap.isNull, !overlap.isEmpty else { return [area] }
+                return [NSRect(x:area.minX, y:area.minY, width:overlap.minX-area.minX, height:area.height),
+                        NSRect(x:overlap.maxX, y:area.minY, width:area.maxX-overlap.maxX, height:area.height),
+                        NSRect(x:overlap.minX, y:area.minY, width:overlap.width, height:overlap.minY-area.minY),
+                        NSRect(x:overlap.minX, y:overlap.maxY, width:overlap.width, height:area.maxY-overlap.maxY)].filter { $0.width > 0 && $0.height > 0 }
+            }
+        }
+        for area in areas { addCursorRect(area, cursor: .arrow) }
+    }
+}
+enum WindowPlacement {
+    struct Anchor {
+        let left: CGFloat, right: CGFloat, bottom: CGFloat, top: CGFloat
+    }
+    static func anchor(_ frame: NSRect, in source: NSRect) -> Anchor {
+        let horizontalSpace = max(0, source.width - frame.width), verticalSpace = max(0, source.height - frame.height)
+        let left = max(0, min(horizontalSpace, frame.minX-source.minX)), right = horizontalSpace-left
+        let bottom = max(0, min(verticalSpace, frame.minY-source.minY)), top = verticalSpace-bottom
+        return Anchor(left: horizontalSpace > 0 ? left / horizontalSpace : 0.5,
+                      right: horizontalSpace > 0 ? right / horizontalSpace : 0.5,
+                      bottom: verticalSpace > 0 ? bottom / verticalSpace : 0.5,
+                      top: verticalSpace > 0 ? top / verticalSpace : 0.5)
+    }
+    static func frame(size: NSSize, anchor: Anchor, in destination: NSRect) -> NSRect {
+        guard destination.width > 0, destination.height > 0 else { return NSRect(origin: destination.origin, size: size) }
+        let width = min(size.width, destination.width), height = min(size.height, destination.height)
+        let xSpace = max(0, destination.width-width), ySpace = max(0, destination.height-height)
+        let xOffset = anchor.right < anchor.left ? 1-anchor.right : anchor.left
+        let yOffset = anchor.top < anchor.bottom ? 1-anchor.top : anchor.bottom
+        return NSRect(x: destination.minX + xSpace * max(0,min(1,xOffset)),
+                      y: destination.minY + ySpace * max(0,min(1,yOffset)), width: width, height: height)
+    }
+    static func onScreen(_ frame: NSRect, from source: NSRect, to destination: NSRect) -> NSRect {
+        guard source.width > 0, source.height > 0, destination.width > 0, destination.height > 0 else { return frame }
+        return self.frame(size: frame.size, anchor: anchor(frame, in: source), in: destination)
+    }
 }
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NotePanel!
     var web: WKWebView!
     var backdrop: NSVisualEffectView!
+    var toolbarDrag: ToolbarDragView!
     var status: NSStatusItem!
     var hotKey: EventHotKeyRef?
     var hotKeyID: UInt32 = 0
@@ -49,11 +121,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private var hideGeneration = 0
     private var hidePending = false
     private var terminationPending = false
+    private var relocatingWindow = false
+    private var automationServer: AutomationServer?
+    private var automationReady = false
+    private var automationBusy = false
+    private var automationQueue: [([String: Any], ([String: Any]) -> Void)] = []
+    private var pendingURLs: [URL] = []
     private let saveDelay: TimeInterval = 0.5
     private let maximumSaveDelay: TimeInterval = 2
     #if INKFLIT_NATIVE_TEST
     var testSuccessfulSaves = 0
     var testSaveTimes: [TimeInterval] = []
+    var testAutomationCallbacks: [URL] = []
     #endif
     var requireExistingStorage = false
 
@@ -112,10 +191,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         backdrop = NSVisualEffectView(frame: container.bounds); backdrop.blendingMode = .behindWindow; backdrop.material = .underWindowBackground; backdrop.state = .active
         backdrop.autoresizingMask = [.width, .height]; web.frame = container.bounds; web.autoresizingMask = [.width, .height]
         container.addSubview(backdrop); container.addSubview(web)
-        let drag = WindowDragView(frame: NSRect(x: 0, y: container.bounds.height - 10, width: container.bounds.width, height: 10))
-        drag.autoresizingMask = [.width, .minYMargin]; container.addSubview(drag)
-        let headerDrag = WindowDragView(frame: NSRect(x: 130, y: container.bounds.height - 46, width: max(0, container.bounds.width - 230), height: 36))
-        headerDrag.autoresizingMask = [.width, .minYMargin]; container.addSubview(headerDrag)
+        toolbarDrag = ToolbarDragView(frame: NSRect(x: 0, y: container.bounds.height - 46, width: container.bounds.width, height: 46))
+        toolbarDrag.autoresizingMask = [.width, .minYMargin]; container.addSubview(toolbarDrag)
         window.contentView = container; window.delegate = self; window.center()
         applyWindowAppearance()
         activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -139,6 +216,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             let menu = NSMenu()
             menu.addItem(withTitle: L("打开 Inkflit"), action: #selector(showWindow), keyEquivalent: "")
+            menu.addItem(withTitle: L("搜索笔记"), action: #selector(showSearch), keyEquivalent: "")
             hotKeyItem = menu.addItem(withTitle: L("设置…"), action: #selector(showSettings), keyEquivalent: ",")
             menu.addItem(.separator()); menu.addItem(withTitle: L("退出 Inkflit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             status.menu = menu
@@ -332,7 +410,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             if let edit = menu.items[1].submenu { for (i, key) in ["剪切", "复制", "粘贴", "全选"].enumerated() where i < edit.items.count { edit.items[i].title = L(key) } }
             menu.items[2].title = L("窗口"); menu.items[2].submenu?.title = L("窗口"); menu.items[2].submenu?.items.first?.title = L("关闭窗口")
         }
-        if let menu = status?.menu, menu.items.count >= 4 { menu.items[0].title = L("打开 Inkflit"); menu.items[1].title = L("设置…"); menu.items[3].title = L("退出 Inkflit") }
+        if let menu = status?.menu, menu.items.count >= 5 { menu.items[0].title = L("打开 Inkflit"); menu.items[1].title = L("搜索笔记"); menu.items[2].title = L("设置…"); menu.items[4].title = L("退出 Inkflit") }
         if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
     }
     @objc func showSettings() {
@@ -396,7 +474,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if reopenLanguageSettings { settingsController?.selectLanguageTab(); reopenLanguageSettings = false }
         settingsController?.show()
     }
-    @objc func showWindow() { hideGeneration += 1; hidePending = false; NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil) }
+    @objc func showWindow() {
+        hideGeneration += 1; hidePending = false
+        if !window.isVisible, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
+            let source = window.screen?.visibleFrame ?? target.visibleFrame
+            let anchor = savedWindowAnchor(source: source, size: window.frame.size) ?? WindowPlacement.anchor(window.frame, in: source)
+            let frame = WindowPlacement.frame(size: window.frame.size, anchor: anchor, in: target.visibleFrame)
+            if frame != window.frame { relocatingWindow = true; window.setFrame(frame, display: false); relocatingWindow = false }
+        }
+        NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil)
+    }
+    @objc func showSearch() { showWindow(); web.evaluateJavaScript("window.openNoteSearch?.()", completionHandler: nil) }
     func toggleWindow() { if hidePending { showWindow() } else if window.isVisible && window.isKeyWindow { hideWindow() } else { showWindow() } }
     func inputSourceID(_ source: TISInputSource) -> String? {
         guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
@@ -420,8 +508,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func windowDidBecomeKey(_ notification: Notification) { useVimInputSource() }
     func windowDidResignKey(_ notification: Notification) { restoreInputSource() }
+    private func savedWindowAnchor(source: NSRect, size: NSSize) -> WindowPlacement.Anchor? {
+        guard let value = UserDefaults.standard.dictionary(forKey: "windowAnchor") else { return nil }
+        let version = value["version"] as? Int ?? 1
+        if version >= 3 {
+            guard let left=value["left"] as? Double, let right=value["right"] as? Double,
+                  let bottom=value["bottom"] as? Double, let top=value["top"] as? Double,
+                  [left,right,bottom,top].allSatisfy({ $0.isFinite && (0...1).contains($0) }),
+                  abs(left+right-1)<0.001, abs(bottom+top-1)<0.001 else { return nil }
+            return WindowPlacement.Anchor(left:left,right:right,bottom:bottom,top:top)
+        }
+        guard let fromRight=value["right"] as? Bool, let fromTop=value["top"] as? Bool,
+              let horizontal=value["horizontal"] as? Double, let vertical=value["vertical"] as? Double,
+              horizontal.isFinite, vertical.isFinite, horizontal >= 0, vertical >= 0 else { return nil }
+        let xSpace=max(0,source.width-size.width), ySpace=max(0,source.height-size.height)
+        let xDistance=version == 1 ? horizontal : horizontal*source.width
+        let yDistance=version == 1 ? vertical : vertical*source.height
+        let xRatio=xSpace > 0 ? min(1,xDistance/xSpace) : 0.5
+        let yRatio=ySpace > 0 ? min(1,yDistance/ySpace) : 0.5
+        let anchor=WindowPlacement.Anchor(left:fromRight ? 1-xRatio : xRatio, right:fromRight ? xRatio : 1-xRatio,
+                                          bottom:fromTop ? 1-yRatio : yRatio, top:fromTop ? yRatio : 1-yRatio)
+        persistWindowAnchor(anchor)
+        return anchor
+    }
+    private func persistWindowAnchor(_ anchor: WindowPlacement.Anchor) {
+        UserDefaults.standard.set(["version": 3, "left": anchor.left, "right": anchor.right, "bottom": anchor.bottom, "top": anchor.top], forKey: "windowAnchor")
+    }
+    private func rememberWindowAnchor() {
+        guard !relocatingWindow, window.isVisible, let screen = window.screen else { return }
+        let anchor = WindowPlacement.anchor(window.frame, in: screen.visibleFrame)
+        persistWindowAnchor(anchor)
+    }
+    func windowDidMove(_ notification: Notification) { rememberWindowAnchor() }
+    func windowDidResize(_ notification: Notification) { rememberWindowAnchor() }
     func applicationWillTerminate(_ notification: Notification) {
         if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
+        automationServer?.stop()
         restoreInputSource()
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -475,7 +597,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             } else { web.evaluateJavaScript("window.loadNotesBase64(null)", completionHandler: nil) }
             if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
         } catch { showError(L("无法读取笔记：") + error.localizedDescription) }
+        web.evaluateJavaScript("window.exportNotesJSON?.()") { [weak self] value, error in
+            guard let self else { return }
+            guard error == nil, value is String else { return }
+            self.automationReady = true
+            if !self.isolatedTest || ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_TEST"] == "1" {
+                let server = AutomationServer { [weak self] request, completion in
+                    guard let self else { completion(["error":"Inkflit is unavailable"]); return }
+                    self.enqueueAutomation(request, completion: completion)
+                }
+                do { try server.start(); self.automationServer = server }
+                catch { NSLog("Inkflit automation unavailable: %@", error.localizedDescription) }
+            }
+            let urls=self.pendingURLs; self.pendingURLs.removeAll(); urls.forEach { self.handleAutomationURL($0) }
+            self.runNextAutomation()
+        }
         #if INKFLIT_NATIVE_TEST
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_EDIT_TEST"] == "1" {
+            NativeCodeEditingTest.startAutomationEdit(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_UI_TEST"] == "1" {
+            NativeCodeEditingTest.startAutomationUI(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_BACKDROP"] == "1" {
             NativeCodeEditingTest.installBackdrop(self)
         }
@@ -509,7 +652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_PLAIN_TEXT_TEST"] == "1" {
             NativeCodeEditingTest.startPlainText(self)
         }
-        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] != "1" {
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_FILE_STORAGE_TEST"] == "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_STREAM_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_TEST"] != "1" && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_TEST"] != "1" {
             NativeCodeEditingTest.startFileStorage(self)
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOSAVE_TEST"] == "1" {
@@ -523,6 +666,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_ONBOARDING_COLLISION_TEST"] == "1" {
             NativeCodeEditingTest.testOnboardingCollision(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_PLACEMENT_TEST"] == "1" {
+            NativeCodeEditingTest.startPlacement(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TOOLBAR_CURSOR_TEST"] == "1" {
+            NativeCodeEditingTest.startToolbarCursor(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_REAL_DRAG_TEST"] == "1" {
+            NativeCodeEditingTest.startRealToolbarDrag(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_HEADER_DRAG_TEST"] == "1" {
+            NativeCodeEditingTest.startHeaderDrag(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_ACCENT_TEST"] == "1" {
+            NativeCodeEditingTest.startSettingsAccent(self)
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
             NativeCodeEditingTest.startBlockCalculation(self)
@@ -540,6 +698,92 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if action.navigationType == .linkActivated { if let url = action.request.url, ["https", "http"].contains(url.scheme?.lowercased() ?? "") { NSWorkspace.shared.open(url) }; decisionHandler(.cancel); return }; decisionHandler(.allow)
+    }
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme?.lowercased() == "inkflit" {
+            if automationReady { handleAutomationURL(url) } else { pendingURLs.append(url) }
+        }
+    }
+    private func enqueueAutomation(_ request: [String: Any], completion: @escaping ([String: Any]) -> Void) {
+        guard automationQueue.count < 100 else { completion(["error":"Too many pending requests"]); return }
+        automationQueue.append((request,completion)); runNextAutomation()
+    }
+    private func runNextAutomation() {
+        guard automationReady, !automationBusy, !automationQueue.isEmpty else { return }
+        automationBusy=true
+        let (request,completion)=automationQueue.removeFirst()
+        func finish(_ reply: [String:Any]) { completion(reply); self.automationBusy=false; self.runNextAutomation() }
+        func execute() {
+            self.web.callAsyncJavaScript("try { return {value: await window.inkflitNotesOperation(request)}; } catch (error) { return {error: String(error.message || error)}; }", arguments:["request":request], in:nil, in:.page) { result in
+                switch result {
+                case .success(let value):
+                    if let object=value as? [String:Any], let message=object["error"] as? String { finish(["error":message]) }
+                    else if let object=value as? [String:Any], let result=object["value"] as? [String:Any] { finish(["result":result]) }
+                    else { finish(["error":"Invalid response from editor"]) }
+                case .failure(let error): finish(["error":error.localizedDescription])
+                }
+            }
+        }
+        if ["create","append","replace","delete"].contains(request["action"] as? String ?? "") {
+            requestFlush { ok,message in
+                guard ok else { finish(["error":message ?? "Save failed"]); return }
+                if self.usesNoteFiles && self.requireExistingStorage {
+                    do {
+                        guard let expected=self.loadedSnapshot, try NoteFiles.read(self.storageURL.deletingLastPathComponent()) == expected else {
+                            finish(["error":L("笔记文件已在外部更改，请先保存当前内容并重新启动应用。")]); return
+                        }
+                    } catch { finish(["error":L("笔记文件不存在或位置不可用，请恢复文件后重试。")]); return }
+                }
+                execute()
+            }
+        } else { execute() }
+    }
+    private func handleAutomationURL(_ url: URL) {
+        guard let components=URLComponents(url:url,resolvingAgainstBaseURL:false), components.scheme?.lowercased()=="inkflit" else { return }
+        let host=(components.host ?? "").lowercased(), path=components.path.split(separator:"/").map(String.init)
+        let action=(host == "note" || host == "notes") ? (path.count == 1 ? path[0].lowercased() : "") : (path.isEmpty ? host : "")
+        func invalidLink() { showWindow(); showError(L("无效的备忘录链接")) }
+        guard ["list","get","search","create","append","replace","delete"].contains(action) else { invalidLink(); return }
+        let items=components.queryItems ?? []
+        guard Set(items.map(\.name)).count == items.count, items.allSatisfy({ ["index","id","content","query","x-success","x-error"].contains($0.name) }) else { invalidLink(); return }
+        var callbacks: [String:URL] = [:]
+        var request:[String:Any] = ["action":action]
+        for item in items {
+            guard let value=item.value else { invalidLink(); return }
+            if item.name == "x-success" || item.name == "x-error" {
+                guard let callback=URL(string:value), let scheme=callback.scheme?.lowercased(), !["http","https","file","inkflit"].contains(scheme) else { invalidLink(); return }
+                callbacks[item.name]=callback
+            } else if item.name == "index" { guard let index=Int(value), index>0 else { invalidLink(); return };request["index"]=index }
+            else { request[item.name]=value }
+        }
+        enqueueAutomation(request) { [weak self] reply in
+            guard let self else { return }
+            if let error=reply["error"] as? String {
+                if let callback=callbacks["x-error"], self.openAutomationCallback(callback,payload:["error":error]) { return }
+                self.showWindow();self.showError(error);return
+            }
+            if let callback=callbacks["x-success"], let result=reply["result"] as? [String:Any] {
+                if !self.openAutomationCallback(callback,payload:result) { self.showWindow(); self.showError(L("操作已完成，但无法返回结果。")) }
+                return
+            }
+            self.showWindow()
+            if action == "list" || action == "search" {
+                let query=action == "search" ? (request["query"] as? String ?? "") : ""
+                self.web.callAsyncJavaScript("window.openNoteSearch(query)",arguments:["query":query],in:nil,in:.page,completionHandler:nil)
+            } else if let result=reply["result"] as? [String:Any], let note=result["note"] as? [String:Any], let id=note["id"] as? String {
+                self.web.callAsyncJavaScript("window.inkflitSelectNote(id)",arguments:["id":id],in:nil,in:.page,completionHandler:nil)
+            }
+        }
+    }
+    private func openAutomationCallback(_ url: URL, payload: [String:Any]) -> Bool {
+        guard let data=try? JSONSerialization.data(withJSONObject:payload), data.count <= 48_000,
+              let text=String(data:data,encoding:.utf8), var components=URLComponents(url:url,resolvingAgainstBaseURL:false) else { return false }
+        var items=components.queryItems ?? []; items.append(URLQueryItem(name:"result",value:text));components.queryItems=items
+        guard let result=components.url else { return false }
+        #if INKFLIT_NATIVE_TEST
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_AUTOMATION_UI_TEST"] == "1" { testAutomationCallbacks.append(result); return true }
+        #endif
+        return NSWorkspace.shared.open(result)
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
         let alert = NSAlert(); alert.messageText = message; alert.addButton(withTitle: L("删除")); alert.addButton(withTitle: L("取消"))
@@ -644,6 +888,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
+        if type == "toolbarRegions", let width = body["width"] as? NSNumber, let regions = body["rects"] as? [[String: NSNumber]], regions.count == 5 {
+            let rects = regions.compactMap { region -> NSRect? in
+                guard let x=region["x"]?.doubleValue, let y=region["y"]?.doubleValue,
+                      let w=region["width"]?.doubleValue, let h=region["height"]?.doubleValue,
+                      [x,y,w,h].allSatisfy(\.isFinite), w > 0, h > 0 else { return nil }
+                return NSRect(x:x,y:y,width:w,height:h)
+            }
+            if rects.count == 5 && width.doubleValue.isFinite && width.doubleValue > 0 {
+                toolbarDrag.buttonRects = rects; toolbarDrag.measuredWidth = width.doubleValue
+            }
+            return
+        }
         if type == "hide" { hideWindow(); return }
         if type == "copyCode", let content = body["content"] as? String {
             NSPasteboard.general.clearContents()
@@ -662,6 +918,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if let data = try? JSONSerialization.data(withJSONObject: [message]), let text = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }
     }
 }
+if CommandLine.arguments.dropFirst().contains("--mcp") { InkflitMCP.run(); exit(0) }
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate

@@ -6,7 +6,7 @@ test_dir=$(mktemp -d "${TMPDIR%/}/inkflit-native-test.XXXXXX")
 test_app="$test_dir/InkflitNativeTest.app"
 ditto build/Inkflit.app "$test_app"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier local.seven.quicknote.nativetest.$(basename "$test_dir" | tr -cd '[:alnum:]')" "$test_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Quicknote" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 codesign --force --sign - --timestamp=none "$test_app"
 for indentation in spaces2 spaces4 tabs; do
   python3 - "$test_dir/notes.json" <<'PY'
@@ -16,7 +16,7 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
 PY
   appearance=dark
   if [[ "$indentation" == spaces2 ]]; then appearance=light; fi
-  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_NATIVE_TEST=1 INKFLIT_NATIVE_INDENT="$indentation" INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_NATIVE_TEST=1 INKFLIT_NATIVE_INDENT="$indentation" INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result = subprocess.run([sys.argv[1]], timeout=30)
@@ -33,7 +33,7 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':[{'id':'test','content':content,'updated':'2026-01-01'}],'selected':'test'}, f)
 PY
 for appearance in light dark; do
-  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_TYPOGRAPHY_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_TYPOGRAPHY_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=15)
@@ -49,7 +49,7 @@ content='// body note\n# One\n## Two\n### Three\n#### Four\n##### Five\n###### S
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':[{'id':'test','content':content,'updated':'2026-01-01'}],'selected':'test'}, f)
 PY
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_TYPOGRAPHY_VIM_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_TYPOGRAPHY_VIM_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=35)
@@ -63,7 +63,7 @@ mkdir -p "$test_dir/file-storage/notes" "$test_dir/file-storage/backups" "$test_
 printf '%s' first > "$test_dir/file-storage/notes/Zmlyc3Q.md"
 printf '%s' second > "$test_dir/file-storage/notes/c2Vjb25k.md"
 printf '%s' '{"version":1,"notes":[{"id":"first","updated":"1"},{"id":"second","updated":"2"}],"selected":"first"}' > "$test_dir/file-storage/index.json"
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/file-storage/index.json" INKFLIT_FILE_STORAGE_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/file-storage/index.json" INKFLIT_FILE_STORAGE_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=20)
@@ -79,7 +79,7 @@ import json, sys
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':[{'id':'test','content':'// body note','updated':'2026-01-01'}],'selected':'test'}, f)
 PY
-    QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_VIM_TEST=1 INKFLIT_TEST_UI_THEME="$theme" INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+    QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_VIM_TEST=1 INKFLIT_TEST_UI_THEME="$theme" INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=15)
@@ -97,7 +97,7 @@ with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':[{'id':'test','content':content,'updated':'2026-01-01'}],'selected':'test'}, f)
 PY
 for appearance in light dark; do
-  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_LAYOUT_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_LAYOUT_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=15)
@@ -107,7 +107,7 @@ if result.returncode:
     sys.exit(result.returncode)
 PY
 done
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_GROUP_VIM_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_COMMENT_GROUP_VIM_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=15)
@@ -122,7 +122,7 @@ notes=[{'id':'nav','content':':::quicknote sum\n12\n\n:::end\nplain','updated':'
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':notes,'selected':'nav'},f)
 PY
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_BLOCK_BOUNDARY_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_BLOCK_BOUNDARY_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=20)
@@ -137,7 +137,7 @@ notes=[{'id':'feature','content':':::quicknote sum\n12\n:::end','updated':'1'},{
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':notes,'selected':'feature'},f)
 PY
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_PLAIN_TEXT_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_PLAIN_TEXT_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]], timeout=20)
@@ -152,7 +152,7 @@ for scenario in AUTOSAVE AUTOSAVE_STREAM; do
   printf '%s' one > "$data_dir/notes/Zmlyc3Q.md"
   printf '%s' two > "$data_dir/notes/c2Vjb25k.md"
   printf '%s' '{"version":1,"notes":[{"id":"first","updated":"1"},{"id":"second","updated":"2"}],"selected":"first"}' > "$data_dir/index.json"
-  env QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 "INKFLIT_${scenario}_TEST=1" python3 - "$test_app/Contents/MacOS/Quicknote" "$data_dir" "$scenario" <<'PY'
+  env QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 "INKFLIT_${scenario}_TEST=1" python3 - "$test_app/Contents/MacOS/Inkflit" "$data_dir" "$scenario" <<'PY'
 import pathlib, subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=25)
@@ -170,7 +170,7 @@ done
 for locale in en-US zh-CN zh-TW ja-JP fr-FR; do
   data_dir="$test_dir/onboarding-$locale"
   mkdir -p "$data_dir"
-  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_LOCALE_ONLY=1 INKFLIT_TEST_SYSTEM_LANGUAGE="$locale" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_LOCALE_ONLY=1 INKFLIT_TEST_SYSTEM_LANGUAGE="$locale" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=15)
@@ -182,7 +182,7 @@ PY
 done
 data_dir="$test_dir/onboarding-regeneration"
 mkdir -p "$data_dir"
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_TEST_SYSTEM_LANGUAGE=ja-JP INKFLIT_TEST_UI_LANGUAGE=en python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$data_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_TEST_SYSTEM_LANGUAGE=ja-JP INKFLIT_TEST_UI_LANGUAGE=en python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=30)
@@ -195,7 +195,7 @@ python3 - "$test_dir/onboarding-en-US/index.json" "$test_dir/onboarding-original
 import json,sys
 index=json.load(open(sys.argv[1]));json.dump([note['id'] for note in index['notes']],open(sys.argv[2],'w'))
 PY
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/onboarding-en-US/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_LOCALE_ONLY=1 INKFLIT_TEST_SYSTEM_LANGUAGE=ja-JP INKFLIT_TEST_EXPECT_LANGUAGE=en python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/onboarding-en-US/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_LOCALE_ONLY=1 INKFLIT_TEST_SYSTEM_LANGUAGE=ja-JP INKFLIT_TEST_EXPECT_LANGUAGE=en python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess, sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=15)
@@ -213,7 +213,7 @@ PY
 collision_dir="$test_dir/onboarding-conflict"
 mkdir -p "$collision_dir/notes"
 printf '%s' 'existing data' > "$collision_dir/notes/existing.md"
-QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$collision_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_COLLISION_TEST=1 python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$collision_dir/index.json" INKFLIT_FILE_STORAGE_TEST=1 INKFLIT_ONBOARDING_TEST=1 INKFLIT_ONBOARDING_COLLISION_TEST=1 python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess,sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=15)
@@ -229,7 +229,7 @@ content='# Title\nShortcut ⌘[ / ⌘]\n**粗體** and [link](https://example.co
 notes=[{'id':'first','content':content,'updated':'1'},{'id':'second','content':'second','updated':'2'},{'id':'third','content':'third','updated':'3'}]
 with open(sys.argv[1],'w',encoding='utf8') as f:json.dump({'notes':notes,'selected':'first'},f,ensure_ascii=False)
 PY
-  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_READING_NAV_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Quicknote" <<'PY'
+  QUICKNOTE_ISOLATED_TEST=1 QUICKNOTE_DATA_PATH="$test_dir/notes.json" INKFLIT_READING_NAV_TEST=1 INKFLIT_TEST_APPEARANCE="$appearance" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess,sys
 try:
     result=subprocess.run([sys.argv[1]],timeout=20)

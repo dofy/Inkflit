@@ -1006,5 +1006,18 @@
     "zh-Hans": "关闭后可直接输入，Esc 收起窗口。",
     "zh-Hant": "關閉後可直接輸入，Esc 收起視窗。",
     "ja": "オフの場合は直接入力できます。Esc でウインドウを隠します。"
-  }
+  },
+  "100% 为不透明；按住 Option 以 5% 为步长调整滑块。": {
+    "en": "100% is opaque; hold Option to adjust sliders in 5% steps.",
+    "zh-Hans": "100% 为不透明；按住 Option 以 5% 为步长调整滑块。",
+    "zh-Hant": "100% 為不透明；按住 Option 以 5% 為間距調整滑桿。",
+    "ja": "100% は不透明です。Option を押すとスライダーが 5% 刻みになります。"
+  },
+  "搜索笔记": { "en": "Search Notes", "zh-Hans": "搜索笔记", "zh-Hant": "搜尋筆記", "ja": "ノートを検索" },
+  "搜索所有笔记": { "en": "Search all notes", "zh-Hans": "搜索所有笔记", "zh-Hant": "搜尋所有筆記", "ja": "すべてのノートを検索" },
+  "没有匹配的笔记": { "en": "No matching notes", "zh-Hans": "没有匹配的笔记", "zh-Hant": "沒有符合的筆記", "ja": "一致するノートはありません" },
+  "输入关键词搜索笔记": { "en": "Type to search notes", "zh-Hans": "输入关键词搜索笔记", "zh-Hant": "輸入關鍵字搜尋筆記", "ja": "キーワードを入力" },
+  "空白笔记": { "en": "Empty note", "zh-Hans": "空白笔记", "zh-Hant": "空白筆記", "ja": "空のノート" },
+  "无效的备忘录链接": { "en": "Invalid note link", "zh-Hans": "无效的备忘录链接", "zh-Hant": "無效的筆記連結", "ja": "無効なノートリンク" },
+  "操作已完成，但无法返回结果。": { "en": "The operation completed, but its result could not be returned.", "zh-Hans": "操作已完成，但无法返回结果。", "zh-Hant": "操作已完成，但無法回傳結果。", "ja": "操作は完了しましたが、結果を返せませんでした。" }
 }

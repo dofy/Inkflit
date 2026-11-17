@@ -58,6 +58,52 @@ final class OrangeSwitch: NSButton {
     }
 }
 
+/// Keep native slider interaction and accessibility while tinting its track.
+final class AccentSliderCell: NSSliderCell {
+    var accentColor: NSColor = .systemOrange
+    override func drawBar(inside rect: NSRect, flipped: Bool) {
+        let knob = knobRect(flipped: flipped)
+        let track = NSRect(x: rect.minX + knob.width / 2, y: rect.midY - 2,
+                           width: max(0, rect.width - knob.width), height: 4)
+        NSColor.quaternaryLabelColor.setFill()
+        NSBezierPath(roundedRect: track, xRadius: 2, yRadius: 2).fill()
+        let fraction = maxValue > minValue ? max(0, min(1, (doubleValue - minValue) / (maxValue - minValue))) : 0
+        let active = NSRect(x: track.minX, y: track.minY, width: track.width * fraction, height: track.height)
+        if active.width > 0 { accentColor.setFill(); NSBezierPath(roundedRect: active, xRadius: 2, yRadius: 2).fill() }
+    }
+}
+
+final class AccentSlider: NSSlider {
+    private(set) var optionAtMouseDown = false
+    override func mouseDown(with event: NSEvent) {
+        optionAtMouseDown = event.modifierFlags.contains(.option)
+        defer { optionAtMouseDown = false }
+        // AppKit treats Option-click as a jump to an endpoint. Keep its native
+        // tracking while reserving Option for five-percent snapping instead.
+        if optionAtMouseDown,
+           let adjusted = NSEvent.mouseEvent(with: .leftMouseDown, location: event.locationInWindow,
+                                             modifierFlags: event.modifierFlags.subtracting(.option),
+                                             timestamp: event.timestamp, windowNumber: event.windowNumber,
+                                             context: nil, eventNumber: event.eventNumber,
+                                             clickCount: event.clickCount, pressure: event.pressure) {
+            super.mouseDown(with: adjusted)
+        } else { super.mouseDown(with: event) }
+    }
+}
+
+final class SliderTicks: NSView {
+    var accentColor: NSColor = .systemOrange { didSet { needsDisplay = true } }
+    override var intrinsicContentSize: NSSize { NSSize(width: 136, height: 8) }
+    override func draw(_ dirtyRect: NSRect) {
+        accentColor.withAlphaComponent(0.65).setFill()
+        let left: CGFloat = 10, width = max(0, bounds.width - 20)
+        for index in 0...10 {
+            let x = left + width * CGFloat(index) / 10
+            NSBezierPath(roundedRect: NSRect(x: x - 0.5, y: 2, width: 1, height: 4), xRadius: 0.5, yRadius: 0.5).fill()
+        }
+    }
+}
+
 /// A native keyboard shortcut field. Recording stays focused until a valid
 /// shortcut is accepted or the user presses Escape.
 final class ShortcutField: NSButton {
@@ -138,12 +184,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
-    private let opacitySlider = NSSlider(value: 100, minValue: 50, maxValue: 100, target: nil, action: nil)
-    private let blurSlider = NSSlider(value: 0, minValue: 0, maxValue: 100, target: nil, action: nil)
+    private let opacitySlider = AccentSlider(value: 100, minValue: 50, maxValue: 100, target: nil, action: nil)
+    private let blurSlider = AccentSlider(value: 0, minValue: 0, maxValue: 100, target: nil, action: nil)
     private let opacityValue = NSTextField(labelWithString: "100%")
     private let blurValue = NSTextField(labelWithString: "0%")
     private let tabs = NSTabView()
     private var symbols: [NSImageView] = []
+    private var sliderTicks: [SliderTicks] = []
     private let getAppearance: () -> WindowAppearance
     private let setAppearance: (WindowAppearance) -> Void
     private let getTheme: () -> String
@@ -223,11 +270,16 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         return page
     }
     private func sliderControls(_ slider: NSSlider, value: NSTextField, label: String) -> NSView {
-        slider.target = self; slider.action = #selector(appearanceChanged); slider.isContinuous = true; slider.setAccessibilityLabel(label)
+        let minValue = slider.minValue, maxValue = slider.maxValue, current = slider.doubleValue
+        let cell = AccentSliderCell(); cell.minValue = minValue; cell.maxValue = maxValue; cell.doubleValue = current
+        slider.cell = cell; slider.numberOfTickMarks = 11; slider.tickMarkPosition = .above; slider.allowsTickMarkValuesOnly = false
+        slider.target = self; slider.action = #selector(appearanceChanged(_:)); slider.isContinuous = true; slider.setAccessibilityLabel(label)
         slider.widthAnchor.constraint(equalToConstant: 136).isActive = true
+        let ticks = SliderTicks(); ticks.setAccessibilityElement(false); sliderTicks.append(ticks)
+        let sliderColumn = NSStackView(views: [ticks, slider]); sliderColumn.orientation = .vertical; sliderColumn.alignment = .leading; sliderColumn.spacing = 0
         value.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular); value.textColor = .secondaryLabelColor
         value.widthAnchor.constraint(equalToConstant: 36).isActive = true
-        let controls = NSStackView(views: [slider, value]); controls.orientation = .horizontal; controls.alignment = .centerY; controls.spacing = 8
+        let controls = NSStackView(views: [sliderColumn, value]); controls.orientation = .horizontal; controls.alignment = .centerY; controls.spacing = 8
         return controls
     }
     private func buildUI(_ window: SettingsWindow) {
@@ -284,9 +336,9 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let themeGroup = NSStackView(views: [themeSection, previewRow]); themeGroup.orientation = .vertical; themeGroup.alignment = .leading; themeGroup.spacing = 8
         themeSection.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true; previewRow.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true
         for theme in UIThemes.all { uiThemePicker.addItem(withTitle: L(theme.title)); uiThemePicker.lastItem?.representedObject = theme.id }
-        uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged); uiThemePicker.setAccessibilityLabel(L("界面主色"))
+        uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged(_:)); uiThemePicker.setAccessibilityLabel(L("界面主色"))
         let uiThemeSection = section(L("界面主色"), icon: "paintbrush", detail: L("设置笔记窗口的主色调"), controls: uiThemePicker, message: NSTextField(wrappingLabelWithString: L("更改后立即应用。")))
-        let opacitySection = section(L("窗口不透明度"), icon: "circle.lefthalf.filled", detail: L("调整笔记背景的透明程度"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("窗口不透明度")), message: NSTextField(wrappingLabelWithString: L("100% 为不透明。")))
+        let opacitySection = section(L("窗口不透明度"), icon: "circle.lefthalf.filled", detail: L("调整笔记背景的透明程度"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("窗口不透明度")), message: NSTextField(wrappingLabelWithString: L("100% 为不透明；按住 Option 以 5% 为步长调整滑块。")))
         let blurSection = section(L("背景模糊"), icon: "drop.halffull", detail: L("柔化窗口后方内容"), controls: sliderControls(blurSlider, value: blurValue, label: L("背景模糊")), message: NSTextField(wrappingLabelWithString: L("降低不透明度后可看到模糊效果。")))
         tabs.tabViewType = .topTabsBezelBorder
         for (title, value) in [(L("跟随系统"), "system"), ("English", "en"), ("简体中文", "zh-Hans"), ("繁體中文", "zh-Hant"), ("日本語", "ja")] {
@@ -326,7 +378,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) { uiThemePicker.selectItem(at: index) }
         opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
-        let accent = UIThemes.accent(appearance.theme); symbols.forEach { $0.contentTintColor = accent }; loginSwitch.accentColor = accent
+        applySettingsAccent(appearance.theme)
         let storagePath = URL(fileURLWithPath: getStorage()).deletingLastPathComponent().path
         storageMessage.stringValue = storagePath; storageMessage.toolTip = storagePath
         let defaults = UserDefaults.standard, limit = defaults.object(forKey: "backupVersionLimit") == nil ? 20 : defaults.integer(forKey: "backupVersionLimit")
@@ -364,12 +416,29 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         guard let value = indentation.selectedItem?.representedObject as? String else { return }
         setIndentation(value)
     }
-    @objc private func appearanceChanged() {
+    static func sliderValue(_ value: Int, optionPressed: Bool) -> Int {
+        optionPressed ? Int((Double(value) / 5).rounded()) * 5 : value
+    }
+    @objc private func appearanceChanged(_ sender: Any?) {
         guard let theme = uiThemePicker.selectedItem?.representedObject as? String else { return }
+        if let slider = sender as? NSSlider, slider === opacitySlider || slider === blurSlider {
+            let option = (slider as? AccentSlider)?.optionAtMouseDown == true || (NSApp.currentEvent?.modifierFlags ?? []).contains(.option) || NSEvent.modifierFlags.contains(.option)
+            slider.integerValue = Self.sliderValue(slider.integerValue, optionPressed: option)
+        }
         let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue)
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
-        let accent = UIThemes.accent(theme); symbols.forEach { $0.contentTintColor = accent }; loginSwitch.accentColor = accent
+        applySettingsAccent(theme)
         setAppearance(appearance)
+    }
+    private func applySettingsAccent(_ theme: String) {
+        let accent = UIThemes.accent(theme)
+        symbols.forEach { $0.contentTintColor = accent }
+        loginSwitch.accentColor = accent; vimSwitch.accentColor = accent
+        sliderTicks.forEach { $0.accentColor = accent }
+        for slider in [opacitySlider, blurSlider] {
+            (slider.cell as? AccentSliderCell)?.accentColor = accent
+            slider.needsDisplay = true
+        }
     }
     private func renderThemePreview(_ id: String) {
         guard let theme = CodeThemes.all.first(where: { $0.id == CodeThemes.validID(id) }) else { return }
@@ -404,7 +473,54 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     func testSetAppearance(_ appearance: WindowAppearance) -> Bool {
         guard let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) else { return false }
         uiThemePicker.selectItem(at: index); opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
-        return NSApp.sendAction(#selector(appearanceChanged), to: self, from: uiThemePicker)
+        return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: uiThemePicker)
+    }
+    func testAppearanceControls(_ theme: String) -> Bool {
+        let accent = UIThemes.accent(theme)
+        guard loginSwitch.accentColor == accent, vimSwitch.accentColor == accent,
+              symbols.allSatisfy({ $0.contentTintColor == accent }), sliderTicks.count == 2,
+              sliderTicks.allSatisfy({ $0.accentColor == accent }),
+              let page = tabs.tabViewItem(at: 1).view else { return false }
+        page.layoutSubtreeIfNeeded()
+        return [opacitySlider, blurSlider].allSatisfy { slider in
+            guard let cell = slider.cell as? AccentSliderCell else { return false }
+            return cell.accentColor == accent && slider.numberOfTickMarks == 11 && slider.tickMarkPosition == .above && !slider.allowsTickMarkValuesOnly && page.bounds.insetBy(dx: -1, dy: -1).contains(slider.convert(slider.bounds, to: page))
+        }
+    }
+    func testClickSlider(blur: Bool, option: Bool) -> Int? {
+        guard let window else { return nil }
+        let slider = blur ? blurSlider : opacitySlider
+        let point = slider.convert(NSPoint(x: slider.bounds.width * 0.66, y: slider.bounds.midY), to: nil)
+        let flags: NSEvent.ModifierFlags = option ? .option : []
+        func event(_ type: NSEvent.EventType) -> NSEvent? {
+            NSEvent.mouseEvent(with: type, location: point, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)
+        }
+        guard let down=event(.leftMouseDown), let up=event(.leftMouseUp) else { return nil }
+        NSApp.postEvent(up, atStart: false); NSApp.sendEvent(down)
+        return slider.integerValue
+    }
+    func testDragSlider(blur: Bool, option: Bool) -> Int? {
+        guard let window else { return nil }
+        let slider = blur ? blurSlider : opacitySlider
+        let start = slider.convert(NSPoint(x: slider.bounds.width * 0.3, y: slider.bounds.midY), to: nil)
+        let end = slider.convert(NSPoint(x: slider.bounds.width * 0.66, y: slider.bounds.midY), to: nil)
+        let flags: NSEvent.ModifierFlags = option ? .option : []
+        func event(_ type: NSEvent.EventType, _ point: NSPoint) -> NSEvent? {
+            NSEvent.mouseEvent(with: type, location: point, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)
+        }
+        guard let down=event(.leftMouseDown,start), let drag=event(.leftMouseDragged,end), let up=event(.leftMouseUp,end) else { return nil }
+        NSApp.postEvent(drag, atStart: false); NSApp.postEvent(up, atStart: false); NSApp.sendEvent(down)
+        return slider.integerValue
+    }
+    func testSetSliderValues(opacity: Int, blur: Int) -> Bool {
+        opacitySlider.integerValue = opacity; blurSlider.integerValue = blur
+        return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: opacitySlider)
+    }
+    func testSaveSettingsScreenshot(_ path: String) -> Bool {
+        guard let view=window?.contentView, let image=view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return false }
+        view.cacheDisplay(in: view.bounds, to: image)
+        guard let data=image.representation(using: .png, properties: [:]) else { return false }
+        do { try data.write(to: URL(fileURLWithPath: path)); return true } catch { return false }
     }
     func testEditingControlsVisible() -> Bool {
         guard let page = tabs.tabViewItem(at: 2).view else { return false }

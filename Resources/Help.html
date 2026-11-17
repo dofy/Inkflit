@@ -7,7 +7,8 @@
   <style>
     :root{color-scheme:light dark;font:16px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#24363a;background:#f4f8f7}
     body{max-width:760px;margin:0 auto;padding:48px 24px 72px}h1{font-size:2.2rem;line-height:1.2;margin:0}h2{margin-top:2.4em;font-size:1.25rem}p,li{color:#405358}a{color:#2b737e}kbd,code{font:0.9em ui-monospace,monospace;background:#e4efed;border-radius:4px;padding:2px 5px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #d8e4e2;vertical-align:top}th{color:#41676b}td:first-child{white-space:nowrap}footer{margin-top:48px;color:#708487;font-size:.85rem}
-    @media(prefers-color-scheme:dark){:root{background:#172123;color:#edf5f3}p,li{color:#c5d6d3}kbd,code{background:#2a3b3d}th{color:#9ec4c2}th,td{border-color:#3a4d4d}a{color:#8dcbd2}footer{color:#9cb0ae}}
+    code{overflow-wrap:anywhere}pre{overflow:auto;padding:12px;border-radius:8px;background:#e4efed}pre code{padding:0;background:transparent;overflow-wrap:normal}
+    @media(prefers-color-scheme:dark){:root{background:#172123;color:#edf5f3}p,li{color:#c5d6d3}kbd,code,pre{background:#2a3b3d}pre code{background:transparent}th{color:#9ec4c2}th,td{border-color:#3a4d4d}a{color:#8dcbd2}footer{color:#9cb0ae}}
   </style>
 </head>
 <body>
@@ -17,6 +18,7 @@
   <p>默认按 <kbd>⌃⌥Space</kbd> 唤起或收起笔记。切换到其他应用时浮窗会自动收起。点击菜单栏图标，或在 Inkflit 中按 <kbd>⌘,</kbd> 打开设置，可更改全局快捷键和开机启动选项。设置窗口中按 <kbd>⌘W</kbd> 关闭。</p>
   <p>主窗口默认宽高比为 2:3，可以自由调整大小。“设置 → 外观”可选择界面主色、窗口不透明度和背景模糊强度；降低不透明度后可看到窗口后面的内容。代码高亮配色可在“设置 → 编辑”中选择和预览。</p>
   <p>拖动窗口顶部或工具栏中央的空白区域可以移动窗口。界面会跟随 macOS 浅色或深色模式；“设置 → 语言”可选择英语、简体中文、繁体中文或日语，默认跟随系统语言。</p>
+  <p>唤起时，窗口出现在鼠标所在屏幕，并按窗口可移动范围（屏幕可用尺寸减去窗口尺寸）的百分比记住上下左右的相对位置，重启后也会恢复。调整不透明度或背景模糊时，按住 <kbd>Option</kbd> 可按 5% 一档吸附。</p>
   <h2>快捷键</h2>
   <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody>
     <tr><td><kbd>⌘N</kbd></td><td>新建笔记</td></tr>
@@ -28,6 +30,7 @@
     <tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前功能块下方 / 上方新建可编辑的普通文本行</td></tr>
     <tr><td><kbd>⌘⇧D</kbd></td><td>删除当前功能块及其内容，可撤销</td></tr>
     <tr><td><kbd>⌘/</kbd></td><td>切换当前行或选中行的注释</td></tr>
+    <tr><td><kbd>⌘⇧F</kbd></td><td>搜索全部当前笔记</td></tr>
   </tbody></table>
   <h2>编辑与 Vim</h2>
   <p>Vim 默认开启，可在「设置 → 编辑」关闭；关闭后直接输入，Esc 收起窗口，⌘Z / ⌘⇧Z 撤销和重做。</p>
@@ -44,6 +47,17 @@
   </ul>
   <h2>数据保存</h2>
   <p>笔记默认分别保存为 <code>~/Documents/Inkflit/notes/</code> 下的 Markdown 文件，索引保存顺序和选中状态。设置中可选择备份保留数量、关闭备份或无限保留，并恢复历史版本、回收站笔记或重建索引。每篇笔记编辑时最多每五分钟保存一次旧版本；调整数量不会立即删除旧版本。更改位置时会复制整个目录并保留原目录。Inkflit 不提供云同步，请定期将整个存储目录备份到其他位置。 连续输入停止约 0.5 秒后保存，持续输入时通常最多约 2 秒保存一次；切换笔记、收起窗口、更改保存位置或退出应用会立即保存。保存失败会显示错误并阻止退出；应用异常崩溃时可能丢失尚未保存的最近修改。</p>
+  <h2>搜索与自动化</h2>
+  <p>点击顶部搜索按钮、按 <kbd>⌘⇧F</kbd> 或在菜单栏选择“搜索笔记”，可搜索全部当前笔记。方向键选择结果，回车打开，Esc 关闭；不搜索备份和回收站。</p>
+  <p>本机 MCP 通过 stdio 提供 <code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code> 和 <code>delete_note</code>。Codex 可以运行：</p>
+  <pre><code>codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp</code></pre>
+  <p>Claude Code 可运行 <code>claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp</code>。在 Namo 的连接设置中添加本地 MCP，填写相同的可执行文件及参数 <code>[&quot;--mcp&quot;]</code>，保存后测试。Namo 和 Inkflit 需在同一台 Mac 以同一用户运行；所有获准对话的成员都能调用这些工具。</p>
+  <p>配置后重启 MCP 客户端。其他 MCP 客户端可配置命令 <code>/Applications/Inkflit.app/Contents/MacOS/Inkflit</code> 和参数 <code>--mcp</code>。使用从 1 开始的 <code>index</code> 或稳定的 <code>id</code> 指定笔记；新增、删除后编号会变化。追加或覆盖不指定目标时新建，追加时需要的话自动补换行。单次写入最多 1,000,000 个 UTF-16 代码单元。删除进入回收站；请求通过应用保存并备份。</p>
+  <p>scheme 地址为 <code>inkflit://note/&lt;action&gt;</code>，操作为 <code>list</code>、<code>get</code>、<code>search</code>、<code>create</code>、<code>append</code>、<code>replace</code>、<code>delete</code>，参数为 URL 编码的 <code>index</code> 或 <code>id</code>、<code>content</code>、<code>query</code>。例如：</p>
+  <pre><code>open 'inkflit://note/append?index=2&amp;content=Remember%20milk'
+open 'inkflit://note/search?query=milk'
+open 'inkflit://note/get?index=1'</code></pre>
+  <p>不提供回调时，读取打开笔记，列表和搜索打开搜索界面。可选的 <code>x-success</code> / <code>x-error</code> 支持 URL 编码的自定义 scheme 回调，<code>result</code> 参数包含 JSON；不接受 HTTP、HTTPS、file 或 Inkflit 回调，JSON 最大 48 KB。写入和删除会立即执行，请只打开可信链接。</p>
   <footer>© 2026 phpz.org · Inkflit</footer>
 </body>
 </html>

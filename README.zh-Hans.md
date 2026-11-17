@@ -22,6 +22,8 @@ open build/Inkflit.app
 
 主窗口默认宽高比为 2:3，也可以自由调整大小。应用跟随系统的浅色或深色模式；“设置 → 语言”可选择英语、简体中文、繁体中文或日语，默认跟随系统。在“设置 → 外观”中可选择界面主色、窗口不透明度和背景模糊强度；降低不透明度后可以看到窗口后面的内容。代码高亮配色在“设置 → 编辑”中单独选择和预览。
 
+唤起时，窗口出现在鼠标所在屏幕，并按窗口可移动范围（屏幕可用尺寸减去窗口尺寸）的百分比记住上下左右的相对位置，重启后也会恢复。调整不透明度或背景模糊时，按住 `Option` 可按 5% 一档吸附。
+
 ## 键盘操作
 
 - `⌘N`：新建笔记。
@@ -33,6 +35,7 @@ open build/Inkflit.app
 - `⌘L`：在代码功能块中打开语言菜单。
 - `⌘O` / `⌘⇧O`：在当前功能块下方 / 上方新建可编辑的普通文本行。
 - `⌘/`：切换当前或选中行的注释。普通笔记使用 `//`；代码块使用对应语言的注释语法，未知语言的代码块使用 `//`。
+- `⌘⇧F`：搜索全部当前笔记。
 - `Esc`：Vim 模式下先退出插入、可视、搜索或待完成命令，在普通模式下再按一次隐藏窗口；关闭 Vim 后直接隐藏。
 
 Vim 模式默认开启，可在「设置 → 编辑」关闭。关闭后可直接输入，`Esc` 收起窗口，使用 `⌘Z` / `⌘⇧Z` 撤销和重做。
@@ -55,3 +58,29 @@ Vim 模式默认开启，可在「设置 → 编辑」关闭。关闭后可直�
 - `code`：选择语言后高亮；“设置 → 编辑”中的“代码配色”提供琥珀、海蓝和鲜明三种方案，并显示实时预览。编辑时自动配对括号和引号，回车根据上下文缩进；在匹配的括号之间回车会创建缩进的中间行。`Tab` 插入缩进，`⇧Tab` 减少缩进，可在设置中选择 2 个空格、4 个空格或 Tab。光标在代码块内且没有选中文本时，`⌘C` 复制块内代码（不含边界标记）；选中文本时照常复制选区。保留原始缩进。
 
 功能块保存在笔记正文中，使用 Inkflit 自有的文本标记（例如 `:::quicknote math` 与 `:::end`），编辑器显示为块头与边界，而不是代码围栏。旧版本的功能围栏和首行关键词仍可读取。货币汇率由 [Frankfurter](https://frankfurter.dev/) 提供，按服务返回日期显示；请求只获取公开汇率，不上传笔记。离线或服务不可用时不显示伪造汇率。
+
+## 搜索与自动化
+
+点击顶部搜索按钮、按 `⌘⇧F`，或从菜单栏选择“搜索笔记”，可搜索全部当前笔记；方向键选择，回车打开，Esc 关闭。搜索不包含备份和回收站。
+
+Inkflit 提供本机 stdio MCP 服务。Codex 可运行：
+
+```sh
+codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
+```
+
+配置后重启 MCP 客户端。可用工具为 `list_notes`、`search_notes`、`get_note`、`create_note`、`append_note`、`replace_note` 和 `delete_note`。通过 `index`（从 1 开始，与页面编号一致）或稳定的 `id` 指定笔记；新增、删除后编号会变化。追加和覆盖不指定目标时会新建；追加时需要的话自动补换行。删除进入回收站。所有请求经运行中的应用执行保存和备份；应用未运行时服务会尝试启动它。
+
+其他 MCP 客户端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。单次写入内容最多 1,000,000 个 UTF-16 代码单元。
+
+Claude Code 可运行 `claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp`。在 Namo 的连接设置中添加本地 MCP，填写相同的可执行文件及参数 `["--mcp"]`，保存后测试。Namo 和 Inkflit 需在同一台 Mac 以同一用户运行；所有获准对话的成员都能调用这些工具。
+
+应用也注册了 `inkflit://note/<action>`，操作包括 `list`、`get`、`search`、`create`、`append`、`replace`、`delete`。按需提供经过 URL 编码的 `index` 或 `id`、`content`、`query` 参数，例如：
+
+```sh
+open 'inkflit://note/append?index=2&content=Remember%20milk'
+open 'inkflit://note/search?query=milk'
+open 'inkflit://note/get?index=1'
+```
+
+追加和覆盖不指定目标时新建，读取和删除必须指定目标。未指定回调时，读取会打开笔记，列表和搜索会打开搜索界面。可选 `x-success` / `x-error` 参数接受 URL 编码的自定义 scheme 回调地址，回调的 `result` 参数包含 JSON；不接受 HTTP、HTTPS、file 或 Inkflit 回调，JSON 最大 48 KB。scheme 写入和删除会立即执行，只应打开可信链接。
