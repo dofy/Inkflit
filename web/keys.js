@@ -1,6 +1,6 @@
 import { Vim, getCM } from '@replit/codemirror-vim';
 import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection } from '@codemirror/autocomplete';
-import { toggleLineComment } from '@codemirror/commands';
+import { toggleLineComment, indentMore, indentLess } from '@codemirror/commands';
 import { app, nativeHandler } from './app.js';
 import { isEditing } from './editor-view.js';
 import { acceptBestSnippet } from './snippet-completion.js';
@@ -174,6 +174,14 @@ function onKeyDown(event) {
     const key = event.key === 'Tab' && event.shiftKey ? 'Shift-Tab' : event.key;
     const planned = planCodeEdit(editor.state, key, { indentation: app.codeIndentation });
     if (planned) { consume(event); editor.dispatch(planned); return; }
+  }
+  // Any other Tab indents or outdents the line. It must never reach the
+  // browser, which would move focus out of the editor (and, in the app, out of
+  // the web view, after which Esc stopped working).
+  if (event.key === 'Tab' && plain(event) && focused) {
+    consume(event);
+    if (isEditing()) (event.shiftKey ? indentLess : indentMore)(editor);
+    return;
   }
   if (!blockMenuOpen() && isEditing() && trySlash(event, editor)) { consume(event); return; }
   if (event.key.toLowerCase() === 'x' && plain(event) && isEditing() && toggleTaskKey(event)) return;
