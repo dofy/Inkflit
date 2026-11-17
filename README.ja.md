@@ -7,6 +7,13 @@
 <p align="center"><a href="README.md">English</a> · <a href="README.zh-Hans.md">简体中文</a> · <a href="README.zh-Hant.md">繁體中文</a> · 日本語<br />
 <a href="https://github.com/dofy/Inkflit">GitHub</a> · <a href="https://github.com/dofy/Inkflit/issues">Issues</a></p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-13%2B-3e586c?style=flat-square" alt="macOS 13 or later" />
+  <img src="https://img.shields.io/badge/notes-local--first-69816b?style=flat-square" alt="Local-first notes" />
+  <img src="https://img.shields.io/badge/editor-Markdown%20%2B%20Vim-9c6f50?style=flat-square" alt="Markdown and Vim editor" />
+  <img src="https://img.shields.io/badge/languages-4-6d6984?style=flat-square" alt="Four interface languages" />
+</p>
+
 Inkflit はローカル優先の macOS 用フローティングメモアプリです。複数のノート、Markdown、Vim 編集、コードの構文ハイライト、機能ブロック、自動保存に対応します。 初回起動時、システム言語に合わせて4つのガイドノートを作成します。設定の「ガイドノートを再作成」は、現在のアプリ言語で既存ノートの前にガイドを追加します。
 
 <p align="center"><img src="docs/images/editor.png" alt="Inkflit Markdown note editor" width="480" /></p>
