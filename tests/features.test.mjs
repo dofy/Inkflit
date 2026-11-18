@@ -335,3 +335,11 @@ test('"code" as the first line makes the whole note code, with an optional langu
  assert.equal(scopeAt(text,1),null,'the first line is the header');
  assert.equal(analyzeScopes(text)[0].summary,'');
 });
+test('a first line that sets the mode exposes its keyword and language for styling',async()=>{
+ const {headerRanges}=await import('../web/features.js');
+ assert.deepEqual(headerRanges('math: Trip\nx'),[{from:0,to:4,kind:'keyword'}]);
+ assert.deepEqual(headerRanges('code  js: Deploy'),[{from:0,to:4,kind:'keyword'},{from:6,to:8,kind:'language'}]);
+ assert.deepEqual(headerRanges('List'),[{from:0,to:4,kind:'keyword'}]);
+ assert.deepEqual(headerRanges('math notes\nx'),[],'not a header: nothing is styled');
+ assert.deepEqual(headerRanges('my list\nx'),[]);
+});

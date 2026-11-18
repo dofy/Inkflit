@@ -1,6 +1,6 @@
 import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
-import { analyzeScopes, scopeAt, mathHighlights, nestedLines } from './features.js';
+import { analyzeScopes, scopeAt, mathHighlights, nestedLines, headerRanges } from './features.js';
 import { codeLanguage } from './code-languages.js';
 import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
@@ -58,6 +58,8 @@ function decorateCode(view,scope,decorations) {
 function decorate(view) {
   const doc=view.state.doc, text=doc.toString(), scopes=analyzeScopes(text,currentRates()), decorations=[], currencies=new Set(currencyCodes());
   if (scopes.some(s=>s.mode==='math')) refreshRates();
+  // A first line that sets the note's mode shows its keyword (and language) as a tag.
+  for (const range of headerRanges(text)) decorations.push(Decoration.mark({class:range.kind==='keyword' ? 'cm-note-mode' : 'cm-note-mode-language'}).range(range.from,range.to));
   for (const scope of scopes) {
     if(scope.kind==='block') {
       const first=doc.line(scope.start);

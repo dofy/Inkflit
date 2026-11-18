@@ -21,6 +21,16 @@ export function noteHeader(text) {
   return {mode:match[1].toLowerCase(),language:(match[2]||'').toLowerCase()};
 }
 export const modeOf = text => noteHeader(text).mode;
+// Where the header's keyword and language sit on the first line, for styling;
+// empty when the first line does not set a mode.
+export function headerRanges(text) {
+  if(!noteHeader(text).mode) return [];
+  const match=/^(\s*)([A-Za-z]+)(?:(\s+)([\w+.-]+))?/.exec(text.split('\n')[0]), ranges=[];
+  const start=match[1].length;
+  ranges.push({from:start,to:start+match[2].length,kind:'keyword'});
+  if(match[4]) { const from=start+match[2].length+match[3].length; ranges.push({from,to:from+match[4].length,kind:'language'}); }
+  return ranges;
+}
 // Feature fences and ordinary Markdown code fences create independent scopes.
 export const blockTypes = ['list','math','sum','avg','count','code'];
 export function featureScopes(text) {
