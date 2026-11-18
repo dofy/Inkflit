@@ -10,6 +10,7 @@ import { persist } from './persistence.js';
 import { refreshNav } from './toolbar.js';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText, markerRanges } from './block-protection.js';
+import { listPasteRules } from './list-editing.js';
 import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-menu.js';
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
@@ -74,7 +75,7 @@ const saveOnChange = EditorView.updateListener.of(update => {
 
 function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
-    vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
+    vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, listPasteRules, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
     drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage }), tasks, features, noteComments, noteHeadings, noteInlineCode, noteListIndent,
     syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, snippets,
     plainEnter, keymap.of([...defaultKeymap, ...historyKeymap]),

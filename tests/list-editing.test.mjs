@@ -56,3 +56,22 @@ test('a whole-note list follows the same rules, down to its last line',()=>{
  assert.equal(state.doc.toString(),'list\nroot\n  child');
  assert.equal(apply(state,'Tab').doc.toString(),'list\nroot\n  child','at most one level deeper');
 });
+test('pasted items follow the same indent rules, keeping their own structure',async()=>{
+ const {listPasteRules}=await import('../web/list-editing.js');
+ const paste=(doc,at,text)=>{ const state=EditorState.create({doc,selection:{anchor:at},extensions:[history(),listPasteRules]});
+  return state.update({changes:{from:at,insert:text},userEvent:'input.paste'}).state; };
+ // The screenshot: an indented item pasted as the first item.
+ let state=paste('list\n\n','list\n\n'.length,'  asdf\nasdf\n  asdf\n    asdfsadf');
+ assert.equal(state.doc.toString(),'list\n\nasdf\nasdf\n  asdf\n    asdfsadf','the first item goes to the root');
+ // A deeper pasted subtree is moved up as a whole under the previous item.
+ state=paste(':::inkflit list\nroot\n\n:::end',':::inkflit list\nroot\n'.length,'      a\n        b');
+ assert.equal(state.doc.toString(),':::inkflit list\nroot\n  a\n    b\n:::end');
+ // Lines before the paste are not touched; typed text is not changed.
+ const typed=EditorState.create({doc:'list\nroot\n',extensions:[listPasteRules]}).update({changes:{from:10,insert:'      x'},userEvent:'input.type'}).state;
+ assert.equal(typed.doc.toString(),'list\nroot\n      x','only paste and drop are re-levelled');
+ // One undo step removes the paste together with the fix.
+ const withHistory=paste('list\n','list\n'.length,'    a');
+ assert.equal(withHistory.doc.toString(),'list\na');
+ let undone=withHistory; undo({state:undone,dispatch:tr=>{undone=tr.state;}});
+ assert.equal(undone.doc.toString(),'list\n');
+});

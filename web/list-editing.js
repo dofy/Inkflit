@@ -1,5 +1,6 @@
 import { isolateHistory } from '@codemirror/commands';
-import { scopeAt } from './features.js';
+import { EditorState } from '@codemirror/state';
+import { scopeAt, featureScopes } from './features.js';
 
 const unit=2;
 const leading=text=>/^[ \t]*/.exec(text)[0];
@@ -47,3 +48,35 @@ export function planListIndent(state, key) {
   const anchor=line.from+(offset>=indent.length ? offset+replacement.length-indent.length : Math.min(offset,replacement.length));
   return {changes,selection:{anchor},scrollIntoView:true,userEvent:'input.list.indent',annotations:isolateHistory.of('full')};
 }
+
+// Pasted items keep the same rules as Tab: the first item is at the root and
+// an item is at most one level deeper than its parent. Pasted lines and the
+// ones after them are re-levelled, keeping their relative structure; lines
+// before the paste are left as they are. Headings start a new tree.
+export function listIndentFixes(state, from, to) {
+  const doc=state.doc, tabSize=state.tabSize, firstLine=doc.lineAt(from).number, lastLine=doc.lineAt(to).number, changes=[];
+  for(const scope of featureScopes(doc.toString())) {
+    if(scope.mode!=='list') continue;
+    const last=Math.min(doc.lines, scope.global ? scope.end : scope.end-1);
+    if(lastLine<=scope.start || firstLine>last) continue;
+    let stack=[];
+    for(let n=scope.start+1;n<=last;n++) {
+      const line=doc.line(n);
+      if(isHeading(line.text)) { stack=[]; continue; }
+      if(!isItem(line.text)) continue;
+      const prefix=leading(line.text), depth=columns(prefix,tabSize);
+      while(stack.length && stack.at(-1).depth>=depth) stack.pop();
+      const level=n<firstLine ? depth : (stack.length ? stack.at(-1).level+unit : 0);
+      stack.push({depth,level});
+      if(n>=firstLine && level!==depth) changes.push({from:line.from,to:line.from+prefix.length,insert:' '.repeat(level)});
+    }
+  }
+  return changes;
+}
+export const listPasteRules = EditorState.transactionFilter.of(tr => {
+  if(!tr.docChanged || !(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop'))) return tr;
+  let from=Infinity, to=-1;
+  tr.changes.iterChangedRanges((_a,_b,fromB,toB)=>{ from=Math.min(from,fromB); to=Math.max(to,toB); });
+  const changes=listIndentFixes(tr.state, from, to);
+  return changes.length ? [tr, {changes, sequential:true}] : tr;
+});
