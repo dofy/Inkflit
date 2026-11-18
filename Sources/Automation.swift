@@ -59,7 +59,10 @@ struct Failure: LocalizedError {
 }
 
 final class AutomationServer {
+    /// Read by the background accept loop and written by start/stop, so guarded by a lock.
     private var listener: Int32 = -1
+    private let lock = NSLock()
+    private func isListening(_ fd: Int32) -> Bool { lock.lock(); defer { lock.unlock() }; return listener == fd }
     private let path: String
     private let handler: ([String: Any], @escaping ([String: Any]) -> Void) -> Void
     init(handler: @escaping ([String: Any], @escaping ([String: Any]) -> Void) -> Void) { self.path = AutomationSocket.path; self.handler = handler }
@@ -73,15 +76,16 @@ final class AutomationServer {
             guard (existing.st_mode & S_IFMT)==S_IFSOCK, existing.st_uid==getuid() else { throw Failure("Automation socket path is occupied") }
             guard unlink(path)==0 else { throw Failure("Could not remove stale socket") }
         }
-        listener=Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
-        guard listener >= 0 else { throw Failure("Could not create automation socket") }
-        var address=try AutomationSocket.address(path)
-        let result=withUnsafePointer(to:&address) { $0.withMemoryRebound(to:sockaddr.self,capacity:1) { Darwin.bind(listener,$0,socklen_t(MemoryLayout<sockaddr_un>.size)) } }
-        guard result==0 else { Darwin.close(listener);listener = -1;throw Failure("Could not bind automation socket") }
-        guard chmod(path,0o600)==0, Darwin.listen(listener,16)==0 else { Darwin.close(listener);listener = -1;unlink(path);throw Failure("Could not start automation socket") }
-        let socketFD=listener
+        let socketFD=Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
+        guard socketFD >= 0 else { throw Failure("Could not create automation socket") }
+        var address: sockaddr_un
+        do { address=try AutomationSocket.address(path) } catch { Darwin.close(socketFD); throw error }
+        let result=withUnsafePointer(to:&address) { $0.withMemoryRebound(to:sockaddr.self,capacity:1) { Darwin.bind(socketFD,$0,socklen_t(MemoryLayout<sockaddr_un>.size)) } }
+        guard result==0 else { Darwin.close(socketFD);throw Failure("Could not bind automation socket") }
+        guard chmod(path,0o600)==0, Darwin.listen(socketFD,16)==0 else { Darwin.close(socketFD);unlink(path);throw Failure("Could not start automation socket") }
+        lock.lock(); listener=socketFD; lock.unlock()
         DispatchQueue.global(qos:.utility).async { [weak self] in
-            while let self, self.listener == socketFD {
+            while let self, self.isListening(socketFD) {
                 let client=Darwin.accept(socketFD,nil,nil)
                 if client<0 { break }
                 DispatchQueue.global(qos:.utility).async { self.accept(client) }
@@ -107,8 +111,9 @@ final class AutomationServer {
         } catch { try? AutomationSocket.send(["error":error.localizedDescription],to:fd);Darwin.close(fd) }
     }
     func stop() {
-        guard listener >= 0 else { return }
-        Darwin.shutdown(listener,SHUT_RDWR);Darwin.close(listener);listener = -1
+        lock.lock(); let fd=listener; listener = -1; lock.unlock()
+        guard fd >= 0 else { return }
+        Darwin.shutdown(fd,SHUT_RDWR);Darwin.close(fd)
         unlink(path)
     }
 }

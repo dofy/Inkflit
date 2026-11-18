@@ -116,6 +116,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private struct PendingSave { let data: Data; let revision: Int }
     private var pendingSave: PendingSave?
     private var saveWork: DispatchWorkItem?
+    /// A failed save is tried again after this delay, doubling up to a minute.
+    private var saveRetryDelay: TimeInterval = 5
     private var firstPendingAt: TimeInterval?
     private var lastSavedRevision = 0
     private var hideGeneration = 0
@@ -131,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private let maximumSaveDelay: TimeInterval = 2
     #if INKFLIT_NATIVE_TEST
     var testSuccessfulSaves = 0
+    var testSaveRetryScheduled: Bool { saveWork != nil && pendingSave != nil }
     var testSaveTimes: [TimeInterval] = []
     var testAutomationCallbacks: [URL] = []
     #endif
@@ -896,14 +899,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             testSuccessfulSaves += 1
             testSaveTimes.append(ProcessInfo.processInfo.systemUptime)
             #endif
-            lastSavedRevision = pending.revision; pendingSave = nil; firstPendingAt = nil
+            lastSavedRevision = pending.revision; pendingSave = nil; firstPendingAt = nil; saveRetryDelay = 5
             reportSaveResult(true, error: nil, revision: pending.revision)
             return (true, nil)
         } catch {
             let message = L("error.saveFailedDetail") + error.localizedDescription
             reportSaveResult(false, error: message, revision: pending.revision)
+            scheduleSaveRetry()
             return (false, message)
         }
+    }
+    /// Without this, a failed save (a full disk, a lost permission) waits for the next edit.
+    private func scheduleSaveRetry() {
+        guard saveWork == nil, pendingSave != nil else { return }
+        let work = DispatchWorkItem { [weak self] in _ = self?.flushPending() }
+        saveWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + saveRetryDelay, execute: work)
+        saveRetryDelay = min(saveRetryDelay * 2, 60)
     }
     private func reportSaveResult(_ ok: Bool, error: String?, revision: Int) {
         guard let data = try? JSONSerialization.data(withJSONObject: [ok, error as Any? ?? NSNull(), revision]),

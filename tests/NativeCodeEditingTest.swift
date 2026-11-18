@@ -1304,6 +1304,7 @@ final class NativeCodeEditingTest {
                         NSApp.terminate(nil)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [self] in
                             guard app.window.isVisible else { fail("failed quit did not keep the note visible") }
+                            guard app.testSaveRetryScheduled else { fail("failed save scheduled no automatic retry") }
                             do { try Data("abcdone".utf8).write(to: first, options: .atomic) } catch { fail("could not restore conflict fixture") }
                             app.requestFlush { [self] success, _ in
                                 guard success else { fail("failed save did not retry") }
