@@ -259,6 +259,23 @@
     </tbody>
   </table>
   <p>Lines starting with <code>//</code> are left out of totals and counts.</p>
+  <h3>Whole notes</h3>
+  <p>Make the first line just a keyword and the whole note becomes that type, with no end marker.</p>
+  <table>
+    <thead><tr><th>First line</th><th>Whole note</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>Checklist</td></tr>
+      <tr><td><code>math</code></td><td>Math; see <a href="#math">Math</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>Sum / average</td></tr>
+      <tr><td><code>count</code></td><td>Count</td></tr>
+      <tr><td><code>code js</code></td><td>Code; <code>js</code> is the language and is optional</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>A colon and a title may follow: <code>sum: Monthly spending</code>, <code>code py: Backup script</code>.</li>
+    <li>Case does not matter.</li>
+    <li>Other blocks in the note keep their own type; in a whole-note code mode everything is code.</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -449,6 +466,7 @@ ans / 2 =
 <section id="code">
   <h2>Code</h2>
   <ul>
+    <li><b>Whole-note code:</b> make the first line <code>code js</code> to highlight and edit the whole note as that language. <kbd>⌘L</kbd> changes the language on the first line.</li>
     <li><kbd>⌘L</kbd> chooses the language of the current code block.</li>
     <li>Brackets and quotes are closed for you. <kbd>Return</kbd> keeps the indentation, <kbd>Tab</kbd> indents and <kbd>⇧Tab</kbd> outdents.</li>
     <li>With nothing selected, <kbd>⌘C</kbd> copies the whole block.</li>
@@ -716,6 +734,23 @@ open 'inkflit://note/get?index=1'</code></pre>
     </tbody>
   </table>
   <p>以 <code>//</code> 开头的行不参与合计和计数。</p>
+  <h3>整篇笔记</h3>
+  <p>第一行只写一个关键词，整篇笔记就是这种类型，没有结束标记。</p>
+  <table>
+    <thead><tr><th>第一行</th><th>整篇笔记</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>清单</td></tr>
+      <tr><td><code>math</code></td><td>计算，见<a href="#math">计算</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>求和 / 平均值</td></tr>
+      <tr><td><code>count</code></td><td>计数</td></tr>
+      <tr><td><code>code js</code></td><td>代码，<code>js</code> 是语言，可省略</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>关键词后可以加冒号和标题：<code>sum: 本月开销</code>、<code>code py: 备份脚本</code>。</li>
+    <li>不区分大小写。</li>
+    <li>笔记里的其他功能块各算各的；整篇代码笔记里的一切都当作代码。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -906,6 +941,7 @@ ans / 2 =
 <section id="code">
   <h2>代码</h2>
   <ul>
+    <li><b>整篇代码笔记：</b>第一行写 <code>code js</code>，整篇按这种语言高亮和编辑。<kbd>⌘L</kbd> 改的是第一行的语言。</li>
     <li><kbd>⌘L</kbd> 选择当前代码块的语言。</li>
     <li>括号和引号会自动补全。<kbd>Return</kbd> 保持缩进，<kbd>Tab</kbd> 缩进，<kbd>⇧Tab</kbd> 取消缩进。</li>
     <li>没有选中内容时，<kbd>⌘C</kbd> 复制整个代码块。</li>
@@ -1173,6 +1209,23 @@ open 'inkflit://note/get?index=1'</code></pre>
     </tbody>
   </table>
   <p>以 <code>//</code> 開頭的行不列入加總和計數。</p>
+  <h3>整篇筆記</h3>
+  <p>第一行只寫一個關鍵詞，整篇筆記就是這種類型，沒有結束標記。</p>
+  <table>
+    <thead><tr><th>第一行</th><th>整篇筆記</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>清單</td></tr>
+      <tr><td><code>math</code></td><td>計算，見<a href="#math">計算</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>加總 / 平均值</td></tr>
+      <tr><td><code>count</code></td><td>計數</td></tr>
+      <tr><td><code>code js</code></td><td>程式碼，<code>js</code> 是語言，可省略</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>關鍵詞後可以加冒號和標題：<code>sum: 本月開銷</code>、<code>code py: 備份腳本</code>。</li>
+    <li>不區分大小寫。</li>
+    <li>筆記中的其他功能區塊各算各的；整篇程式碼筆記中的一切都當作程式碼。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -1363,6 +1416,7 @@ ans / 2 =
 <section id="code">
   <h2>程式碼</h2>
   <ul>
+    <li><b>整篇程式碼筆記：</b>第一行寫 <code>code js</code>，整篇依這種語言突顯和編輯。<kbd>⌘L</kbd> 改的是第一行的語言。</li>
     <li><kbd>⌘L</kbd> 選擇目前程式碼區塊的語言。</li>
     <li>括號和引號會自動補上。<kbd>Return</kbd> 保持縮排，<kbd>Tab</kbd> 縮排，<kbd>⇧Tab</kbd> 取消縮排。</li>
     <li>沒有選取內容時，<kbd>⌘C</kbd> 複製整個程式碼區塊。</li>
@@ -1630,6 +1684,23 @@ open 'inkflit://note/get?index=1'</code></pre>
     </tbody>
   </table>
   <p><code>//</code> で始まる行は合計とカウントから除外されます。</p>
+  <h3>ノート全体</h3>
+  <p>1 行目をキーワードだけにすると、ノート全体がその種類になります。終わりの記号はありません。</p>
+  <table>
+    <thead><tr><th>1 行目</th><th>ノート全体</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>チェックリスト</td></tr>
+      <tr><td><code>math</code></td><td>計算（<a href="#math">計算</a>を参照）</td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>合計 / 平均</td></tr>
+      <tr><td><code>count</code></td><td>カウント</td></tr>
+      <tr><td><code>code js</code></td><td>コード。<code>js</code> は言語で省略可</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>コロンとタイトルを続けられます：<code>sum: 今月の支出</code>、<code>code py: バックアップ</code>。</li>
+    <li>大文字と小文字は区別しません。</li>
+    <li>ノート内のほかのブロックはそれぞれの種類のままです。ノート全体のコードでは、すべてがコードになります。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -1820,6 +1891,7 @@ ans / 2 =
 <section id="code">
   <h2>コード</h2>
   <ul>
+    <li><b>ノート全体のコード：</b>1 行目を <code>code js</code> にすると、ノート全体をその言語で表示・編集します。<kbd>⌘L</kbd> は 1 行目の言語を変更します。</li>
     <li><kbd>⌘L</kbd> で現在のコードブロックの言語を選びます。</li>
     <li>括弧と引用符は自動で閉じられます。<kbd>Return</kbd> はインデントを保ち、<kbd>Tab</kbd> でインデント、<kbd>⇧Tab</kbd> でインデント解除します。</li>
     <li>何も選択していないときは、<kbd>⌘C</kbd> でブロック全体をコピーします。</li>

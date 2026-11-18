@@ -156,7 +156,7 @@ export function handleBlockMenuKey(event) {
 export function trySlash(event, editor) {
   if(event.key!=='/' || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || !editor.state.selection.main.empty)return false;
   const pos=editor.state.selection.main.head,line=editor.state.doc.lineAt(pos),scope=scopeAt(editor.state.doc.toString(),line.number);
-  if(line.text.trim() || (scope && !scope.global && (scope.kind!=='block'||scope.mode==='code')))return false;
+  if(line.text.trim() || (scope && (scope.mode==='code' || (!scope.global && scope.kind!=='block'))))return false;
   editor.dispatch({changes:{from:pos,insert:'/'},selection:{anchor:pos+1},userEvent:'input.type'});
   openBlockMenu({from:pos,scope:scope?.kind==='block'?scope:null,trigger:true});return true;
 }
@@ -169,7 +169,7 @@ export function openMenuAfterInput(update) {
   const line=update.state.doc.lineAt(sel.head), oldLine=update.startState.doc.lineAt(Math.min(update.startState.selection.main.head,update.startState.doc.length));
   if(line.text.trim() !== '/' || oldLine.text.trim() || update.state.sliceDoc(sel.head-1,sel.head)!=='/')return;
   const scope=scopeAt(update.state.doc.toString(),line.number);
-  if(scope && !scope.global && (scope.kind!=='block' || scope.mode==='code'))return;
+  if(scope && (scope.mode==='code' || (!scope.global && scope.kind!=='block')))return;
   const from=sel.head-1;
   queueMicrotask(()=>{
     if(active || view()!==v || v.state.doc.lineAt(Math.min(from,v.state.doc.length)).text.trim()!=='/' || v.state.selection.main.head!==from+1)return;

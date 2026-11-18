@@ -13,11 +13,20 @@ const minuteUnit = math.unit('min');
 const bindMinute = (node, scope) => 'min' in scope ? node : node.transform((n, path) => n.type === 'SymbolNode' && n.name === 'min' && path !== 'fn' ? new math.ConstantNode(minuteUnit) : n);
 const allowedFunctions = new Set(['sqrt','abs','round','floor','ceil','sin','cos','tan','log','log10','exp','min','max']);
 const allowedOperators = new Set(['add','subtract','multiply','divide','pow','unaryMinus','unaryPlus','to','percentage']);
-export const modeOf = text => /^(list|math|sum|avg|count)(?:\s*:\s*.*)?\s*$/i.exec(text.split('\n')[0].trim())?.[1].toLowerCase() || '';
+// A note's first line may set a mode for the whole note: a keyword, a language
+// after "code" ("code js"), and a title after a colon ("math: Trip").
+export function noteHeader(text) {
+  const match=/^(list|math|sum|avg|count|code)(?:\s+([\w+.-]+))?(?:\s*:\s*.*)?\s*$/i.exec(text.split('\n')[0].trim());
+  if(!match || (match[2] && match[1].toLowerCase()!=='code')) return {mode:'',language:''};
+  return {mode:match[1].toLowerCase(),language:(match[2]||'').toLowerCase()};
+}
+export const modeOf = text => noteHeader(text).mode;
 // Feature fences and ordinary Markdown code fences create independent scopes.
 export const blockTypes = ['list','math','sum','avg','count','code'];
 export function featureScopes(text) {
-  const lines=text.split('\n'), scopes=[], globalMode=modeOf(text);
+  const lines=text.split('\n'), scopes=[], {mode:globalMode,language}=noteHeader(text);
+  // A whole-note code mode is all code: markers and fences inside it are text.
+  if(globalMode==='code') return [{mode:'code',language,start:1,end:lines.length,global:true}];
   if(globalMode) scopes.push({mode:globalMode,start:1,end:lines.length,global:true});
   let active=null;
   for(let i=0;i<lines.length;i++) {
@@ -193,8 +202,8 @@ export function nestedLines(scopes) {
 export function analyzeScopes(text,rates=null) {
   const lines=text.split('\n'), scopes=featureScopes(text), nested=nestedLines(scopes);
   return scopes.map(scope=>{
-    if(scope.global) return {...scope,...analyze(lines.map((line,i)=>nested.has(i+1) ? '' : line).join('\n'),rates)};
     if(scope.mode==='code') return {...scope,results:[],summary:''};
+    if(scope.global) return {...scope,...analyze(lines.map((line,i)=>nested.has(i+1) ? '' : line).join('\n'),rates)};
     const body=lines.slice(scope.start,Math.min(scope.end-1,lines.length));
     const info=analyze([scope.mode,...body].join('\n'),rates);
     return {...scope,...info,results:info.results.map(r=>({...r,line:scope.start+r.line-1}))};

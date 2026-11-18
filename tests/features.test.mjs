@@ -324,3 +324,14 @@ test('a whole-note math mode leaves blocks inside it alone',()=>{
  const count=analyzeScopes('count\none two\n:::inkflit list\nthree four five\n:::end').find(scope=>scope.global);
  assert.match(count.summary,/2/,'words inside the list are not counted');
 });
+test('"code" as the first line makes the whole note code, with an optional language and title',async()=>{
+ const {noteHeader,featureScopes,scopeAt}=await import('../web/features.js');
+ assert.deepEqual(noteHeader('code js: Deploy\nconst a = 1'),{mode:'code',language:'js'});
+ assert.deepEqual(noteHeader('Code\nx'),{mode:'code',language:''});
+ assert.deepEqual(noteHeader('math js\nx'),{mode:'',language:''},'only code takes a language');
+ const text='code py\nprint(1)\n:::inkflit list\nx\n:::end\n```js\n1\n```';
+ assert.deepEqual(featureScopes(text),[{mode:'code',language:'py',start:1,end:8,global:true}],'markers and fences inside are text');
+ assert.equal(scopeAt(text,4).mode,'code');
+ assert.equal(scopeAt(text,1),null,'the first line is the header');
+ assert.equal(analyzeScopes(text)[0].summary,'');
+});

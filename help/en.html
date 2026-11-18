@@ -162,6 +162,23 @@
     </tbody>
   </table>
   <p>Lines starting with <code>//</code> are left out of totals and counts.</p>
+  <h3>Whole notes</h3>
+  <p>Make the first line just a keyword and the whole note becomes that type, with no end marker.</p>
+  <table>
+    <thead><tr><th>First line</th><th>Whole note</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>Checklist</td></tr>
+      <tr><td><code>math</code></td><td>Math; see <a href="#math">Math</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>Sum / average</td></tr>
+      <tr><td><code>count</code></td><td>Count</td></tr>
+      <tr><td><code>code js</code></td><td>Code; <code>js</code> is the language and is optional</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>A colon and a title may follow: <code>sum: Monthly spending</code>, <code>code py: Backup script</code>.</li>
+    <li>Case does not matter.</li>
+    <li>Other blocks in the note keep their own type; in a whole-note code mode everything is code.</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -352,6 +369,7 @@ ans / 2 =
 <section id="code">
   <h2>Code</h2>
   <ul>
+    <li><b>Whole-note code:</b> make the first line <code>code js</code> to highlight and edit the whole note as that language. <kbd>⌘L</kbd> changes the language on the first line.</li>
     <li><kbd>⌘L</kbd> chooses the language of the current code block.</li>
     <li>Brackets and quotes are closed for you. <kbd>Return</kbd> keeps the indentation, <kbd>Tab</kbd> indents and <kbd>⇧Tab</kbd> outdents.</li>
     <li>With nothing selected, <kbd>⌘C</kbd> copies the whole block.</li>

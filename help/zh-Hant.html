@@ -162,6 +162,23 @@
     </tbody>
   </table>
   <p>以 <code>//</code> 開頭的行不列入加總和計數。</p>
+  <h3>整篇筆記</h3>
+  <p>第一行只寫一個關鍵詞，整篇筆記就是這種類型，沒有結束標記。</p>
+  <table>
+    <thead><tr><th>第一行</th><th>整篇筆記</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>清單</td></tr>
+      <tr><td><code>math</code></td><td>計算，見<a href="#math">計算</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>加總 / 平均值</td></tr>
+      <tr><td><code>count</code></td><td>計數</td></tr>
+      <tr><td><code>code js</code></td><td>程式碼，<code>js</code> 是語言，可省略</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>關鍵詞後可以加冒號和標題：<code>sum: 本月開銷</code>、<code>code py: 備份腳本</code>。</li>
+    <li>不區分大小寫。</li>
+    <li>筆記中的其他功能區塊各算各的；整篇程式碼筆記中的一切都當作程式碼。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -352,6 +369,7 @@ ans / 2 =
 <section id="code">
   <h2>程式碼</h2>
   <ul>
+    <li><b>整篇程式碼筆記：</b>第一行寫 <code>code js</code>，整篇依這種語言突顯和編輯。<kbd>⌘L</kbd> 改的是第一行的語言。</li>
     <li><kbd>⌘L</kbd> 選擇目前程式碼區塊的語言。</li>
     <li>括號和引號會自動補上。<kbd>Return</kbd> 保持縮排，<kbd>Tab</kbd> 縮排，<kbd>⇧Tab</kbd> 取消縮排。</li>
     <li>沒有選取內容時，<kbd>⌘C</kbd> 複製整個程式碼區塊。</li>

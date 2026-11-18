@@ -78,7 +78,7 @@ In Vim insert mode, or with Vim turned off, type `/` on an empty line to choose 
 - **sum / avg / count:** Extract and sum or average numbers without evaluating expressions or converting units (for example, `2+3=` counts two numbers); count nonempty items, words and characters. Lines beginning `//` are excluded.
 - **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
 
-Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. A note whose first line is a block keyword such as `math` applies it to the whole note and skips the blocks inside it. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
+Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. A note whose first line is a block keyword (`list`, `math`, `sum`, `avg`, `count`, or `code` with an optional language such as `code js`) applies it to the whole note and skips the blocks inside it; a whole-note code mode treats everything as code. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 
 
 ## Snippets

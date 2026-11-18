@@ -51,3 +51,11 @@ test('markdown code fences also receive code editing without changing boundaries
   const state=EditorState.create({doc,selection:{anchor:pos}});
   assert.equal(apply(state,'Enter').doc.toString(),'```python\nif ok:\n  \n```');
 });
+test('a whole-note code mode edits like a code block, down to its last line',async()=>{
+ const doc='code js\nif (a) {', state=EditorState.create({doc,selection:{anchor:doc.length}});
+ assert.equal(apply(state,'Enter').doc.toString(),'code js\nif (a) {\n  ','Return indents after a bracket on the last line');
+ assert.equal(planCodeEdit(EditorState.create({doc,selection:{anchor:3}}),'Enter'),null,'the header line is not code');
+ const {blockCodeCommentChanges}=await import('../web/comments.js');
+ const py='code py\nprint(1)', pyState=EditorState.create({doc:py,selection:{anchor:py.length}});
+ assert.deepEqual(blockCodeCommentChanges(pyState),[{from:py.indexOf('print'),insert:'# '}],'comments use the language syntax');
+});

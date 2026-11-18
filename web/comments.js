@@ -37,7 +37,7 @@ export function commentChanges(state, {includeCode = false} = {}) {
 export function blockCodeCommentChanges(state) {
   const lines=selectedLines(state), text=state.doc.toString();
   const scopes=lines.map(line=>scopeAt(text,line.number));
-  if(!scopes.length || !scopes.every(scope=>scope?.kind==='block' && scope.mode==='code' && scope.start===scopes[0].start)) return null;
+  if(!scopes.length || !scopes.every(scope=>(scope?.kind==='block' || scope?.global) && scope.mode==='code' && scope.start===scopes[0].start)) return null;
   const language=scopes[0].language.toLowerCase();
   const marker=['python','py','shell','sh','bash','ruby','rb'].includes(language)?'#':['sql'].includes(language)?'--':'//';
   const nonempty=lines.filter(line=>line.text.trim());

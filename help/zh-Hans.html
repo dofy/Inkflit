@@ -162,6 +162,23 @@
     </tbody>
   </table>
   <p>以 <code>//</code> 开头的行不参与合计和计数。</p>
+  <h3>整篇笔记</h3>
+  <p>第一行只写一个关键词，整篇笔记就是这种类型，没有结束标记。</p>
+  <table>
+    <thead><tr><th>第一行</th><th>整篇笔记</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>清单</td></tr>
+      <tr><td><code>math</code></td><td>计算，见<a href="#math">计算</a></td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>求和 / 平均值</td></tr>
+      <tr><td><code>count</code></td><td>计数</td></tr>
+      <tr><td><code>code js</code></td><td>代码，<code>js</code> 是语言，可省略</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>关键词后可以加冒号和标题：<code>sum: 本月开销</code>、<code>code py: 备份脚本</code>。</li>
+    <li>不区分大小写。</li>
+    <li>笔记里的其他功能块各算各的；整篇代码笔记里的一切都当作代码。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -352,6 +369,7 @@ ans / 2 =
 <section id="code">
   <h2>代码</h2>
   <ul>
+    <li><b>整篇代码笔记：</b>第一行写 <code>code js</code>，整篇按这种语言高亮和编辑。<kbd>⌘L</kbd> 改的是第一行的语言。</li>
     <li><kbd>⌘L</kbd> 选择当前代码块的语言。</li>
     <li>括号和引号会自动补全。<kbd>Return</kbd> 保持缩进，<kbd>Tab</kbd> 缩进，<kbd>⇧Tab</kbd> 取消缩进。</li>
     <li>没有选中内容时，<kbd>⌘C</kbd> 复制整个代码块。</li>

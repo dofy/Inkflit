@@ -100,7 +100,7 @@ function copyCodeBlock(event) {
   const scope = scopeAt(doc.toString(), line.number);
   if (scope?.mode !== 'code') return false;
   const from = scope.start < doc.lines ? doc.line(scope.start + 1).from : doc.length;
-  const to = scope.end <= doc.lines ? doc.line(scope.end).from - 1 : doc.length;
+  const to = !scope.global && scope.end <= doc.lines ? doc.line(scope.end).from - 1 : doc.length;
   const content = doc.sliceString(from, Math.max(from, to));
   if (nativeHandler()) { consume(event); nativeHandler().postMessage({ type: 'copyCode', content }); return true; }
   if (navigator.clipboard?.writeText) { consume(event); navigator.clipboard.writeText(content).catch(() => {}); return true; }

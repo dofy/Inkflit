@@ -43,6 +43,7 @@ class BlockHeader extends WidgetType {
   ignoreEvent(event){return !!event.target?.closest?.('.block-language');}
 }
 class BlockEnd extends WidgetType { toDOM(){const el=document.createElement('span');el.className='block-end';el.textContent='';return el;} }
+const codeLine=Decoration.line({class:'cm-code-line'});
 function decorateCode(view,scope,decorations) {
   if(!scope.language || scope.start>=view.state.doc.lines)return;
   const description=codeLanguage(scope.language); if(!description)return;
@@ -50,7 +51,7 @@ function decorateCode(view,scope,decorations) {
     if(!pendingLanguages.has(description)) {pendingLanguages.add(description);description.load().then(()=>view.dispatch({effects:rateEffect.of(null)})).catch(()=>{}).finally(()=>pendingLanguages.delete(description));}
     return;
   }
-  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=scope.end<=doc.lines?doc.line(scope.end).from-1:doc.length;
+  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=!scope.global && scope.end<=doc.lines?doc.line(scope.end).from-1:doc.length;
   if(to<=from)return;
   try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),classHighlighter,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
 }
@@ -64,6 +65,12 @@ function decorate(view) {
       decorations.push(Decoration.replace({widget:new BlockHeader(scope)}).range(first.from,first.to));
       if(scope.end<=doc.lines) {const last=doc.line(scope.end);decorations.push(Decoration.line({class:'cm-block-end-line'}).range(last.from));decorations.push(Decoration.replace({widget:new BlockEnd()}).range(last.from,last.to));}
       if(scope.mode==='code') decorateCode(view,scope,decorations);
+    }
+    if(scope.global && scope.mode==='code') decorateCode(view,scope,decorations);
+    // Code lines keep Markdown's own styling ("# x" as a heading) out of the code.
+    if(scope.mode==='code') {
+      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      for(let n=scope.start+1;n<=last;n++) decorations.push(codeLine.range(doc.line(n).from));
     }
     if(scope.mode==='math') {
       const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();

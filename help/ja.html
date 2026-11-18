@@ -162,6 +162,23 @@
     </tbody>
   </table>
   <p><code>//</code> で始まる行は合計とカウントから除外されます。</p>
+  <h3>ノート全体</h3>
+  <p>1 行目をキーワードだけにすると、ノート全体がその種類になります。終わりの記号はありません。</p>
+  <table>
+    <thead><tr><th>1 行目</th><th>ノート全体</th></tr></thead>
+    <tbody>
+      <tr><td><code>list</code></td><td>チェックリスト</td></tr>
+      <tr><td><code>math</code></td><td>計算（<a href="#math">計算</a>を参照）</td></tr>
+      <tr><td><code>sum</code> / <code>avg</code></td><td>合計 / 平均</td></tr>
+      <tr><td><code>count</code></td><td>カウント</td></tr>
+      <tr><td><code>code js</code></td><td>コード。<code>js</code> は言語で省略可</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>コロンとタイトルを続けられます：<code>sum: 今月の支出</code>、<code>code py: バックアップ</code>。</li>
+    <li>大文字と小文字は区別しません。</li>
+    <li>ノート内のほかのブロックはそれぞれの種類のままです。ノート全体のコードでは、すべてがコードになります。</li>
+  </ul>
 </section>
 
 <section id="math">
@@ -352,6 +369,7 @@ ans / 2 =
 <section id="code">
   <h2>コード</h2>
   <ul>
+    <li><b>ノート全体のコード：</b>1 行目を <code>code js</code> にすると、ノート全体をその言語で表示・編集します。<kbd>⌘L</kbd> は 1 行目の言語を変更します。</li>
     <li><kbd>⌘L</kbd> で現在のコードブロックの言語を選びます。</li>
     <li>括弧と引用符は自動で閉じられます。<kbd>Return</kbd> はインデントを保ち、<kbd>Tab</kbd> でインデント、<kbd>⇧Tab</kbd> でインデント解除します。</li>
     <li>何も選択していないときは、<kbd>⌘C</kbd> でブロック全体をコピーします。</li>

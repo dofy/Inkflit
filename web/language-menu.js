@@ -1,4 +1,4 @@
-import { markerPrefix } from './features.js';
+import { markerPrefix, featureScopes } from './features.js';
 import { t } from './i18n.js';
 import { currentBlockScope, closeBlockMenu } from './block-menu.js';
 
@@ -41,7 +41,7 @@ function position(editor, scope, button) {
   menu.style.left=`${left}px`; menu.style.top=`${below+menu.offsetHeight<=parent.height-8?below:Math.max(8,above)}px`;
 }
 export function openLanguageMenu(editor, scope, button=null) {
-  if(!editor || scope?.kind!=='block' || scope.mode!=='code' || !scope.closed)return false;
+  if(!editor || scope?.mode!=='code' || !(scope.global || (scope.kind==='block' && scope.closed)))return false;
   closeBlockMenu(); closeLanguageMenu();
   const choices=[...languages];
   if(scope.language && !choices.some(([value])=>value===scope.language))choices.push([scope.language,scope.language]);
@@ -50,7 +50,9 @@ export function openLanguageMenu(editor, scope, button=null) {
   menu.hidden=false; render(); position(editor,scope,button); return true;
 }
 export function openCurrentLanguageMenu(editor) {
-  const scope=currentBlockScope(editor.state);
+  const {state}=editor, global=featureScopes(state.doc.toString()).find(item=>item.global);
+  // In a whole-note code mode the first line names the language.
+  const scope=global?.mode==='code' ? global : currentBlockScope(state);
   if(scope?.mode!=='code')return false;
   const line=editor.state.doc.line(scope.start);
   const button=[...editor.dom.querySelectorAll('.block-language')].find(el=>editor.state.doc.lineAt(editor.posAtDOM(el)).number===line.number);
@@ -60,9 +62,12 @@ function choose(language) {
   const editor=getView(), current=active;
   if(!editor || !current)return;
   // The selection may be in another block when opened with the mouse.
-  const line=editor.state.doc.line(current.scope.start);
-  if(!/^:::inkflit code(?:\s|$)/.test(line.text)) { closeLanguageMenu(); return; }
-  const changes=editor.state.changes({from:line.from,to:line.to,insert:`${markerPrefix} code`+(language?' '+language:'')});
+  const line=editor.state.doc.line(current.scope.start), header=/^(\s*code)(?:\s+[\w+.-]+)?(\s*:.*)?$/i.exec(line.text);
+  let insert;
+  if(current.scope.global && header) insert=header[1]+(language?' '+language:'')+(header[2]||'');
+  else if(!current.scope.global && /^:::inkflit code(?:\s|$)/.test(line.text)) insert=`${markerPrefix} code`+(language?' '+language:'');
+  else { closeLanguageMenu(); return; }
+  const changes=editor.state.changes({from:line.from,to:line.to,insert});
   closeLanguageMenu();
   editor.dispatch({changes,selection:editor.state.selection.map(changes),userEvent:'input.block.language'}); editor.focus();
 }
