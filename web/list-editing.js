@@ -29,8 +29,9 @@ export function planListIndent(state, key) {
     }
     if(!previous || depth+unit>columns(leading(previous.text),tabSize)+unit) return {selection:state.selection};
   } else if(depth===0) return {selection:state.selection};
-  const rows=[line];
-  for(let n=line.number+1;n<scope.end && n<=doc.lines;n++) {
+  // A block ends on its ":::end" line; a whole-note list ends on its last line.
+  const last=scope.global ? scope.end : scope.end-1, rows=[line];
+  for(let n=line.number+1;n<=last && n<=doc.lines;n++) {
     const candidate=doc.line(n);
     if(isHeading(candidate.text)) break;
     if(!isItem(candidate.text)) continue;

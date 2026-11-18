@@ -47,3 +47,12 @@ test('outdent handles tabs, uneven whitespace, and headings are boundaries',()=>
 test('non-items, code and text outside a checklist are left alone',()=>{
  for(const [text,pos] of [[':::inkflit code\napple\n:::end','apple'],[':::inkflit list\n// comment\n:::end','comment'],[':::inkflit list\n# title\n:::end','title'],[':::inkflit list\n\n:::end','\n\n'],['ordinary','ordinary']]) assert.equal(planListIndent(make(text,pos),'Tab'),null);
 });
+test('a whole-note list follows the same rules, down to its last line',()=>{
+ // The last line is the end of a whole-note list, not an ":::end" marker.
+ let state=make('list\nroot\n  parent\n    child','parent');
+ state=apply(state,'Shift-Tab');
+ assert.equal(state.doc.toString(),'list\nroot\nparent\n  child','the last child moves with its parent');
+ state=apply(make('list\nroot\nchild','child'),'Tab');
+ assert.equal(state.doc.toString(),'list\nroot\n  child');
+ assert.equal(apply(state,'Tab').doc.toString(),'list\nroot\n  child','at most one level deeper');
+});
