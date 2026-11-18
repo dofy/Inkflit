@@ -57,6 +57,8 @@ export function featureScopes(text) {
   if(active) scopes.push({...active,start:active.line,end:lines.length+1,global:false,closed:false});
   return scopes;
 }
+// Calculation modes treat "12. 0.2" as numbers, not a Markdown list.
+export const calculationModes = new Set(['math','sum','avg','count']);
 let scopeCacheText=null, scopeCache=[];
 export function scopeAt(text, line) {
   if(text!==scopeCacheText) {

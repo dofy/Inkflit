@@ -1,6 +1,6 @@
 import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
-import { analyzeScopes, scopeAt, mathHighlights, nestedLines, headerRanges } from './features.js';
+import { analyzeScopes, scopeAt, mathHighlights, nestedLines, headerRanges, calculationModes } from './features.js';
 import { codeLanguage } from './code-languages.js';
 import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
@@ -43,7 +43,7 @@ class BlockHeader extends WidgetType {
   ignoreEvent(event){return !!event.target?.closest?.('.block-language');}
 }
 class BlockEnd extends WidgetType { toDOM(){const el=document.createElement('span');el.className='block-end';el.textContent='';return el;} }
-const codeLine=Decoration.line({class:'cm-code-line'});
+const codeLine=Decoration.line({class:'cm-code-line'}), calcLine=Decoration.line({class:'cm-calc-line'});
 function decorateCode(view,scope,decorations) {
   if(!scope.language || scope.start>=view.state.doc.lines)return;
   const description=codeLanguage(scope.language); if(!description)return;
@@ -69,6 +69,12 @@ function decorate(view) {
       if(scope.mode==='code') decorateCode(view,scope,decorations);
     }
     if(scope.global && scope.mode==='code') decorateCode(view,scope,decorations);
+    // Calculation lines: "12." is a number, not a list marker.
+    if(calculationModes.has(scope.mode)) {
+      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      // Lines of blocks nested in a whole-note mode belong to those blocks.
+      for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(text,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(calcLine.range(doc.line(n).from)); }
+    }
     // Code lines keep Markdown's own styling ("# x" as a heading) out of the code.
     if(scope.mode==='code') {
       const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);

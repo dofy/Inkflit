@@ -15,6 +15,7 @@ import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-men
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
+import { scopeAt, calculationModes } from './features.js';
 import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
 import { snippets } from './snippet-completion.js';
@@ -47,6 +48,8 @@ export function plainEnterAfterList(state) {
   const selection = state.selection.main;
   if (!selection.empty) return null;
   const line = state.doc.lineAt(selection.head);
+  // In math, sum, avg and count, "12. 0.2" is data: Return never continues a list.
+  if (calculationModes.has(scopeAt(state.doc.toString(), line.number)?.mode)) return { changes: { from: selection.head, insert: '\n' }, selection: { anchor: selection.head + 1 }, scrollIntoView: true, userEvent: 'input' };
   if (/^\s/.test(line.text) || /^(?:[-+*]|\d+[.)])(?:\s|$)/.test(line.text) || isCodeAt(state, selection.head)) return null;
   let inList = false;
   for (let node = syntaxTree(state).resolveInner(line.from, 1); node; node = node.parent) if (node.name === 'ListItem') { inList = true; break; }

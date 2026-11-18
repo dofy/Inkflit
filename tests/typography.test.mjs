@@ -55,3 +55,20 @@ test('wrapped list items hang under their text; tasks and code are left alone', 
     ['12. numbered', 'text-indent:-4ch;padding-left:calc(6px + 4ch)'],
   ]);
 });
+
+test('in math, sum, avg and count, numbered lines are data, not Markdown lists', async () => {
+  const { plainEnterAfterList } = await import('../web/editor-view.js');
+  const { listIndentDecorations } = await import('../web/typography.js');
+  const plan = doc => {
+    const text = doc.replace('|', ''), state = EditorState.create({ doc: text, selection: { anchor: doc.indexOf('|') }, extensions: [markdown()] });
+    const result = plainEnterAfterList(state);
+    return result ? state.update(result).state.doc.toString() : null;
+  };
+  assert.equal(plan('avg: asdf\n12. 0.2|'), 'avg: asdf\n12. 0.2\n', 'Return does not add "13."');
+  assert.equal(plan('notes\n:::inkflit sum\n- 12 coffee|\n:::end'), 'notes\n:::inkflit sum\n- 12 coffee\n\n:::end');
+  assert.equal(plan('notes\n12. item|'), null, 'ordinary notes keep list continuation');
+  const doc = 'sum\n12. numbered';
+  const state = EditorState.create({ doc, extensions: [markdown()] });
+  let hanging = 0; listIndentDecorations(state, [{ from: 0, to: doc.length }]).between(0, doc.length, () => { hanging++; });
+  assert.equal(hanging, 0, 'no hanging list indent');
+});

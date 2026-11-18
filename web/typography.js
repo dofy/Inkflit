@@ -1,6 +1,7 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, ViewPlugin } from '@codemirror/view';
 import { isCodeAt } from './comments.js';
+import { scopeAt, calculationModes } from './features.js';
 
 const headings=Array.from({length:6},(_,i)=>Decoration.line({class:`cm-note-heading cm-note-heading-${i+1}`}));
 
@@ -55,7 +56,7 @@ export function listIndentDecorations(state, ranges) {
   for (const range of ranges) {
     for (let number = doc.lineAt(range.from).number; number <= doc.lineAt(range.to).number; number++) {
       const line = doc.line(number), marker = /^(\s*(?:[-*+]|\d+[.)]) )(?!\[[ xX]\])/.exec(line.text);
-      if (marker && !isCodeAt(state, line.from)) result.push(hanging(marker[1].length).range(line.from));
+      if (marker && !isCodeAt(state, line.from) && !calculationModes.has(scopeAt(state.doc.toString(), number)?.mode)) result.push(hanging(marker[1].length).range(line.from));
     }
   }
   return Decoration.set(result, true);

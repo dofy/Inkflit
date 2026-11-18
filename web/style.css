@@ -38,6 +38,7 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 /* Math blocks borrow the code theme's colours, so they follow its light and dark variants. */
 .editor .cm-content .cm-math-number{color:var(--syntax-number,#075eac)}.editor .cm-content .cm-math-function{color:var(--syntax-function,#775000)}.editor .cm-content .cm-math-unit{color:var(--syntax-keyword,#85338e)}.editor .cm-content .cm-math-currency{color:var(--syntax-string,#007464);font-weight:600}.editor .cm-content .cm-math-operator{color:var(--syntax-operator,#95520f)}.editor .cm-content .cm-math-punctuation{color:var(--syntax-punctuation,#61564d)}.editor .cm-content .cm-math-equals{color:var(--ui-accent,#b95c1d);font-weight:700}.editor .cm-content .cm-math-comment{color:var(--syntax-comment,#75685e)}
 .editor .cm-editor .cm-line.cm-note-heading{line-height:1.5;padding-top:4px;color:var(--ui-ink,#302921)}
+.cm-calc-line .tok-list,.cm-calc-line .inkflit-md-meta{color:inherit!important;font-weight:inherit!important}
 .cm-code-line .tok-heading,.cm-code-line .tok-emphasis,.cm-code-line .tok-strong,.cm-code-line .tok-link,.cm-code-line .tok-url,.cm-code-line .inkflit-md-meta,.cm-code-line .inkflit-md-url{color:inherit!important;font-weight:inherit!important;font-style:inherit!important;text-decoration:none!important}
 .cm-note-heading .tok-heading{font-weight:inherit!important;text-decoration:none!important;color:inherit!important}
 .cm-note-heading .tok-meta{color:var(--ui-button,#8c5b39)!important}
