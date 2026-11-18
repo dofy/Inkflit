@@ -1,6 +1,6 @@
 import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
-import { analyzeScopes, scopeAt, mathHighlights, nestedLines, headerRanges, calculationModes } from './features.js';
+import { analyzeScopes, scopeAt, scopesOf, mathHighlights, nestedLines, headerRanges, calculationModes } from './features.js';
 import { codeLanguage } from './code-languages.js';
 import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
@@ -51,12 +51,20 @@ function decorateCode(view,scope,decorations) {
     if(!pendingLanguages.has(description)) {pendingLanguages.add(description);description.load().then(()=>view.dispatch({effects:rateEffect.of(null)})).catch(()=>{}).finally(()=>pendingLanguages.delete(description));}
     return;
   }
-  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=!scope.global && scope.end<=doc.lines?doc.line(scope.end).from-1:doc.length;
+  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=doc.line(Math.min(doc.lines,scope.last)).to;
   if(to<=from)return;
   try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),classHighlighter,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
 }
+// One analysis per document, rates and language (summaries are translated),
+// shared by the decorations and the footer summary.
+let analysis={doc:null,rates:null,language:null,scopes:null};
+function analysisOf(doc) {
+  const rates=currentRates(), language=lang();
+  if(analysis.doc!==doc || analysis.rates!==rates || analysis.language!==language) analysis={doc,rates,language,scopes:analyzeScopes(doc.toString(),rates,scopesOf(doc))};
+  return analysis.scopes;
+}
 function decorate(view) {
-  const doc=view.state.doc, text=doc.toString(), scopes=analyzeScopes(text,currentRates()), decorations=[], currencies=new Set(currencyCodes());
+  const doc=view.state.doc, text=doc.toString(), scopes=analysisOf(doc), decorations=[], currencies=new Set(currencyCodes());
   if (scopes.some(s=>s.mode==='math')) refreshRates();
   // A first line that sets the note's mode shows its keyword (and language) as a tag.
   for (const range of headerRanges(text)) decorations.push(Decoration.mark({class:range.kind==='keyword' ? 'cm-note-mode' : 'cm-note-mode-language'}).range(range.from,range.to));
@@ -71,17 +79,17 @@ function decorate(view) {
     if(scope.global && scope.mode==='code') decorateCode(view,scope,decorations);
     // Calculation lines: "12." is a number, not a list marker.
     if(calculationModes.has(scope.mode)) {
-      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      const last=Math.min(doc.lines,scope.last);
       // Lines of blocks nested in a whole-note mode belong to those blocks.
-      for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(text,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(calcLine.range(doc.line(n).from)); }
+      for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(doc,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(calcLine.range(doc.line(n).from)); }
     }
     // Code lines keep Markdown's own styling ("# x" as a heading) out of the code.
     if(scope.mode==='code') {
-      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      const last=Math.min(doc.lines,scope.last);
       for(let n=scope.start+1;n<=last;n++) decorations.push(codeLine.range(doc.line(n).from));
     }
     if(scope.mode==='math') {
-      const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();
+      const first=scope.start+1, last=Math.min(doc.lines,scope.last), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();
       for(let n=first;n<=last;n++) lines.push(nested.has(n) ? '' : doc.line(n).text);
       for(const range of mathHighlights(lines,currencies)) {
         const line=doc.line(first+range.line);
@@ -92,7 +100,7 @@ function decorate(view) {
     if (!scope.global && scope.summary && scope.end<=doc.lines) { const line=doc.line(scope.end); decorations.push(Decoration.widget({widget:new Result('  '+scope.summary),side:1}).range(line.to)); }
   }
   for(let n=2;n<=doc.lines;n++) {
-    const scope=scopeAt(text,n); if(scope?.mode!=='list') continue;
+    const scope=scopeAt(doc,n); if(scope?.mode!=='list') continue;
     const line=doc.line(n), trimmed=line.text.trim();
     if (!trimmed || /^(\/\/|#{1,6}(?:\s|$))/.test(trimmed) || /^(?:[-+*]\s+|\d+[.)]\s+)?\[[ xX]\](?:\s|$)/.test(trimmed)) continue;
     const indent=/^\s*/.exec(line.text)[0].length;
@@ -102,8 +110,9 @@ function decorate(view) {
 }
 export const features = ViewPlugin.fromClass(class {
   constructor(view){this.decorations=decorate(view);}
-  update(u){if(u.docChanged || u.viewportChanged || u.geometryChanged || u.transactions.some(t=>t.effects.some(e=>e.is(rateEffect)))) this.decorations=decorate(u.view);}
+  // Decorations cover the whole document, so scrolling or resizing changes nothing.
+  update(u){if(u.docChanged || u.transactions.some(t=>t.effects.some(e=>e.is(rateEffect)))) this.decorations=decorate(u.view);}
 },{decorations:v=>v.decorations});
 import { StateEffect } from '@codemirror/state';
 export const rateEffect=StateEffect.define();
-export const analyzeCurrent = text => analyzeScopes(text,currentRates()).find(scope=>scope.global) || {summary:''};
+export const analyzeCurrent = doc => analysisOf(doc).find(scope=>scope.global) || {summary:''};

@@ -1,10 +1,10 @@
 import { EditorState, Transaction } from '@codemirror/state';
-import { featureScopes } from './features.js';
+import { scopesOf } from './features.js';
 import { taskContentPosition } from './tasks.js';
 
 export function markerRanges(doc) {
   const ranges=[];
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.kind!=='block')continue;
     const start=doc.line(scope.start);
     ranges.push({from:start.from,to:start.to,scope,kind:'start'});
@@ -39,17 +39,23 @@ export function nearestEditablePosition(doc, pos, previous=pos, changed=false) {
   for(const marker of markerRanges(doc)) {
     if(pos<marker.from || pos>marker.to)continue;
     const scope=marker.scope;
+    // A block with no body reserves the position just before the opening
+    // marker's line break. Typing there creates the first content line.
+    if (scope.last === scope.start) {
+      const anchor = doc.line(scope.start).to;
+      if (!changed && previous === anchor && marker.kind === 'end' && marker.to < doc.length) {
+        return nearestEditablePosition(doc, marker.to + 1, previous, false);
+      }
+      return anchor;
+    }
     if(marker.kind==='start') {
       if(!changed && previous>marker.to && marker.from>0)return nearestEditablePosition(doc,marker.from-1,previous,false);
       return scope.start<doc.lines ? doc.line(scope.start+1).from : marker.to;
     }
     if(!changed && previous<marker.from && marker.to<doc.length)return nearestEditablePosition(doc,marker.to+1,previous,false);
-    if(scope.end>1) {
-      const line=doc.line(scope.end-1);
-      const segments=typeof Intl.Segmenter==='function' ? [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(line.text)] : Array.from(line.text).map(segment=>({segment}));
-      return Math.max(line.from,line.to-(segments.at(-1)?.segment.length||0));
-    }
-    return marker.from;
+    const line=doc.line(scope.last);
+    const segments=typeof Intl.Segmenter==='function' ? [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(line.text)] : Array.from(line.text).map(segment=>({segment}));
+    return Math.max(line.from,line.to-(segments.at(-1)?.segment.length||0));
   }
   return pos;
 }
@@ -58,7 +64,7 @@ export function trimFinalLineDeletion(doc, changes) {
   let edit=null,count=0;
   changes.iterChanges((from,to,_a,_b,inserted)=>{count++;edit={from,to,inserted};});
   if(count!==1 || !edit || edit.from===edit.to || edit.inserted.length!==0)return null;
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.kind!=='block' || !scope.closed || scope.start+1>=scope.end)continue;
     const first=doc.line(scope.start+1).from, end=doc.line(scope.end).from;
     // Vim dd on a final empty line includes the separator before the end
@@ -108,6 +114,16 @@ export function visibleCopiedText(text,state) {
 export const blockProtection=EditorState.transactionFilter.of(tr=>{
   const internal=tr.isUserEvent('input.block') || tr.isUserEvent('undo') || tr.isUserEvent('redo');
   if(tr.docChanged && !internal && changesTouchMarkers(tr.startState.doc,tr.changes) && !removesLinesBeforeBlock(tr.startState.doc,tr.changes)) {
+    let firstContentAt = null, changeCount = 0;
+    tr.changes.iterChanges((from,to,_a,_b,inserted)=>{
+      changeCount++;
+      if (from === to && inserted.length && markerRanges(tr.startState.doc).some(
+        ({kind,scope,to}) => kind === 'start' && to === from && scope.last === scope.start
+      )) firstContentAt = from;
+    });
+    if (changeCount === 1 && firstContentAt !== null) {
+      return [tr, {changes:{from:firstContentAt,insert:'\n'},sequential:true}];
+    }
     const trimmed=trimFinalLineDeletion(tr.startState.doc,tr.changes);
     if(trimmed) return {changes:trimmed,selection:{anchor:trimmed.from},userEvent:'delete'};
     const safeChanges=splitReplacementAroundMarkers(tr.startState.doc,tr.changes);

@@ -1,9 +1,10 @@
 import { syntaxTree } from '@codemirror/language';
 import { Decoration, ViewPlugin } from '@codemirror/view';
 import { scopeAt } from './features.js';
+import { lineCommentMarker } from './code-languages.js';
 
 export function isCodeAt(state, offset) {
-  if (scopeAt(state.doc.toString(),state.doc.lineAt(offset).number)?.mode === 'code') return true;
+  if (scopeAt(state.doc,state.doc.lineAt(offset).number)?.mode === 'code') return true;
   for (let node = syntaxTree(state).resolve(offset, 1); node; node = node.parent) {
     if (node.name === 'FencedCode' || node.name === 'CodeBlock') return true;
   }
@@ -35,11 +36,10 @@ export function commentChanges(state, {includeCode = false} = {}) {
   });
 }
 export function blockCodeCommentChanges(state) {
-  const lines=selectedLines(state), text=state.doc.toString();
-  const scopes=lines.map(line=>scopeAt(text,line.number));
+  const lines=selectedLines(state);
+  const scopes=lines.map(line=>scopeAt(state.doc,line.number));
   if(!scopes.length || !scopes.every(scope=>(scope?.kind==='block' || scope?.global) && scope.mode==='code' && scope.start===scopes[0].start)) return null;
-  const language=scopes[0].language.toLowerCase();
-  const marker=['python','py','shell','sh','bash','ruby','rb'].includes(language)?'#':['sql'].includes(language)?'--':'//';
+  const marker=lineCommentMarker(scopes[0].language);
   const nonempty=lines.filter(line=>line.text.trim());
   const uncomment=nonempty.every(line=>line.text.trimStart().startsWith(marker));
   return nonempty.map(line=>{
@@ -59,7 +59,7 @@ function decorations(view) {
     while (line.from <= range.to) {
       const match=/^[\t ]*\/\//.exec(line.text);
       if (match && !isCodeAt(view.state, line.from)) {
-        const inFeature=!!scopeAt(doc.toString(),line.number);
+        const inFeature=!!scopeAt(doc,line.number);
         result.push((inFeature ? commentLine : noteCommentLine).range(line.from));
         if(!inFeature) result.push(noteCommentMarker.range(line.from+match[0].length-2,line.from+match[0].length));
       }

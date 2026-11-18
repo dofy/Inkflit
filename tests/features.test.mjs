@@ -169,6 +169,26 @@ test('copy excludes only structural markers and keeps code text',async()=>{
  const state=EditorState.create({doc:text,selection:{anchor:0,head:text.length}});
  assert.equal(visibleCopiedText(text,state),'苹果\n梨\n段落\n```text\n:::end\n```');
 });
+test('typing into an empty feature block creates its first content line',async()=>{
+ const {EditorState}=await import('@codemirror/state');
+ const {history,undo}=await import('@codemirror/commands');
+ const {blockProtection,nearestEditablePosition}=await import('../web/block-protection.js');
+ for (const end of ['', '\n:::end', '\n:::end\nafter']) {
+  const header=':::inkflit list', doc=header+end, anchor=header.length;
+  const state=EditorState.create({doc,selection:{anchor},extensions:[history(),blockProtection]});
+  assert.equal(nearestEditablePosition(state.doc,0,0,true),anchor);
+  if(end) {
+   const closing=state.doc.line(2);
+   assert.equal(nearestEditablePosition(state.doc,closing.from),anchor);
+   if(state.doc.lines === 3) assert.equal(nearestEditablePosition(state.doc,closing.from,anchor),state.doc.line(3).from);
+  }
+  let edited=state.update({changes:{from:anchor,insert:'item'},selection:{anchor:anchor+4},userEvent:'input.type'}).state;
+  assert.equal(edited.doc.toString(),header+'\nitem'+end);
+  assert.equal(edited.selection.main.head,anchor+5);
+  undo({state:edited,dispatch:tr=>{edited=tr.state;}});
+  assert.equal(edited.doc.toString(),doc);
+ }
+});
 test('cross-block deletion preserves marker lines and allows undo',async()=>{
  const {EditorState,Transaction}=await import('@codemirror/state');const {history,undo}=await import('@codemirror/commands');const {blockProtection}=await import('../web/block-protection.js');
  const doc=':::inkflit list\n苹果\n:::end\n中间\n:::inkflit math\n2+3=\n:::end\n结尾';
@@ -298,6 +318,11 @@ test('task cursor skips checkbox marker while preserving code and plain text',as
  assert.equal(taskContentPosition(state,open+1),open+4);
  assert.equal(taskContentPosition(state,finished+4),finished+4);
  assert.equal(taskContentPosition(state,code),code);
+ for (const doc of ['code js\n[x] source',':::inkflit code js\n[x] source\n:::end']) {
+  const codeState=EditorState.create({doc,extensions:[markdown()]});
+  const pos=doc.indexOf('[x]');
+  assert.equal(taskContentPosition(codeState,pos),pos);
+ }
 });
 import { setLanguage } from '../web/i18n.js';
 setLanguage('zh-Hans');
@@ -330,7 +355,7 @@ test('"code" as the first line makes the whole note code, with an optional langu
  assert.deepEqual(noteHeader('Code\nx'),{mode:'code',language:''});
  assert.deepEqual(noteHeader('math js\nx'),{mode:'',language:''},'only code takes a language');
  const text='code py\nprint(1)\n:::inkflit list\nx\n:::end\n```js\n1\n```';
- assert.deepEqual(featureScopes(text),[{mode:'code',language:'py',start:1,end:8,global:true}],'markers and fences inside are text');
+ assert.deepEqual(featureScopes(text),[{mode:'code',language:'py',start:1,end:8,last:8,global:true}],'markers and fences inside are text');
  assert.equal(scopeAt(text,4).mode,'code');
  assert.equal(scopeAt(text,1),null,'the first line is the header');
  assert.equal(analyzeScopes(text)[0].summary,'');
@@ -355,4 +380,13 @@ test('sum and avg skip numbering markers at the start of a line',()=>{
  assert.equal(summary('12. 0.2'),summary('0.2'),'the amount after a marker still counts');
  assert.equal(summary('cost 1.2.'),summary('1.2'),'a number ending a sentence still counts');
  assert.equal(summary('1.5 kg'),summary('1.5'),'a decimal at the line start is an amount');
+});
+test('every scope knows its last content line',async()=>{
+ const {featureScopes}=await import('../web/features.js');
+ const last=text=>featureScopes(text).map(s=>[s.mode,s.start,s.end,s.last]);
+ assert.deepEqual(last(':::inkflit list\na\nb\n:::end'),[['list',1,4,3]],'closed block: the line before :::end');
+ assert.deepEqual(last(':::inkflit list\n:::end'),[['list',1,2,1]],'empty block: no content lines');
+ assert.deepEqual(last(':::inkflit list\na'),[['list',1,3,2]],'unclosed block: the last line');
+ assert.deepEqual(last('sum\n1\n2'),[['sum',1,3,3]],'whole note: the last line');
+ assert.deepEqual(last('```js\nx\n```'),[['code',1,3,2]],'fence');
 });

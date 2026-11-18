@@ -1,22 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# Each run uses a throwaway bundle ID and folder; remove both when the script exits.
-cleanup_ids=(); cleanup_dirs=()
-cleanup() {
-  for id in ${cleanup_ids[@]+"${cleanup_ids[@]}"}; do defaults delete "$id" >/dev/null 2>&1; rm -f "$HOME/Library/Preferences/$id.plist"; done
-  for dir in ${cleanup_dirs[@]+"${cleanup_dirs[@]}"}; do rm -rf "$dir"; done
-}
-trap cleanup EXIT
-npm run build
-qa_dir=$(mktemp -d /tmp/inkflit-auto.XXXXXX); cleanup_dirs+=("$qa_dir")
-qa_app="$qa_dir/Test.app"
-ditto build/Inkflit.app "$qa_app"
-bundle_id="local.seven.inkflit.auto.$(basename "$qa_dir" | tr -cd '[:alnum:]')"; cleanup_ids+=("$bundle_id")
-/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$qa_app/Contents/Info.plist"
-swiftc -D INKFLIT_NATIVE_TEST Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift tests/NativeCodeEditingTest.swift -o "$qa_app/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
-codesign --force --sign - --timestamp=none "$qa_app"
-python3 - "$qa_app/Contents/MacOS/Inkflit" "$qa_dir" <<'PY'
+source scripts/native-test-common.sh
+setup_native_test inkflit-auto auto Test.app /tmp
+python3 - "$test_app/Contents/MacOS/Inkflit" "$test_dir" <<'PY'
 import os, sys, json, time, tempfile, subprocess, select, base64, pathlib, signal
 binary, root = sys.argv[1:]
 root=pathlib.Path(root); store=root/'store'
@@ -134,7 +121,7 @@ finally:
 PY
 
 # Exercise the editor search and URL handler in fresh isolated stores.
-python3 - "$qa_app/Contents/MacOS/Inkflit" "$qa_dir" <<'PY2'
+python3 - "$test_app/Contents/MacOS/Inkflit" "$test_dir" <<'PY2'
 import os,sys,json,base64,pathlib,subprocess
 binary,root=sys.argv[1:];root=pathlib.Path(root)
 for appearance,language in [('light','en'),('dark','zh-Hant')]:

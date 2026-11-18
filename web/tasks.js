@@ -29,6 +29,10 @@ function isInCode(tree, offset) {
   }
   return false;
 }
+function isTaskCode(state, line, offset) {
+  const mode = scopeAt(state.doc, line)?.mode;
+  return mode === 'code' || (mode !== 'list' && isInCode(syntaxTree(state), offset));
+}
 // In normal mode a task marker is represented by a widget, so put the Vim
 // cursor on its text rather than drawing a source character over the checkbox.
 export function taskContentPosition(state, pos) {
@@ -37,19 +41,18 @@ export function taskContentPosition(state, pos) {
   if(!match)return pos;
   const from=line.from+match[1].length, end=from+3;
   if(pos<from || pos>=end)return pos;
-  if(isInCode(syntaxTree(state),from) && scopeAt(state.doc.toString(),line.number)?.mode!=='list')return pos;
+  if(isTaskCode(state,line.number,from))return pos;
   return Math.min(line.to,end+(line.text[end-line.from]===' '?1:0));
 }
 function taskDecorations(view) {
-  const decorations = [], doc = view.state.doc, tree = syntaxTree(view.state);
+  const decorations = [], state = view.state, doc = state.doc;
   for (const range of view.visibleRanges) {
     let line = doc.lineAt(range.from);
     while (line.from <= range.to) {
       const match = /^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
       if (match) {
         const from = line.from + match[1].length, to = from + 3;
-        const inCode = isInCode(tree, from) && scopeAt(doc.toString(),line.number)?.mode !== 'list';
-        if (!inCode) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
+        if (!isTaskCode(state, line.number, from)) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
       }
       if (line.to >= doc.length) break;
       line = doc.lineAt(line.to + 1);
@@ -59,5 +62,6 @@ function taskDecorations(view) {
 }
 export const tasks = ViewPlugin.fromClass(class {
   constructor(view) { this.decorations = taskDecorations(view); }
-  update(update) { if (update.docChanged || update.viewportChanged || update.selectionSet || update.geometryChanged) this.decorations = taskDecorations(update.view); }
+  // Checkboxes depend on the visible text, not on the selection.
+  update(update) { if (update.docChanged || update.viewportChanged || update.geometryChanged) this.decorations = taskDecorations(update.view); }
 }, {decorations: value => value.decorations});

@@ -233,3 +233,16 @@ test('{cursor} marks caret stops that Tab and Shift-Tab move between', async () 
   assert.ok(hasPrevSnippetField(view.state));
   prevSnippetField(view); assert.deepEqual(sel(), [5, 9]);
 });
+
+test('the combined row list is reused until a source changes', async () => {
+  const { setUserSnippets } = await import('../web/snippet-completion.js');
+  setUserSnippets([]);
+  const first = allSnippets();
+  assert.equal(allSnippets(), first, 'same rows, same array');
+  setUserSnippets([{ trigger: 'addr', content: 'Home' }]);
+  const changed = allSnippets();
+  assert.notEqual(changed, first, 'new user rows rebuild the list');
+  assert.ok(changed.some(row => row.trigger === 'addr'));
+  setUserSnippets([]);
+  assert.ok(!allSnippets().some(row => row.trigger === 'addr'));
+});

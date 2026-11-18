@@ -1,6 +1,6 @@
 import { isolateHistory } from '@codemirror/commands';
 import { EditorState, Transaction } from '@codemirror/state';
-import { scopeAt, featureScopes } from './features.js';
+import { scopeAt, scopesOf } from './features.js';
 
 const unit=2;
 const leading=text=>/^[ \t]*/.exec(text)[0];
@@ -18,21 +18,22 @@ export function planListIndent(state, key) {
   if(key !== 'Tab' && key !== 'Shift-Tab') return null;
   const selection=state.selection.main;
   if(state.selection.ranges.length!==1 || !selection.empty) return null;
-  const doc=state.doc, line=doc.lineAt(selection.head), scope=scopeAt(doc.toString(),line.number);
+  const doc=state.doc, line=doc.lineAt(selection.head), scope=scopeAt(doc,line.number);
   if(scope?.mode!=='list' || !isItem(line.text)) return null;
   const tabSize=state.tabSize, indent=leading(line.text), depth=columns(indent,tabSize);
   if(key==='Tab') {
     let previous=null;
     for(let n=line.number-1;n>scope.start;n--) {
+      if(scopeAt(doc,n)!==scope) break;
       const candidate=doc.line(n);
       if(isHeading(candidate.text)) break;
       if(isItem(candidate.text)) {previous=candidate; break;}
     }
     if(!previous || depth+unit>columns(leading(previous.text),tabSize)+unit) return {selection:state.selection};
   } else if(depth===0) return {selection:state.selection};
-  // A block ends on its ":::end" line; a whole-note list ends on its last line.
-  const last=scope.global ? scope.end : scope.end-1, rows=[line];
+  const last=scope.last, rows=[line];
   for(let n=line.number+1;n<=last && n<=doc.lines;n++) {
+    if(scopeAt(doc,n)!==scope) break;
     const candidate=doc.line(n);
     if(isHeading(candidate.text)) break;
     if(!isItem(candidate.text)) continue;
@@ -41,7 +42,8 @@ export function planListIndent(state, key) {
   }
   const changes=rows.map(row=>{
     const prefix=leading(row.text);
-    const replacement=key==='Tab' ? '  '+prefix : ' '.repeat(Math.max(0,columns(prefix,tabSize)-unit));
+    const target=columns(prefix,tabSize)+(key==='Tab' ? unit : -unit);
+    const replacement=' '.repeat(Math.max(0,target));
     return {from:row.from,to:row.from+prefix.length,insert:replacement};
   });
   const replacement=changes[0].insert, offset=selection.head-line.from;
@@ -55,12 +57,13 @@ export function planListIndent(state, key) {
 // before the paste are left as they are. Headings start a new tree.
 export function listIndentFixes(state, from, to) {
   const doc=state.doc, tabSize=state.tabSize, firstLine=doc.lineAt(from).number, lastLine=doc.lineAt(to).number, changes=[];
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.mode!=='list') continue;
-    const last=Math.min(doc.lines, scope.global ? scope.end : scope.end-1);
+    const last=Math.min(doc.lines, scope.last);
     if(lastLine<=scope.start || firstLine>last) continue;
     let stack=[];
     for(let n=scope.start+1;n<=last;n++) {
+      if(scopeAt(doc,n)!==scope) { stack=[]; continue; }
       const line=doc.line(n);
       if(isHeading(line.text)) { stack=[]; continue; }
       if(!isItem(line.text)) continue;

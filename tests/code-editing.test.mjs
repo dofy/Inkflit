@@ -59,3 +59,14 @@ test('a whole-note code mode edits like a code block, down to its last line',asy
  const py='code py\nprint(1)', pyState=EditorState.create({doc:py,selection:{anchor:py.length}});
  assert.deepEqual(blockCodeCommentChanges(pyState),[{from:py.indexOf('print'),insert:'# '}],'comments use the language syntax');
 });
+test('code editing and ⌘/ agree on comment markers, including py, rb and sql',async()=>{
+ const {lineCommentMarker}=await import('../web/code-languages.js');
+ for(const [language,marker] of [['python','#'],['py','#'],['rb','#'],['sql','--'],['javascript','//'],['',"//"]]) assert.equal(lineCommentMarker(language),marker,language);
+ // A quote inside a comment is not paired.
+ for(const [language,comment] of [['py','# note '],['rb','# note '],['sql','-- note '],['javascript','// note ']]) {
+  const state=inBlock(comment,comment.length,language);
+  assert.equal(apply(state,'"'),null,`${language}: no pairing inside a comment`);
+ }
+ // In Python "//" is floor division, so a quote after it is still paired.
+ assert.ok(apply(inBlock('a // ',5,'python'),'"'),'python: // is not a comment');
+});

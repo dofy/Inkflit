@@ -28,9 +28,11 @@ export function searchNotes(notes, query) {
   const pattern=new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'giu');
   const results=[];
   for(let index=0;index<notes.length;index++) {
-    const note=notes[index], markers=hiddenMarkers(note.content);let match;
+    // Block markers are only worked out for notes that match at all.
+    const note=notes[index];let match, markers=null;
     pattern.lastIndex=0;
     while((match=pattern.exec(note.content))) {
+      markers??=hiddenMarkers(note.content);
       if(!markers.some(marker=>match.index < marker.to && match.index+match[0].length > marker.from))break;
     }
     const at=match?.index ?? -1;

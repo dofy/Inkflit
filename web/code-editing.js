@@ -1,4 +1,5 @@
 import { scopeAt } from './features.js';
+import { lineCommentMarker } from './code-languages.js';
 
 export const indentationOptions = ['spaces2', 'spaces4', 'tabs'];
 export function normalizeIndentation(value) { return indentationOptions.includes(value) ? value : 'spaces2'; }
@@ -9,7 +10,8 @@ const openers = new Set(['(','[','{']);
 // in a comment or an existing string does not silently insert extra text.
 function lexicalContext(text, language) {
   let quote='', blockComment=false, lineComment=false, escaped=false;
-  const hashComments=['python','shell','sh','bash','ruby'].includes(language);
+  // "//" languages also have /* */ comments; in Python "//" is floor division.
+  const marker=lineCommentMarker(language), slashes=marker==='//';
   for(let i=0;i<text.length;i++) {
     const ch=text[i], next=text[i+1];
     if(lineComment) {if(ch==='\n')lineComment=false; continue;}
@@ -21,9 +23,8 @@ function lexicalContext(text, language) {
       else if(ch==='\n' && quote!=='`')quote='';
       continue;
     }
-    if(ch==='/' && next==='/'){lineComment=true;i++;continue;}
-    if(ch==='/' && next==='*'){blockComment=true;i++;continue;}
-    if(ch==='#' && hashComments){lineComment=true;continue;}
+    if(text.startsWith(marker,i)){lineComment=true;i+=marker.length-1;continue;}
+    if(slashes && ch==='/' && next==='*'){blockComment=true;i++;continue;}
     if(ch==='"'||ch==="'"||ch==='`')quote=ch;
   }
   return {quote,comment:blockComment||lineComment,escaped};
@@ -33,8 +34,8 @@ function lexicalContext(text, language) {
 export function planCodeEdit(state, key, options={}) {
   if(state.selection.ranges.length!==1)return null;
   const selection=state.selection.main, doc=state.doc;
-  const start=scopeAt(doc.toString(),doc.lineAt(selection.from).number);
-  const end=scopeAt(doc.toString(),doc.lineAt(selection.to).number);
+  const start=scopeAt(doc,doc.lineAt(selection.from).number);
+  const end=scopeAt(doc,doc.lineAt(selection.to).number);
   if(!start || start.mode!=='code' || !end || start.start!==end.start || start.end!==end.end)return null;
   const line=doc.lineAt(selection.head), pos=selection.head, empty=selection.empty;
   const scopeStart=doc.line(start.start+1).from;
