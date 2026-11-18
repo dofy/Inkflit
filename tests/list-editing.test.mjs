@@ -75,3 +75,16 @@ test('pasted items follow the same indent rules, keeping their own structure',as
  let undone=withHistory; undo({state:undone,dispatch:tr=>{undone=tr.state;}});
  assert.equal(undone.doc.toString(),'list\n');
 });
+test('Vim put and shift follow the same indent rules',async()=>{
+ const {listPasteRules}=await import('../web/list-editing.js');
+ const run=(doc,spec)=>EditorState.create({doc,extensions:[listPasteRules]}).update({...spec,userEvent:'input.type.compose'}).state.doc.toString();
+ assert.equal(run('list\nroot\n',{changes:{from:10,insert:'      a\n        b\n'}}),'list\nroot\n  a\n    b\n','p of indented lines');
+ assert.equal(run('list\nroot\n  child',{changes:{from:10,insert:'    '}}),'list\nroot\n  child','>> past the limit is held back');
+ const shift=EditorState.create({doc:'list\nroot\n  child',extensions:[listPasteRules]}).update({changes:{from:10,insert:'  '},userEvent:'indent.more'}).state.doc.toString();
+ assert.equal(shift,'list\nroot\n  child','indent.more (Vim >>) past the limit is held back');
+ const vimShift=EditorState.create({doc:'list\nroot\n  child',extensions:[listPasteRules]}).update({changes:{from:10,insert:'  '},userEvent:'input.indent'}).state.doc.toString();
+ assert.equal(vimShift,'list\nroot\n  child','Vim >> (userEvent "input.indent") past the limit is held back');
+ const typed=EditorState.create({doc:'list\nroot\n  child',extensions:[listPasteRules]}).update({changes:{from:10,insert:'  '},userEvent:'input.type'}).state.doc.toString();
+ assert.equal(typed,'list\nroot\n    child','typed spaces are kept');
+ assert.equal(run('list\nroot\n    deep',{changes:{from:14,to:15}}),'list\nroot\n    eep','x inside text is not re-levelled');
+});

@@ -1,5 +1,5 @@
 import { isolateHistory } from '@codemirror/commands';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Transaction } from '@codemirror/state';
 import { scopeAt, featureScopes } from './features.js';
 
 const unit=2;
@@ -49,7 +49,7 @@ export function planListIndent(state, key) {
   return {changes,selection:{anchor},scrollIntoView:true,userEvent:'input.list.indent',annotations:isolateHistory.of('full')};
 }
 
-// Pasted items keep the same rules as Tab: the first item is at the root and
+// Pasted items (and Vim p, P, >>, <<) keep the same rules as Tab: the first item is at the root and
 // an item is at most one level deeper than its parent. Pasted lines and the
 // ones after them are re-levelled, keeping their relative structure; lines
 // before the paste are left as they are. Headings start a new tree.
@@ -73,8 +73,23 @@ export function listIndentFixes(state, from, to) {
   }
   return changes;
 }
+// Vim edits arrive as "input" (>> and <<) or "input.type.compose" (p, P):
+// treat a put of whole lines and a change of leading whitespace only like a
+// paste. Typing ("input.type") is left alone, so spaces you type stay.
+function vimLayoutChange(tr) {
+  const event=tr.annotation(Transaction.userEvent) || '';
+  if(event!=='input' && !event.startsWith('input.type.compose')) return false;
+  let put=false, indentOnly=true;
+  tr.changes.iterChanges((fromA,toA,_fromB,_toB,inserted)=>{
+    const text=inserted.toString(), removed=tr.startState.sliceDoc(fromA,toA);
+    if(/\n/.test(text) && /\S/.test(text)) put=true;
+    if(fromA!==tr.startState.doc.lineAt(fromA).from || !/^[ \t]*$/.test(text) || !/^[ \t]*$/.test(removed)) indentOnly=false;
+  });
+  return put || indentOnly;
+}
 export const listPasteRules = EditorState.transactionFilter.of(tr => {
-  if(!tr.docChanged || !(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop'))) return tr;
+  // "indent" covers indentMore / indentLess; Vim's >> and << arrive as "input.indent".
+  if(!tr.docChanged || !(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop') || tr.isUserEvent('indent') || tr.isUserEvent('input.indent') || vimLayoutChange(tr))) return tr;
   let from=Infinity, to=-1;
   tr.changes.iterChangedRanges((_a,_b,fromB,toB)=>{ from=Math.min(from,fromB); to=Math.max(to,toB); });
   const changes=listIndentFixes(tr.state, from, to);
