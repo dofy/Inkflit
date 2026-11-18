@@ -49,7 +49,7 @@ export function planListIndent(state, key) {
   return {changes,selection:{anchor},scrollIntoView:true,userEvent:'input.list.indent',annotations:isolateHistory.of('full')};
 }
 
-// Pasted items (and Vim p, P, >>, <<) keep the same rules as Tab: the first item is at the root and
+// Pasted items (and Vim p, P, >>, <<, and removed lines) keep the same rules as Tab: the first item is at the root and
 // an item is at most one level deeper than its parent. Pasted lines and the
 // ones after them are re-levelled, keeping their relative structure; lines
 // before the paste are left as they are. Headings start a new tree.
@@ -87,9 +87,19 @@ function vimLayoutChange(tr) {
   });
   return put || indentOnly;
 }
+// Removing a line break (dd, deleting selected lines, joining lines) can leave
+// the lines below too deep, so it is re-levelled like a paste.
+function removesLine(tr) {
+  let removed=false;
+  tr.changes.iterChanges((fromA,toA)=>{ if(/\n/.test(tr.startState.sliceDoc(fromA,toA))) removed=true; });
+  return removed;
+}
 export const listPasteRules = EditorState.transactionFilter.of(tr => {
+  const event=tr.annotation(Transaction.userEvent);
+  // Only user edits: not loading, automation, undo / redo, or Tab's own indent.
+  if(!tr.docChanged || !event || event==='undo' || event==='redo' || event==='input.list.indent') return tr;
   // "indent" covers indentMore / indentLess; Vim's >> and << arrive as "input.indent".
-  if(!tr.docChanged || !(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop') || tr.isUserEvent('indent') || tr.isUserEvent('input.indent') || vimLayoutChange(tr))) return tr;
+  if(!(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop') || tr.isUserEvent('indent') || tr.isUserEvent('input.indent') || vimLayoutChange(tr) || removesLine(tr))) return tr;
   let from=Infinity, to=-1;
   tr.changes.iterChangedRanges((_a,_b,fromB,toB)=>{ from=Math.min(from,fromB); to=Math.max(to,toB); });
   const changes=listIndentFixes(tr.state, from, to);

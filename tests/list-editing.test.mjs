@@ -88,3 +88,14 @@ test('Vim put and shift follow the same indent rules',async()=>{
  assert.equal(typed,'list\nroot\n    child','typed spaces are kept');
  assert.equal(run('list\nroot\n    deep',{changes:{from:14,to:15}}),'list\nroot\n    eep','x inside text is not re-levelled');
 });
+test('removing a line re-levels the lines below it',async()=>{
+ const {listPasteRules}=await import('../web/list-editing.js');
+ const run=(doc,spec,userEvent)=>EditorState.create({doc,extensions:[listPasteRules]}).update({...spec,userEvent}).state.doc.toString();
+ const doc='list\nroot\n  parent\n    child\n      grandchild\nnext';
+ // dd on "  parent" leaves "    child" two levels under root.
+ const from=doc.indexOf('  parent'), to=doc.indexOf('    child');
+ assert.equal(run(doc,{changes:{from,to}},'delete.line'),'list\nroot\n  child\n    grandchild\nnext');
+ assert.equal(run(doc,{changes:{from,to}},'input.type.compose'),'list\nroot\n  child\n    grandchild\nnext','Vim dd');
+ assert.equal(run(doc,{changes:{from,to}},'undo'),'list\nroot\n    child\n      grandchild\nnext','undo is left alone');
+ assert.equal(run(doc,{changes:{from,to}}),'list\nroot\n    child\n      grandchild\nnext','changes without a user event are left alone');
+});
