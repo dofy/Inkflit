@@ -44,6 +44,12 @@ test('outdent handles tabs, uneven whitespace, and headings are boundaries',()=>
  const doc=':::inkflit list\nroot\n# section\nchild\n:::end';
  assert.equal(apply(make(doc,'child'),'Tab').doc.toString(),doc);
 });
+test('Tab moves tab-indented items and their descendants two visual columns',()=>{
+ const state=make('list\nroot\n\tprevious\n\tpeer\n\t\tchild','peer');
+ const result=apply(state,'Tab');
+ assert.equal(result.doc.toString(),'list\nroot\n\tprevious\n      peer\n          child');
+ assert.equal(result.selection.main.head,result.doc.line(4).from+6);
+});
 test('non-items, code and text outside a checklist are left alone',()=>{
  for(const [text,pos] of [[':::inkflit code\napple\n:::end','apple'],[':::inkflit list\n// comment\n:::end','comment'],[':::inkflit list\n# title\n:::end','title'],[':::inkflit list\n\n:::end','\n\n'],['ordinary','ordinary']]) assert.equal(planListIndent(make(text,pos),'Tab'),null);
 });
@@ -98,4 +104,17 @@ test('removing a line re-levels the lines below it',async()=>{
  assert.equal(run(doc,{changes:{from,to}},'input.type.compose'),'list\nroot\n  child\n    grandchild\nnext','Vim dd');
  assert.equal(run(doc,{changes:{from,to}},'undo'),'list\nroot\n    child\n      grandchild\nnext','undo is left alone');
  assert.equal(run(doc,{changes:{from,to}}),'list\nroot\n    child\n      grandchild\nnext','changes without a user event are left alone');
+});
+test('whole-note list indentation respects nested block boundaries',async()=>{
+ const {listPasteRules}=await import('../web/list-editing.js');
+ const doc='list\nroot\n:::inkflit code python\n    keep()\n:::end\nchild';
+ assert.equal(apply(make(doc,'child'),'Tab').doc.toString(),doc,'a nested block starts a new list tree');
+ const at=doc.indexOf('root')+4;
+ const state=EditorState.create({doc,extensions:[listPasteRules]});
+ assert.equal(state.update({changes:{from:at,insert:'\n  item'},userEvent:'input.paste'}).state.doc.toString(),doc.replace('root','root\n  item'),'paste must preserve nested code indentation');
+ const nested='list\n:::inkflit list\nroot\nchild\n:::end';
+ const pos=nested.indexOf('child');
+ assert.equal(EditorState.create({doc:nested,extensions:[listPasteRules]}).update({changes:{from:pos,insert:'      '},userEvent:'input.paste'}).state.doc.toString(),nested.replace('child','  child'),'nested checklists are normalized once');
+ const fenced='list\nroot\n  parent\n    ```python\n    keep()\n    ```';
+ assert.equal(apply(make(fenced,'parent'),'Shift-Tab').doc.toString(),fenced.replace('  parent','parent'),'moving a parent must leave a nested fence untouched');
 });

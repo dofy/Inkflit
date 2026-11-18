@@ -42,6 +42,24 @@ private struct NoteIndex: Codable {
     var version = 1
     var notes: [Entry]
     var selected: String
+    var saveID: UUID?
+}
+
+private struct NoteSave: Codable {
+    struct Body: Codable {
+        let id: String
+        let before: String?
+        let after: String
+    }
+    struct Deletion: Codable {
+        let note: StoredNote
+        let archiveID: UUID
+    }
+    let beforeIndex: Data
+    let afterIndex: Data
+    let bodies: [Body]
+    let deletions: [Deletion]
+    let date: Date
 }
 
 enum NoteFiles {
@@ -74,6 +92,7 @@ enum NoteFiles {
         try snapshot.validate(); return snapshot
     }
     static func read(_ directory: URL) throws -> NoteSnapshot {
+        try recoverSave(in: directory)
         let index = try JSONDecoder().decode(NoteIndex.self, from: Data(contentsOf: index(directory)))
         guard index.version == 1 else { throw NoteStorageError.invalidSnapshot }
         let notes = try index.notes.map { entry in
@@ -125,6 +144,7 @@ enum NoteFiles {
         try install(stage, in: destination)
     }
     static func rebuildIndex(_ directory: URL) throws -> NoteSnapshot {
+        try recoverSave(in: directory)
         let root = directory, folder = root.appendingPathComponent("notes", isDirectory: true)
         let entries = try files.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey], options: [.skipsHiddenFiles]).filter { $0.pathExtension == "md" }
         let dated = try entries.map { url -> (StoredNote, Date) in
@@ -166,43 +186,136 @@ enum NoteFiles {
         for name in archives.dropLast(keptIndexArchives) { try? files.removeItem(at: root.appendingPathComponent(name)) }
     }
     static func uniqueName(_ date: Date = Date()) -> String { "\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(UUID().uuidString).md" }
+    private static func saveRecord(_ root: URL) -> URL {
+        root.appendingPathComponent(".inkflit-save.json")
+    }
+    private static func archiveURL(_ root: URL, _ deletion: NoteSave.Deletion, date: Date) -> URL {
+        let filename = "\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(deletion.archiveID.uuidString).md"
+        return root.appendingPathComponent("trash")
+            .appendingPathComponent(String(Self.filename(deletion.note.id).dropLast(3)))
+            .appendingPathComponent(filename)
+    }
+    private static func bodyData(_ url: URL) throws -> Data? {
+        do { return try Data(contentsOf: url) }
+        catch let error as CocoaError where error.code == .fileReadNoSuchFile { return nil }
+    }
+    private static func installNewFile(_ data: Data, at url: URL, privateRecord: Bool = false) throws {
+        let temporary = url.deletingLastPathComponent().appendingPathComponent(".inkflit-write-\(UUID())")
+        defer { try? files.removeItem(at: temporary) }
+        // The save record may contain previous note bodies. Set the mode
+        // before writing so those bytes stay private in shared directories.
+        if privateRecord {
+            guard files.createFile(atPath: temporary.path, contents: nil, attributes: [.posixPermissions: 0o600]) else {
+                throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: temporary.path])
+            }
+            try data.write(to: temporary)
+        } else {
+            try data.write(to: temporary, options: .withoutOverwriting)
+        }
+        try files.moveItem(at: temporary, to: url)
+    }
+    private static func outsideChange() -> NSError {
+        NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("error.notesChangedOutside")])
+    }
+    // The atomic index replacement commits the save. Until then, the record
+    // can restore old bodies even after the process exits between file writes.
+    private static func recoverSave(in root: URL) throws {
+        let record = saveRecord(root)
+        guard let data = try bodyData(record) else { return }
+        let save = try JSONDecoder().decode(NoteSave.self, from: data)
+        let currentIndex = try Data(contentsOf: index(root))
+        if currentIndex == save.beforeIndex {
+            for body in save.bodies.reversed() {
+                let url = noteURL(root, body.id), before = body.before.map { Data($0.utf8) }
+                let current = try bodyData(url)
+                if current == before { continue }
+                guard current == Data(body.after.utf8) else { throw outsideChange() }
+                if let before { try before.write(to: url, options: .atomic) }
+                else { try files.removeItem(at: url) }
+            }
+            for deletion in save.deletions {
+                let url = archiveURL(root, deletion, date: save.date)
+                if try bodyData(url) == Data(deletion.note.content.utf8) { try files.removeItem(at: url) }
+            }
+        } else if currentIndex == save.afterIndex {
+            for deletion in save.deletions {
+                let url = noteURL(root, deletion.note.id)
+                // The note was archived before commit. Leave an externally
+                // changed file alone even when it is no longer in the index.
+                if (try? bodyData(url)) == Data(deletion.note.content.utf8) { try? files.removeItem(at: url) }
+            }
+        } else { throw outsideChange() }
+        try files.removeItem(at: record)
+    }
     /// `current` is the store as just read by the caller (to detect outside
     /// changes), so it is not read a second time.
     static func save(_ snapshot: NoteSnapshot, directory: URL, backupLimit: Int, now: Date = Date(), current: NoteSnapshot? = nil) throws {
         try snapshot.validate()
-        let root = directory, old = try current ?? read(directory)
+        let root = directory
+        try recoverSave(in: root)
+        let old = try current ?? read(root)
         let oldByID = Dictionary(uniqueKeysWithValues: old.notes.map { ($0.id, $0) })
         let newIDs = Set(snapshot.notes.map(\.id))
-        // Archive before publishing the new index; a failed archive cannot delete a note.
-        for note in old.notes where !newIDs.contains(note.id) {
-            let folder = root.appendingPathComponent("trash").appendingPathComponent(filename(note.id).dropLast(3).description)
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            try Data(note.content.utf8).write(to: folder.appendingPathComponent(uniqueName()), options: .withoutOverwriting)
-        }
+        let beforeIndex = try Data(contentsOf: index(root))
+        let next = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, created: $0.created, updated: $0.updated) },
+                             selected: snapshot.selected, saveID: UUID())
+        let afterIndex = try JSONEncoder().encode(next)
+        let deletions = old.notes.filter { !newIDs.contains($0.id) }.map { NoteSave.Deletion(note: $0, archiveID: UUID()) }
+        var bodies: [NoteSave.Body] = []
         for note in snapshot.notes {
             let url = noteURL(directory, note.id)
-            guard let previous = oldByID[note.id] else {
-                if files.fileExists(atPath: url.path) {
-                    guard try Data(contentsOf: url) == Data(note.content.utf8) else { throw NoteStorageError.destinationExists }
-                    continue
-                }
-                try Data(note.content.utf8).write(to: url, options: .withoutOverwriting); continue
+            let previous = oldByID[note.id]?.content
+            if previous == note.content { continue }
+            if previous == nil, let existing = try bodyData(url) {
+                guard existing == Data(note.content.utf8) else { throw NoteStorageError.destinationExists }
+                continue
             }
-            guard previous.content != note.content else { continue }
-            let key = root.path + "/" + note.id
+            bodies.append(.init(id: note.id, before: previous, after: note.content))
+        }
+        // Prepare retained backups before modifying indexed files.
+        for body in bodies {
+            guard let previous = body.before else { continue }
+            let key = root.path + "/" + body.id
             if backupLimit != 0 && now.timeIntervalSince(lastBackup[key] ?? .distantPast) >= backupInterval {
-                let folder = root.appendingPathComponent("backups").appendingPathComponent(filename(note.id).dropLast(3).description)
+                let folder = root.appendingPathComponent("backups").appendingPathComponent(String(filename(body.id).dropLast(3)))
                 try files.createDirectory(at: folder, withIntermediateDirectories: true)
-                try Data(previous.content.utf8).write(to: folder.appendingPathComponent(uniqueName(now)), options: .withoutOverwriting)
+                try Data(previous.utf8).write(to: folder.appendingPathComponent(uniqueName(now)), options: .withoutOverwriting)
                 lastBackup[key] = now
                 if backupLimit > 0 {
                     let versions = try files.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil).filter { $0.pathExtension == "md" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
                     for version in versions.dropFirst(backupLimit) { try files.removeItem(at: version) }
                 }
             }
-            try Data(note.content.utf8).write(to: url, options: .atomic)
         }
-        try writeIndex(snapshot, root: root)
-        for note in old.notes where !newIDs.contains(note.id) { try? files.removeItem(at: noteURL(directory, note.id)) }
+        // Selection and ordering changes only need the atomic index write.
+        if bodies.isEmpty && deletions.isEmpty {
+            guard try Data(contentsOf: index(root)) == beforeIndex else { throw outsideChange() }
+            try afterIndex.write(to: index(root), options: .atomic)
+            return
+        }
+        let save = NoteSave(beforeIndex: beforeIndex, afterIndex: afterIndex, bodies: bodies, deletions: deletions, date: now)
+        try installNewFile(JSONEncoder().encode(save), at: saveRecord(root), privateRecord: true)
+        do {
+            for deletion in deletions {
+                guard try bodyData(noteURL(root, deletion.note.id)) == Data(deletion.note.content.utf8) else { throw outsideChange() }
+                let url = archiveURL(root, deletion, date: now)
+                try files.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try installNewFile(Data(deletion.note.content.utf8), at: url)
+            }
+            for body in bodies {
+                let url = noteURL(root, body.id)
+                guard try bodyData(url) == body.before.map({ Data($0.utf8) }) else { throw outsideChange() }
+                let content = Data(body.after.utf8)
+                if body.before == nil { try installNewFile(content, at: url) }
+                else { try content.write(to: url, options: .atomic) }
+            }
+            guard try Data(contentsOf: index(root)) == beforeIndex else { throw outsideChange() }
+            try afterIndex.write(to: index(root), options: .atomic)
+        } catch {
+            try? recoverSave(in: root)
+            throw error
+        }
+        // Cleanup after the commit can also run on the next read.
+        try? recoverSave(in: root)
     }
 }

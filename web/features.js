@@ -32,18 +32,21 @@ export function headerRanges(text) {
   return ranges;
 }
 // Feature fences and ordinary Markdown code fences create independent scopes.
-export const blockTypes = ['list','math','sum','avg','count','code'];
+// Each scope has start (its first line: the marker, fence or note header),
+// end and last, all 1-based. A block's or fence's end is its closing line
+// (lines+1 while unclosed); a whole note's end is its last line. Use last,
+// the last content line, rather than working it out from end.
 export function featureScopes(text) {
   const lines=text.split('\n'), scopes=[], {mode:globalMode,language}=noteHeader(text);
   // A whole-note code mode is all code: markers and fences inside it are text.
-  if(globalMode==='code') return [{mode:'code',language,start:1,end:lines.length,global:true}];
-  if(globalMode) scopes.push({mode:globalMode,start:1,end:lines.length,global:true});
+  if(globalMode==='code') return [{mode:'code',language,start:1,end:lines.length,last:lines.length,global:true}];
+  if(globalMode) scopes.push({mode:globalMode,start:1,end:lines.length,last:lines.length,global:true});
   let active=null;
   for(let i=0;i<lines.length;i++) {
     const line=lines[i];
     if(active) {
       const close=active.kind==='block' ? /^:::end\s*$/.test(line) : new RegExp('^\\s*'+active.marker[0]+'{'+active.marker.length+',}\\s*$').test(line);
-      if(close) { scopes.push({...active,start:active.line,end:i+1,global:false,closed:true}); active=null; }
+      if(close) { scopes.push({...active,start:active.line,end:i+1,last:i,global:false,closed:true}); active=null; }
       continue;
     }
     const block=/^:::inkflit (list|math|sum|avg|count|code)(?: ([\w+.-]+))?\s*$/.exec(line);
@@ -54,7 +57,7 @@ export function featureScopes(text) {
       active={kind:'fence',marker:open[1],mode:keyword ? keyword[1] : 'code',line:i+1};
     }
   }
-  if(active) scopes.push({...active,start:active.line,end:lines.length+1,global:false,closed:false});
+  if(active) scopes.push({...active,start:active.line,end:lines.length+1,last:lines.length,global:false,closed:false});
   return scopes;
 }
 // Calculation modes treat "12. 0.2" as numbers, not a Markdown list.
@@ -238,7 +241,7 @@ export function analyzeScopes(text,rates=null,scopes=scopesOf(text)) {
   return scopes.map(scope=>{
     if(scope.mode==='code') return {...scope,results:[],summary:''};
     if(scope.global) return {...scope,...analyze(lines.map((line,i)=>nested.has(i+1) ? '' : line).join('\n'),rates)};
-    const body=lines.slice(scope.start,Math.min(scope.end-1,lines.length));
+    const body=lines.slice(scope.start,Math.min(scope.last,lines.length));
     const info=analyze([scope.mode,...body].join('\n'),rates);
     return {...scope,...info,results:info.results.map(r=>({...r,line:scope.start+r.line-1}))};
   });

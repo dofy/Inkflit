@@ -51,7 +51,7 @@ function decorateCode(view,scope,decorations) {
     if(!pendingLanguages.has(description)) {pendingLanguages.add(description);description.load().then(()=>view.dispatch({effects:rateEffect.of(null)})).catch(()=>{}).finally(()=>pendingLanguages.delete(description));}
     return;
   }
-  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=!scope.global && scope.end<=doc.lines?doc.line(scope.end).from-1:doc.length;
+  const doc=view.state.doc, from=doc.line(scope.start+1).from, to=doc.line(Math.min(doc.lines,scope.last)).to;
   if(to<=from)return;
   try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),classHighlighter,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
 }
@@ -79,17 +79,17 @@ function decorate(view) {
     if(scope.global && scope.mode==='code') decorateCode(view,scope,decorations);
     // Calculation lines: "12." is a number, not a list marker.
     if(calculationModes.has(scope.mode)) {
-      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      const last=Math.min(doc.lines,scope.last);
       // Lines of blocks nested in a whole-note mode belong to those blocks.
       for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(doc,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(calcLine.range(doc.line(n).from)); }
     }
     // Code lines keep Markdown's own styling ("# x" as a heading) out of the code.
     if(scope.mode==='code') {
-      const last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1);
+      const last=Math.min(doc.lines,scope.last);
       for(let n=scope.start+1;n<=last;n++) decorations.push(codeLine.range(doc.line(n).from));
     }
     if(scope.mode==='math') {
-      const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();
+      const first=scope.start+1, last=Math.min(doc.lines,scope.last), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();
       for(let n=first;n<=last;n++) lines.push(nested.has(n) ? '' : doc.line(n).text);
       for(const range of mathHighlights(lines,currencies)) {
         const line=doc.line(first+range.line);

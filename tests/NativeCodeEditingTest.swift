@@ -873,10 +873,15 @@ final class NativeCodeEditingTest {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testTypographyVim(0) }
     }
     static func startCommentVim(_ app: AppDelegate) {
-        running = NativeCodeEditingTest(app); app.showWindow()
+        let test = NativeCodeEditingTest(app)
+        running = test
         let theme = ProcessInfo.processInfo.environment["INKFLIT_TEST_UI_THEME"] ?? "orange"
-        app.web.evaluateJavaScript("window.setUIAppearance('\(theme)',100)") { _, _ in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testCommentVim() }
+        app.web.evaluateJavaScript("window.setUIAppearance('\(theme)',100)") { _, error in
+            if let error { test.fail("could not set the comment cursor theme: \(error)") }
+            test.focusNoteEditor {
+                // CodeMirror draws the cursor during its next layout pass.
+                test.later { test.testCommentVim() }
+            }
         }
     }
     static func testCommentLayout(_ app: AppDelegate) {
@@ -975,11 +980,31 @@ final class NativeCodeEditingTest {
                         key(36, "\r"); later { [self] in content { [self] value in
                             expect(value, expected + "\n", "Return on final blank line exits block")
                             print("PASS block boundary navigation and Return")
-                            app.restoreInputSource(); exit(0)
+                            testEmptyBlockAndLiteralTask()
                         } }
                     }
                 }
                 } }
+            }
+        }
+    }
+    private func testEmptyBlockAndLiteralTask() {
+        sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) },
+                  { self.key(34, "i") }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
+            content { [self] text in
+                expect(text, ":::inkflit code js\nx\n:::end", "Vim insert opens a content line in an empty block")
+                key(30, "]", "]", .command)
+                later { [self] in
+                    let script = """
+                    document.querySelector('.cm-content')?.textContent.includes('[x] literal')
+                        && !document.querySelector('.cm-content .task-checkbox')
+                    """
+                    app.web.evaluateJavaScript(script) { [self] result, error in
+                        guard error == nil, result as? Bool == true else { fail("a code note rendered literal [x] as a task") }
+                        print("PASS task syntax remains literal in a code note")
+                        app.restoreInputSource(); exit(0)
+                    }
+                }
             }
         }
     }
@@ -1012,13 +1037,21 @@ final class NativeCodeEditingTest {
           probe.style.color=root.getPropertyValue('--ui-cursor'); const expected=getComputedStyle(probe).color; probe.remove();
           const normal='\(mode)'==='normal', line=document.querySelector('.cm-note-comment-body.cm-activeLine');
           const cursor=document.querySelector(normal ? '.cm-fat-cursor' : '.cm-cursorLayer:not(.cm-vimCursorLayer) .cm-cursor-primary');
-          if(!line || !cursor || !document.querySelector('.cm-editor.cm-focused')) return false;
-          const style=getComputedStyle(cursor), box=cursor.getBoundingClientRect();
-          return box.height>0 && (normal ? style.backgroundColor : style.borderLeftColor)===expected;
+          if(!line) return 'the active line is not a body comment';
+          if(!cursor) return 'the cursor is missing';
+          if(!document.querySelector('.cm-editor.cm-focused')) return 'the editor lacks focus (document.hasFocus: '+document.hasFocus()+')';
+          const style=getComputedStyle(cursor), actual=normal ? style.backgroundColor : style.borderLeftColor;
+          if(cursor.getBoundingClientRect().height<=0) return 'the cursor has no height';
+          return actual===expected ? '' : 'expected '+expected+' but got '+actual;
         })()
         """
         app.web.evaluateJavaScript(script) { [self] result, error in
-            guard error == nil, result as? Bool == true else { fail("comment cursor mismatch in \(mode): \(String(describing: error))") }
+            guard error == nil, let mismatch = result as? String else {
+                fail("could not read the comment cursor in \(mode): \(String(describing: error))")
+            }
+            if !mismatch.isEmpty {
+                fail("comment cursor mismatch in \(mode): \(mismatch) (key window: \(app.window.isKeyWindow))")
+            }
             completion()
         }
     }
@@ -1434,6 +1467,25 @@ final class NativeCodeEditingTest {
         }
     }
     private func later(_ block: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: block) }
+    private func focusNoteEditor(_ completion: @escaping () -> Void) {
+        app.showWindow()
+        waitForEditorFocus(until: ProcessInfo.processInfo.systemUptime + 2, completion)
+    }
+    private func waitForEditorFocus(until deadline: TimeInterval, _ completion: @escaping () -> Void) {
+        let focused = "document.hasFocus() && document.activeElement?.matches('.cm-content')"
+        app.web.evaluateJavaScript(focused) { [self] value, error in
+            if app.window.isKeyWindow, value as? Bool == true {
+                completion()
+            } else if ProcessInfo.processInfo.systemUptime >= deadline {
+                fail("note editor did not regain keyboard focus (key window: \(app.window.isKeyWindow), WebKit: \(String(describing: value)), error: \(String(describing: error)))")
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+                    app.showWindow()
+                    waitForEditorFocus(until: deadline, completion)
+                }
+            }
+        }
+    }
     private func sequence(_ actions: [() -> Void], _ completion: @escaping () -> Void) {
         guard let first = actions.first else { later(completion); return }
         first()
@@ -1631,7 +1683,12 @@ final class NativeCodeEditingTest {
         if index == cases.count {
             content { [self] text in
                 expect(text, completedText, "language changes preserve note content")
-                testDeleteBeforeBlock()
+                // The language tests reopen Settings. Finish that fixture
+                // before sending keys to the note's WKWebView.
+                app.settingsController?.window?.close()
+                focusNoteEditor { [self] in
+                    testDeleteBeforeBlock()
+                }
             }
             return
         }
@@ -1648,7 +1705,6 @@ final class NativeCodeEditingTest {
         }
     }
     private func testDeleteBeforeBlock() {
-        app.showWindow()
         sequence([{ self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }, { self.key(30, "]", "]", .command) }]) { [self] in
             content { [self] text in
                 let original = "// comment\n\n:::inkflit code json\n{}\n:::end"

@@ -105,7 +105,8 @@ function choose(mode) {
       changes.push({from:start.from,to:end.to<doc.length?end.to+1:end.to});
       anchor=start.from;
     } else if(mode==='text') {
-      changes.push({from:start.from,to:start.to+1},{from:end.from-1,to:end.to});
+      if (scope.last === scope.start) changes.push({from:start.from,to:end.to});
+      else changes.push({from:start.from,to:start.to+1},{from:end.from-1,to:end.to});
       if(current.trigger) changes.push({from:current.from,to:triggerTo});
       anchor=start.from;
     } else {

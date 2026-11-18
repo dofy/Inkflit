@@ -1,10 +1,9 @@
 {
   "name": "inkflit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "build:web": "esbuild web/editor.js --bundle --format=iife --target=safari16 --outfile=web/dist/editor.js",
+    "build:web": "esbuild web/editor.js --bundle --minify --format=iife --target=safari16 --outfile=web/dist/editor.js",
     "build": "bash scripts/build.sh",
     "test": "node --test tests/*.test.mjs",
     "test:native": "bash scripts/test-native.sh",
@@ -22,6 +21,7 @@
     "@codemirror/language-data": "6.5.2",
     "@codemirror/state": "6.7.6",
     "@codemirror/view": "6.43.15",
+    "@lezer/highlight": "1.2.5",
     "@replit/codemirror-vim": "6.4.0",
     "mathjs": "^15.2.0"
   },

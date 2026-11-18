@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 @main struct StorageTests {
     static func main() throws {
@@ -8,6 +9,28 @@ import Foundation
         defer { try? files.removeItem(at: root) }
         func check(_ condition: Bool, line: Int = #line) { if !condition { fatalError("check failed at storage.swift:\(line)") } }
         let directory = root.appendingPathComponent("notes-root")
+        let recovery = root.appendingPathComponent("recovery")
+        let before = NoteSnapshot(notes: [.init(id: "edited", content: "old", updated: "1"),
+                                          .init(id: "removed", content: "keep me", updated: "1")], selected: "removed")
+        let after = NoteSnapshot(notes: [.init(id: "edited", content: "new", updated: "2"),
+                                         .init(id: "added", content: "new note", updated: "2")], selected: "added")
+        try NoteFiles.create(before, in: recovery)
+        let recoveryIndex = NoteFiles.index(recovery).path
+        check(chflags(recoveryIndex, UInt32(UF_IMMUTABLE)) == 0)
+        defer { _ = chflags(recoveryIndex, 0) }
+        do {
+            try NoteFiles.save(after, directory: recovery, backupLimit: 0, current: before)
+            fatalError("an immutable index must prevent committing a save")
+        } catch {}
+        check(try NoteFiles.read(recovery) == before)
+        check(!files.fileExists(atPath: NoteFiles.noteURL(recovery, "added").path))
+        let recoveryTrash = recovery.appendingPathComponent("trash").appendingPathComponent(String(NoteFiles.filename("removed").dropLast(3)))
+        check(try files.contentsOfDirectory(atPath: recoveryTrash.path).isEmpty)
+        check(chflags(recoveryIndex, 0) == 0)
+        try NoteFiles.save(after, directory: recovery, backupLimit: 0)
+        check(try NoteFiles.read(recovery) == after)
+        check(try files.contentsOfDirectory(atPath: recoveryTrash.path).count == 1)
+        check(!files.fileExists(atPath: NoteFiles.noteURL(recovery, "removed").path))
         try files.createDirectory(at: directory, withIntermediateDirectories: true)
         let original = NoteSnapshot(notes: [StoredNote(id: "../危险", content: "# 中文\n:::inkflit code js\n{}\n:::end", updated: "1"), StoredNote(id: "two", content: "second", updated: "2")], selected: "two")
         let sentinel = directory.appendingPathComponent("unrelated.txt")

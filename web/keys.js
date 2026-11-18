@@ -86,7 +86,7 @@ function toggleTaskKey(event) {
 function leaveBlockKey(event) {
   const editor = app.editor, selection = editor.state.selection.main;
   const line = editor.state.doc.lineAt(selection.head), scope = scopeAt(editor.state.doc, line.number);
-  if (!selection.empty || scope?.kind !== 'block' || scope.mode === 'code' || line.number !== scope.end - 1 || line.text.trim() || scope.end > editor.state.doc.lines) return false;
+  if (!selection.empty || scope?.kind !== 'block' || !scope.closed || scope.mode === 'code' || line.number !== scope.last || line.text.trim()) return false;
   const end = editor.state.doc.line(scope.end);
   consume(event);
   if (end.to === editor.state.doc.length) editor.dispatch({ changes: { from: end.to, insert: '\n' }, selection: { anchor: end.to + 1 }, userEvent: 'input.block.exit' });
@@ -100,7 +100,7 @@ function copyCodeBlock(event) {
   const scope = scopeAt(doc, line.number);
   if (scope?.mode !== 'code') return false;
   const from = scope.start < doc.lines ? doc.line(scope.start + 1).from : doc.length;
-  const to = !scope.global && scope.end <= doc.lines ? doc.line(scope.end).from - 1 : doc.length;
+  const to = doc.line(Math.min(doc.lines, scope.last)).to;
   const content = doc.sliceString(from, Math.max(from, to));
   if (nativeHandler()) { consume(event); nativeHandler().postMessage({ type: 'copyCode', content }); return true; }
   if (navigator.clipboard?.writeText) { consume(event); navigator.clipboard.writeText(content).catch(() => {}); return true; }
