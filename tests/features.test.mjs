@@ -343,3 +343,9 @@ test('a first line that sets the mode exposes its keyword and language for styli
  assert.deepEqual(headerRanges('math notes\nx'),[],'not a header: nothing is styled');
  assert.deepEqual(headerRanges('my list\nx'),[]);
 });
+test('sum and avg take standalone numbers only',()=>{
+ const count=text=>analyze('sum\n'+text).summary;
+ const expected={'1.2.3.4':0,'192.168.1.10':0,'v1.2.3':0,'2026-11-19':0,'14:05':0,'10/2':0,'3-2':0};
+ for(const [text,n] of Object.entries(expected)) assert.match(count(text),new RegExp(`\\b${n}\\b`),text);
+ assert.equal(analyze('sum\n-5 refund\n1,234.5 rent\ncost 12.\n20%\n$12').summary, analyze('sum\n-5\n1234.5\n12\n20\n12').summary,'ordinary amounts still count');
+});

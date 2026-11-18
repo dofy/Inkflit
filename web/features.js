@@ -190,7 +190,9 @@ export function analyze(text, rates = null) {
         if (r) { results.push({line:i+1,...r}); if(r.value !== undefined) scope.ans=r.value; }
       }
     } else if (mode === 'sum' || mode === 'avg') {
-      for (const match of line.matchAll(/(?<![\p{L}\p{N}_])[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)(?![\p{L}\p{N}_])/gu)) values.push(Number(match[0].replaceAll(',','')));
+      // A number stands alone: not joined to other digits by . - : / (1.2.3.4,
+      // 192.168.1.10, 2026-11-19, 14:05 and 10/2 are not amounts).
+      for (const match of line.matchAll(/(?<![\p{L}\p{N}_.:/-])[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)(?![\p{L}\p{N}_]|[.:/-]\d)/gu)) values.push(Number(match[0].replaceAll(',','')));
     }
   }
   if (mode === 'count') {
