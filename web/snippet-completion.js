@@ -1,3 +1,7 @@
+// Editor side of snippets: typing "@" offers matching snippets; Return or Tab
+// replaces "@name" with the value. Not inside code, and not after a word
+// character, so e-mail addresses and decorators are left alone.
+
 import { autocompletion, CompletionContext, closeCompletion, snippet as fieldSnippet, hasNextSnippetField } from '@codemirror/autocomplete';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
@@ -12,19 +16,12 @@ import { scopeAt } from './features.js';
 
 const currentContext = () => snippetContext({ native: nativeRequest, locale: lang(), rates: loadRates });
 
-// Editor side of snippets: typing "@" offers matching snippets; Return or Tab
-// replaces "@name" with the value. Not inside code, and not after a word
-// character, so e-mail addresses and decorators are left alone.
-
 function inCode(state, pos) {
   if (isCodeAt(state, pos)) return true;
   for (let node = syntaxTree(state).resolveInner(pos, 1); node; node = node.parent) if (node.name === 'InlineCode') return true;
   return false;
 }
 
-// User snippets from snippets.json, sent by the app (Settings → Snippets).
-// Each is a template row; rows sharing a trigger form a group and lead the
-// built-in group of the same name.
 // Math rows are added first, so user rows still lead any group they share.
 let mathRows = null, mathCurrencies = null;
 addSnippetSource(() => {
@@ -33,6 +30,8 @@ addSnippetSource(() => {
   if (currencies !== mathCurrencies) { mathCurrencies = currencies; mathRows = [...functionSnippets, ...unitSnippets, ...currencies]; }
   return mathRows;
 });
+// User snippets from snippets.json, sent by the app (Settings → Snippets).
+// Rows sharing a trigger form a group and lead the built-in group of that name.
 let userRows = [];
 addSnippetSource(() => userRows);
 export function setUserSnippets(list) {
@@ -48,7 +47,8 @@ export function setUserSnippets(list) {
 
 // "@name" being replaced by a value that is still loading. The range follows
 // later edits; if the text changed meanwhile, the value is dropped.
-export const track = StateEffect.define(), untrack = StateEffect.define();
+export const track = StateEffect.define();
+const untrack = StateEffect.define();
 export const pending = StateField.define({
   create: () => new Map(),
   update(ranges, tr) {
@@ -208,7 +208,7 @@ class CurrentPoint extends WidgetType {
 }
 const currentMark = Decoration.mark({ class: 'cm-snippetField-current' }), currentPoint = Decoration.widget({ widget: new CurrentPoint(), side: 1 });
 const isStopWidget = deco => { try { return deco.spec.widget?.toDOM?.()?.className === 'cm-snippetFieldPosition'; } catch { return false; } };
-export function currentStop(state) {
+function currentStop(state) {
   if (!hasNextSnippetField(state)) return null;
   const { main } = state.selection, stops = [];
   for (const source of state.facet(EditorView.decorations)) {

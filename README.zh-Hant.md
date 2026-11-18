@@ -32,6 +32,10 @@ npm run build
 open build/Inkflit.app
 ```
 
+`npm run test:storage` 檢查儲存復原；`npm run test:recovery` 使用獨立原生應用程式驗證復原提示和重新啟動。
+
+執行 `./scripts/install.sh` 可安裝到 `~/Applications/Inkflit.app`，也可傳入其他絕對 `.app` 路徑。腳本拒絕覆寫既有應用程式。
+
 `npm test` 測試編輯邏輯；`npm run test:native` 使用獨立筆記測試原生視窗、程式碼編輯與 Vim 復原。預設使用臨時簽章，可透過 `INKFLIT_CODESIGN_IDENTITY` 指定 Apple 開發者憑證；目前未經公證。
 
 應用程式常駐選單列，按 `Control + Option + Space` 顯示或收起筆記，切換至其他應用程式時自動收起。拖曳視窗頂部或工具列中央空白處可移動視窗。預設寬高比為 2:3，可自由調整大小。選單列或 `⌘,` 可開啟設定，調整快捷鍵、登入時啟動、儲存位置、主色、不透明度、背景模糊、程式碼配色與縮排；介面自動配合 macOS 淺色／深色模式。語言預設跟隨系統，也可選英語、簡體中文、繁體中文或日語。設定內附離線使用說明。

@@ -1450,5 +1450,11 @@
     "zh-Hans": "插入占位符",
     "zh-Hant": "插入預留位置",
     "ja": "プレースホルダを挿入"
+  },
+  "error.saveRecoveryConflict": {
+    "en": "An interrupted save could not be recovered safely. Current files were kept. Recovery data was preserved at:",
+    "zh-Hans": "未完成的保存无法安全恢复。已保留当前文件，恢复记录已备份至：",
+    "zh-Hant": "未完成的儲存無法安全復原。已保留目前檔案，復原記錄已備份至：",
+    "ja": "中断された保存を安全に復元できませんでした。現在のファイルは保持されています。復元データの保存先："
   }
 }

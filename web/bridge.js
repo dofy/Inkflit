@@ -39,7 +39,7 @@ function watchColorScheme() {
 // Load the notes, or start with one empty note when there are none yet.
 function loadNotesBase64(value) {
   try {
-    const loaded = value ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value), c => c.charCodeAt(0)))) : null;
+    const loaded = value ? JSON.parse(decodeBase64(value)) : null;
     if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('error.invalidNotesFile'));
     if (loaded) { delete loaded.timer; app.state = loaded; } else { const note = newNote(); app.state = { notes: [note], selected: note.id }; }
     changeEditor(app.state.selected); $('save').textContent = ''; $('save').title = ''; $('save').className = '';

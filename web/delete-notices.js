@@ -98,16 +98,17 @@ export function deleteNote() {
   if (!app.state) return;
   deletionQueue++; processDeletionQueue();
 }
+function stopDeletionQueue() { deletionQueue = 0; deleting = false; }
 function processDeletionQueue() {
   if (deleting || !app.state || deletionQueue === 0) return;
   deletionQueue--; deleting = true;
   const deleted = app.state.selected;
-  if (app.state.notes.length === 1 && deleted === placeholderID && !current().content) { deletionQueue = 0; deleting = false; return; }
+  if (app.state.notes.length === 1 && deleted === placeholderID && !current().content) { stopDeletionQueue(); return; }
   const saveBeforeDelete = () => persist(true, (ok, revision) => {
-    if (!ok || !app.state || app.state.selected !== deleted) { deletionQueue = 0; deleting = false; return; }
+    if (!ok || !app.state || app.state.selected !== deleted) { stopDeletionQueue(); return; }
     if (revision < latestRevision()) { saveBeforeDelete(); return; }
     const index = app.state.notes.findIndex(note => note.id === deleted);
-    if (index < 0) { deletionQueue = 0; deleting = false; return; }
+    if (index < 0) { stopDeletionQueue(); return; }
     removeNote(index);
     persist(true, success => { if (!success) deletionQueue = 0; deleting = false; processDeletionQueue(); });
   });

@@ -140,6 +140,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var requireExistingStorage = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NoteFiles.onRecoveryConflict = { [weak self] backup in
+            DispatchQueue.main.async { self?.showError(L("error.saveRecoveryConflict") + "\n" + backup.path) }
+        }
         NSApp.setActivationPolicy(.accessory)
         #if INKFLIT_NATIVE_TEST
         if isolatedTest, let appearance = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"] {
@@ -352,12 +355,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let label = hotKeyDisabled ? L("app.notSet") : shortcutLabel()
         status?.button?.toolTip = hotKeyDisabled ? L("app.globalShortcutNotSet") : L("settings.globalShortcut") + " " + label
         hotKeyItem?.title = L("app.settingsMenu")
-        if let data = try? JSONSerialization.data(withJSONObject: [label]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
+        if let json = javaScriptJSON([label]) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func reportHotKeyFailure() {
         status?.button?.toolTip = L("app.shortcutUnavailableInSettings")
         hotKeyItem?.title = L("app.settingsMenuShortcutUnavailable")
-        if let data = try? JSONSerialization.data(withJSONObject: [L("app.shortcutUnavailable")]), let json = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
+        if let json = javaScriptJSON([L("app.shortcutUnavailable")]) { web.evaluateJavaScript("window.setShortcutLabel?.(\(json)[0])", completionHandler: nil) }
     }
     func saveShortcut(code: UInt32, modifiers: UInt32) -> String? {
         if code == hotKeyCode && modifiers == hotKeyModifiers && hotKey != nil { return nil }
@@ -403,7 +406,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         UserDefaults.standard.set(value, forKey: "codeTheme"); syncCodeTheme()
     }
     func syncCodeTheme() {
-        guard let data = try? JSONSerialization.data(withJSONObject: [codeTheme()]), let json = String(data: data, encoding: .utf8) else { return }
+        guard let json = javaScriptJSON([codeTheme()]) else { return }
         web.evaluateJavaScript("window.setCodeTheme?.(\(json)[0])", completionHandler: nil)
     }
     func windowAppearance() -> WindowAppearance {
@@ -428,11 +431,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             // Fallback: a faded effect view only mixes blurred and sharp content.
             backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
         }
-        guard let data = try? JSONSerialization.data(withJSONObject: [appearance.theme, appearance.opacity]), let json = String(data: data, encoding: .utf8) else { return }
+        guard let json = javaScriptJSON([appearance.theme, appearance.opacity]) else { return }
         web?.evaluateJavaScript("window.setUIAppearance?.(...\(json))", completionHandler: nil)
     }
     func syncLanguage() {
-        guard let data = try? JSONSerialization.data(withJSONObject: [Localization.current]), let json = String(data: data, encoding: .utf8) else { return }
+        guard let json = javaScriptJSON([Localization.current]) else { return }
         web?.evaluateJavaScript("window.setLanguage?.(\(json)[0])", completionHandler: nil)
         if let menu = NSApp.mainMenu, menu.items.count >= 3 {
             if let app = menu.items[0].submenu, app.items.count >= 3 { app.items[0].title = L("app.settingsMenu"); app.items[2].title = L("app.quit") }
@@ -918,8 +921,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         saveRetryDelay = min(saveRetryDelay * 2, 60)
     }
     private func reportSaveResult(_ ok: Bool, error: String?, revision: Int) {
-        guard let data = try? JSONSerialization.data(withJSONObject: [ok, error as Any? ?? NSNull(), revision]),
-              let json = String(data: data, encoding: .utf8) else { return }
+        guard let json = javaScriptJSON([ok, error as Any? ?? NSNull(), revision]) else { return }
         web.evaluateJavaScript("window.saveResult(...\(json))", completionHandler: nil)
     }
     func requestFlush(_ completion: @escaping (Bool, String?) -> Void) {
@@ -955,7 +957,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("error.notesChangedOutside")])
                 }
                 let defaults = UserDefaults.standard
-                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
+                let limit = NoteFiles.backupVersionLimit(defaults)
                 try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit), current: current)
             } else if requireExistingStorage {
                 throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
@@ -1019,14 +1021,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 settingsController?.refresh()
             case "state":
                 let appearance = windowAppearance(), defaults = UserDefaults.standard
-                let limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
+                let limit = NoteFiles.backupVersionLimit(defaults)
                 let login = loginItemStatus()
                 let state: [String: String] = [
                     "ui-theme": appearance.theme, "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
                     "opacity": String(appearance.opacity), "blur": String(appearance.blur),
                     "backup": limit == 0 ? "off" : limit < 0 ? "unlimited" : String(limit),
                     "login": login == .enabled || login == .requiresApproval ? "on" : "off"]
-                if let data = try? JSONSerialization.data(withJSONObject: state), let text = String(data: data, encoding: .utf8) {
+                if let text = javaScriptJSON(state) {
                     web.evaluateJavaScript("window.setCommandState(\(text))", completionHandler: nil)
                 }
             case "onboarding": generateOnboarding { [weak self] error in if let error { self?.showError(error) } }
@@ -1042,7 +1044,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 let value = MachineInfo.value(for: action)
                 DispatchQueue.main.async {
-                    guard let self, let data = try? JSONSerialization.data(withJSONObject: [value ?? "Not available"]), let text = String(data: data, encoding: .utf8) else { return }
+                    guard let self, let text = self.javaScriptJSON([value ?? "Not available"]) else { return }
                     self.web.evaluateJavaScript("window.resolveNativeRequest(\(id), \(value != nil), \(text)[0])", completionHandler: nil)
                 }
             }
@@ -1062,8 +1064,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
               let revision = (body["revision"] as? NSNumber)?.intValue, revision > 0 else { return }
         queueSave(data, revision: revision, force: body["force"] as? Bool == true)
     }
+    private func javaScriptJSON(_ value: Any) -> String? {
+        guard let data = try? JSONSerialization.data(withJSONObject: value) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
     func showError(_ message: String) {
-        if let data = try? JSONSerialization.data(withJSONObject: [message]), let text = String(data: data, encoding: .utf8) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }
+        if let text = javaScriptJSON([message]) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }
     }
 }
 /// Values for snippets that the web page cannot read itself.

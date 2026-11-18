@@ -7,7 +7,8 @@
     "build": "bash scripts/build.sh",
     "test": "node --test tests/*.test.mjs",
     "test:native": "bash scripts/test-native.sh",
-    "test:storage": "bash scripts/test-storage.sh"
+    "test:storage": "bash scripts/test-storage.sh",
+    "test:recovery": "bash scripts/test-recovery.sh"
   },
   "keywords": [],
   "author": "",

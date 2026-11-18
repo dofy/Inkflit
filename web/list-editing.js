@@ -12,6 +12,18 @@ function columns(indent,tabSize) {
   return result;
 }
 
+// Keep the longest existing prefix that fits the new visual depth. Only a
+// partially removed tab needs spaces to represent the remaining columns.
+function resizeIndent(prefix,target,tabSize) {
+  let kept='', depth=0;
+  for(const ch of prefix) {
+    const next=ch==='\t' ? depth+tabSize-depth%tabSize : depth+1;
+    if(next>target) break;
+    kept+=ch; depth=next;
+  }
+  return kept+' '.repeat(target-depth);
+}
+
 // A checklist item may only become a child of a preceding item. Move its
 // descendants with it so changing the parent never breaks the existing tree.
 export function planListIndent(state, key) {
@@ -43,7 +55,7 @@ export function planListIndent(state, key) {
   const changes=rows.map(row=>{
     const prefix=leading(row.text);
     const target=columns(prefix,tabSize)+(key==='Tab' ? unit : -unit);
-    const replacement=' '.repeat(Math.max(0,target));
+    const replacement=resizeIndent(prefix,Math.max(0,target),tabSize);
     return {from:row.from,to:row.from+prefix.length,insert:replacement};
   });
   const replacement=changes[0].insert, offset=selection.head-line.from;
@@ -71,7 +83,7 @@ export function listIndentFixes(state, from, to) {
       while(stack.length && stack.at(-1).depth>=depth) stack.pop();
       const level=n<firstLine ? depth : (stack.length ? stack.at(-1).level+unit : 0);
       stack.push({depth,level});
-      if(n>=firstLine && level!==depth) changes.push({from:line.from,to:line.from+prefix.length,insert:' '.repeat(level)});
+      if(n>=firstLine && level!==depth) changes.push({from:line.from,to:line.from+prefix.length,insert:resizeIndent(prefix,level,tabSize)});
     }
   }
   return changes;

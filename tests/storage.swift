@@ -31,6 +31,66 @@ import Darwin
         check(try NoteFiles.read(recovery) == after)
         check(try files.contentsOfDirectory(atPath: recoveryTrash.path).count == 1)
         check(!files.fileExists(atPath: NoteFiles.noteURL(recovery, "removed").path))
+        // Recreate durable on-disk states at process interruption boundaries.
+        // The journal uses the same Codable wire format, without recovery hooks.
+        for scenario in ["before", "after", "index-conflict", "body-conflict", "corrupt-record"] {
+            let folder = root.appendingPathComponent(scenario)
+            try NoteFiles.create(before, in: folder)
+            let beforeIndex = try Data(contentsOf: NoteFiles.index(folder))
+            let committed = root.appendingPathComponent("committed-" + scenario)
+            try NoteFiles.create(after, in: committed)
+            let afterIndex = try Data(contentsOf: NoteFiles.index(committed))
+            let date = Date(timeIntervalSince1970: 1_700_000_000), archiveID = UUID()
+            let trash = folder.appendingPathComponent("trash/\(String(NoteFiles.filename("removed").dropLast(3)))")
+            try files.createDirectory(at: trash, withIntermediateDirectories: true)
+            let archive = trash.appendingPathComponent("\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(archiveID.uuidString).md")
+            try Data("keep me".utf8).write(to: archive)
+            try Data("new".utf8).write(to: NoteFiles.noteURL(folder, "edited"))
+            try Data("new note".utf8).write(to: NoteFiles.noteURL(folder, "added"))
+            let record = folder.appendingPathComponent(".inkflit-save.json")
+            let object: [String: Any] = ["beforeIndex":beforeIndex.base64EncodedString(), "afterIndex":afterIndex.base64EncodedString(),
+                "bodies":[["id":"edited", "before":"old", "after":"new"], ["id":"added", "after":"new note"]],
+                "deletions":[["note":["id":"removed", "content":"keep me", "updated":"1"], "archiveID":archiveID.uuidString]],
+                "date":date.timeIntervalSinceReferenceDate]
+            let recordData = scenario == "corrupt-record" ? Data("broken".utf8) : try JSONSerialization.data(withJSONObject: object)
+            try recordData.write(to: record)
+            if scenario == "after" { try afterIndex.write(to: NoteFiles.index(folder)) }
+            if scenario == "index-conflict" {
+                var external = before; external.selected = "edited"
+                try NoteFiles.writeIndex(external, root: folder)
+            }
+            if scenario == "body-conflict" { try Data("external".utf8).write(to: NoteFiles.noteURL(folder, "added")) }
+            let diskIndex = try Data(contentsOf: NoteFiles.index(folder))
+            var warnings: [URL] = []
+            NoteFiles.onRecoveryConflict = { warnings.append($0) }
+            let recovered = try NoteFiles.read(folder)
+            check(try NoteFiles.read(folder) == recovered)
+            check(!files.fileExists(atPath: record.path))
+            if scenario == "before" {
+                check(recovered == before)
+                check(!files.fileExists(atPath: NoteFiles.noteURL(folder, "added").path))
+                check(!files.fileExists(atPath: archive.path))
+            } else if scenario == "after" {
+                check(recovered == after)
+                check(!files.fileExists(atPath: NoteFiles.noteURL(folder, "removed").path))
+                check(try String(contentsOf: archive, encoding: .utf8) == "keep me")
+            } else {
+                check(warnings.count == 1)
+                check(try Data(contentsOf: warnings[0]) == recordData)
+                check(try Data(contentsOf: NoteFiles.index(folder)) == diskIndex)
+                check(try String(contentsOf: NoteFiles.noteURL(folder, "edited"), encoding: .utf8) == "new")
+                check(files.fileExists(atPath: archive.path))
+                check(try String(contentsOf: NoteFiles.noteURL(folder, "added"), encoding: .utf8) == (scenario == "body-conflict" ? "external" : "new note"))
+            }
+            NoteFiles.onRecoveryConflict = nil
+        }
+        let preferences = UserDefaults(suiteName: "inkflit-storage-test-\(UUID())")!
+        check(NoteFiles.backupVersionLimit(preferences) == 12)
+        for value in [0, -1, -9, 24] {
+            preferences.set(value, forKey: "backupVersionLimit")
+            check(NoteFiles.backupVersionLimit(preferences) == max(-1, value))
+        }
+        preferences.removeObject(forKey: "backupVersionLimit")
         try files.createDirectory(at: directory, withIntermediateDirectories: true)
         let original = NoteSnapshot(notes: [StoredNote(id: "../危险", content: "# 中文\n:::inkflit code js\n{}\n:::end", updated: "1"), StoredNote(id: "two", content: "second", updated: "2")], selected: "two")
         let sentinel = directory.appendingPathComponent("unrelated.txt")

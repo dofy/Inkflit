@@ -1,7 +1,12 @@
 // Feature blocks are written as ":::inkflit <type>" … ":::end".
-export const markerPrefix = ':::inkflit';
 import { t } from './i18n.js';
 import { create, all } from 'mathjs';
+
+export const markerPrefix = ':::inkflit';
+const blockTypes = ['list','math','sum','avg','count','code'];
+const headerPattern = new RegExp(`^(${blockTypes.join('|')})(?:\\s+([\\w+.-]+))?(?:\\s*:\\s*.*)?\\s*$`, 'i');
+const blockPattern = new RegExp(`^${markerPrefix} (${blockTypes.join('|')})(?: ([\\w+.-]+))?\\s*$`);
+const fenceModes = new Set(blockTypes.filter(type=>type!=='code'));
 
 const math = create(all);
 math.createUnit({mph:'1 mi/h', nmi:'1852 m'});
@@ -16,7 +21,7 @@ const allowedOperators = new Set(['add','subtract','multiply','divide','pow','un
 // A note's first line may set a mode for the whole note: a keyword, a language
 // after "code" ("code js"), and a title after a colon ("math: Trip").
 export function noteHeader(text) {
-  const match=/^(list|math|sum|avg|count|code)(?:\s+([\w+.-]+))?(?:\s*:\s*.*)?\s*$/i.exec(text.split('\n')[0].trim());
+  const match=headerPattern.exec(text.split('\n')[0].trim());
   if(!match || (match[2] && match[1].toLowerCase()!=='code')) return {mode:'',language:''};
   return {mode:match[1].toLowerCase(),language:(match[2]||'').toLowerCase()};
 }
@@ -49,12 +54,12 @@ export function featureScopes(text) {
       if(close) { scopes.push({...active,start:active.line,end:i+1,last:i,global:false,closed:true}); active=null; }
       continue;
     }
-    const block=/^:::inkflit (list|math|sum|avg|count|code)(?: ([\w+.-]+))?\s*$/.exec(line);
+    const block=blockPattern.exec(line);
     if(block) { active={kind:'block',mode:block[1],language:block[2]||'',line:i+1}; continue; }
     const open=/^\s*(`{3,}|~{3,})([^`]*)$/.exec(line);
     if(open) {
-      const info=open[2].trim().toLowerCase(), keyword=/^(list|math|sum|avg|count)$/.exec(info);
-      active={kind:'fence',marker:open[1],mode:keyword ? keyword[1] : 'code',line:i+1};
+      const info=open[2].trim().toLowerCase(), keyword=fenceModes.has(info);
+      active={kind:'fence',marker:open[1],mode:keyword ? info : 'code',line:i+1};
     }
   }
   if(active) scopes.push({...active,start:active.line,end:lines.length+1,last:lines.length,global:false,closed:false});

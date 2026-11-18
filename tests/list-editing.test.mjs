@@ -47,8 +47,8 @@ test('outdent handles tabs, uneven whitespace, and headings are boundaries',()=>
 test('Tab moves tab-indented items and their descendants two visual columns',()=>{
  const state=make('list\nroot\n\tprevious\n\tpeer\n\t\tchild','peer');
  const result=apply(state,'Tab');
- assert.equal(result.doc.toString(),'list\nroot\n\tprevious\n      peer\n          child');
- assert.equal(result.selection.main.head,result.doc.line(4).from+6);
+ assert.equal(result.doc.toString(),'list\nroot\n\tprevious\n\t  peer\n\t\t  child');
+ assert.equal(result.selection.main.head,result.doc.line(4).from+3);
 });
 test('non-items, code and text outside a checklist are left alone',()=>{
  for(const [text,pos] of [[':::inkflit code\napple\n:::end','apple'],[':::inkflit list\n// comment\n:::end','comment'],[':::inkflit list\n# title\n:::end','title'],[':::inkflit list\n\n:::end','\n\n'],['ordinary','ordinary']]) assert.equal(planListIndent(make(text,pos),'Tab'),null);
@@ -117,4 +117,17 @@ test('whole-note list indentation respects nested block boundaries',async()=>{
  assert.equal(EditorState.create({doc:nested,extensions:[listPasteRules]}).update({changes:{from:pos,insert:'      '},userEvent:'input.paste'}).state.doc.toString(),nested.replace('child','  child'),'nested checklists are normalized once');
  const fenced='list\nroot\n  parent\n    ```python\n    keep()\n    ```';
  assert.equal(apply(make(fenced,'parent'),'Shift-Tab').doc.toString(),fenced.replace('  parent','parent'),'moving a parent must leave a nested fence untouched');
+});
+
+test('tab prefixes survive indentation, outdent and history with mixed whitespace',()=>{
+  for(const prefix of ['\t',' \t','\t ']) {
+    const doc=`list\nroot\n${prefix}previous\n${prefix}peer\n${prefix}\tchild`;
+    const state=make(doc,'peer'), next=apply(state,'Tab');
+    assert.equal(next.doc.line(4).text,`${prefix}  peer`);
+    assert.equal(next.doc.line(5).text,`${prefix}\t  child`);
+    assert.equal(apply(next,'Shift-Tab').doc.toString(),doc);
+    let undone=next;
+    assert.equal(undo({state:next,dispatch:tr=>undone=tr.state}),true);
+    assert.equal(undone.doc.toString(),doc);
+  }
 });

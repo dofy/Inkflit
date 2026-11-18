@@ -22,8 +22,9 @@ const command = (event, key, { shift = false } = {}) => event.metaKey && event.s
 const plain = event => !event.metaKey && !event.ctrlKey && !event.altKey;
 const consume = event => { event.preventDefault(); event.stopPropagation(); };
 
-export function hide() {
-  if (nativeHandler()) nativeHandler().postMessage({ type: 'hide' });
+function hide() {
+  const handler = nativeHandler();
+  if (handler) handler.postMessage({ type: 'hide' });
   else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
 }
 
@@ -102,7 +103,8 @@ function copyCodeBlock(event) {
   const from = scope.start < doc.lines ? doc.line(scope.start + 1).from : doc.length;
   const to = doc.line(Math.min(doc.lines, scope.last)).to;
   const content = doc.sliceString(from, Math.max(from, to));
-  if (nativeHandler()) { consume(event); nativeHandler().postMessage({ type: 'copyCode', content }); return true; }
+  const handler = nativeHandler();
+  if (handler) { consume(event); handler.postMessage({ type: 'copyCode', content }); return true; }
   if (navigator.clipboard?.writeText) { consume(event); navigator.clipboard.writeText(content).catch(() => {}); return true; }
   return false;
 }

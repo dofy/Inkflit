@@ -66,6 +66,10 @@ enum NoteFiles {
     static let backupInterval: TimeInterval = 300
     /// Versions kept per note until the user picks another limit in Settings → Data.
     static let defaultBackupLimit = 12
+    static func backupVersionLimit(_ defaults: UserDefaults = .standard) -> Int {
+        max(-1, defaults.object(forKey: "backupVersionLimit") == nil ? defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit"))
+    }
+    static var onRecoveryConflict: ((URL) -> Void)?
     static var lastBackup: [String: Date] = [:]
     static let files = FileManager.default
     static func index(_ directory: URL) -> URL { directory.appendingPathComponent("index.json") }
@@ -222,9 +226,24 @@ enum NoteFiles {
     private static func recoverSave(in root: URL) throws {
         let record = saveRecord(root)
         guard let data = try bodyData(record) else { return }
-        let save = try JSONDecoder().decode(NoteSave.self, from: data)
+        func quarantine() throws {
+            let backup = root.appendingPathComponent("inkflit-save-conflict-\(UUID().uuidString).json")
+            try files.moveItem(at: record, to: backup)
+            onRecoveryConflict?(backup)
+        }
+        let save: NoteSave
+        do { save = try JSONDecoder().decode(NoteSave.self, from: data) }
+        catch { try quarantine(); return }
         let currentIndex = try Data(contentsOf: index(root))
         if currentIndex == save.beforeIndex {
+            // Validate all bodies before rolling back any: an outside edit must
+            // leave the entire current store intact for manual reconciliation.
+            for body in save.bodies {
+                let current = try bodyData(noteURL(root, body.id))
+                if current != body.before.map({ Data($0.utf8) }) && current != Data(body.after.utf8) {
+                    try quarantine(); return
+                }
+            }
             for body in save.bodies.reversed() {
                 let url = noteURL(root, body.id), before = body.before.map { Data($0.utf8) }
                 let current = try bodyData(url)
@@ -244,7 +263,7 @@ enum NoteFiles {
                 // changed file alone even when it is no longer in the index.
                 if (try? bodyData(url)) == Data(deletion.note.content.utf8) { try? files.removeItem(at: url) }
             }
-        } else { throw outsideChange() }
+        } else { try quarantine(); return }
         try files.removeItem(at: record)
     }
     /// `current` is the store as just read by the caller (to detect outside

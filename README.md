@@ -35,6 +35,10 @@ npm run build
 open build/Inkflit.app
 ```
 
+`npm run test:storage` checks storage recovery; `npm run test:recovery` verifies the recovery notice and restart in an isolated native app.
+
+Install a local build with `./scripts/install.sh` (defaults to `~/Applications/Inkflit.app`), or pass a different absolute `.app` path. The installer refuses to overwrite an existing app.
+
 Run `npm test` for editor tests and `npm run test:native` for isolated native-window, code editing and Vim undo/redo tests. Builds use an ad hoc signature by default; set `INKFLIT_CODESIGN_IDENTITY` to use an Apple Development certificate. The app is not notarized.
 
 Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. Appearance follows macOS light/dark mode. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.

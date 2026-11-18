@@ -114,10 +114,11 @@ export function visibleCopiedText(text,state) {
 export const blockProtection=EditorState.transactionFilter.of(tr=>{
   const internal=tr.isUserEvent('input.block') || tr.isUserEvent('undo') || tr.isUserEvent('redo');
   if(tr.docChanged && !internal && changesTouchMarkers(tr.startState.doc,tr.changes) && !removesLinesBeforeBlock(tr.startState.doc,tr.changes)) {
+    const markers=markerRanges(tr.startState.doc);
     let firstContentAt = null, changeCount = 0;
     tr.changes.iterChanges((from,to,_a,_b,inserted)=>{
       changeCount++;
-      if (from === to && inserted.length && markerRanges(tr.startState.doc).some(
+      if (from === to && inserted.length && markers.some(
         ({kind,scope,to}) => kind === 'start' && to === from && scope.last === scope.start
       )) firstContentAt = from;
     });

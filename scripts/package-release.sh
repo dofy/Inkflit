@@ -8,7 +8,7 @@ VERSION="$(node -p "require('./package.json').version")"
 output="dist/Inkflit-$VERSION-macos-arm64.dmg"
 if [[ -e "$output" ]]; then echo "Refusing to overwrite $output" >&2; exit 1; fi
 mkdir -p dist
-stage="$(mktemp -d)"
+stage="$(mktemp -d "${TMPDIR:-/tmp}/inkflit-release.XXXXXX")"
 trap 'rm -rf -- "$stage"' EXIT
 ditto "build/Inkflit.app" "$stage/Inkflit.app"
 codesign --force --deep --sign - --timestamp=none "$stage/Inkflit.app"

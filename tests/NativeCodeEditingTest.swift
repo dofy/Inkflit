@@ -44,11 +44,11 @@ final class NativeCodeEditingTest {
     }
     static func start(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { running?.run() }
+        running?.focusNoteEditor { running?.run() }
     }
     static func startAutomationEdit(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.6) { running?.testAutomationEdit() }
+        running?.focusNoteEditor { running?.testAutomationEdit() }
     }
     private func testAutomationEdit() {
         sequence([{ self.key(34,"i") }, { self.key(7,"x") }, { self.key(53,"\u{1b}") }]) { [self] in
@@ -67,7 +67,7 @@ final class NativeCodeEditingTest {
     }
     static func startAutomationUI(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.window.setContentSize(NSSize(width:360,height:560));app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.8) { running?.testAutomationUI() }
+        running?.focusNoteEditor { running?.testAutomationUI() }
     }
     private func testAutomationUI() {
         key(3,"F","f",[.command,.shift]); later { [self] in
@@ -160,7 +160,7 @@ final class NativeCodeEditingTest {
     }
     static func startPlacement(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app)
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.8) { running?.testPlacement() }
+        running?.focusNoteEditor { running?.testPlacement() }
     }
     private func testPlacement() {
         if ["legacy", "v2"].contains(ProcessInfo.processInfo.environment["INKFLIT_PLACEMENT_RESTART"] ?? "") {
@@ -253,7 +253,7 @@ final class NativeCodeEditingTest {
     }
     static func startToolbarCursor(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+1) { running?.testToolbarCursor(0,original:CGEvent(source:nil)?.location ?? .zero) }
+        running?.focusNoteEditor { running?.testToolbarCursor(0,original:CGEvent(source:nil)?.location ?? .zero) }
     }
     private func testToolbarCursor(_ index: Int, original: CGPoint) {
         guard AXIsProcessTrusted() else { print("SKIP native cursor test: Accessibility permission unavailable"); exit(0) }
@@ -277,7 +277,7 @@ final class NativeCodeEditingTest {
     }
     static func startRealToolbarDrag(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+1) { running?.testRealToolbarDrag(0, original: CGEvent(source:nil)?.location ?? .zero) }
+        running?.focusNoteEditor { running?.testRealToolbarDrag(0, original: CGEvent(source:nil)?.location ?? .zero) }
     }
     private func testRealToolbarDrag(_ index: Int, original: CGPoint) {
         guard AXIsProcessTrusted() else { print("SKIP real toolbar drag: Accessibility permission unavailable"); exit(0) }
@@ -307,7 +307,7 @@ final class NativeCodeEditingTest {
     }
     static func startHeaderDrag(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now()+0.8) { running?.testHeaderHitRegions(0) }
+        running?.focusNoteEditor { running?.testHeaderHitRegions(0) }
     }
     private func testHeaderHitRegions(_ index: Int) {
         let widths: [CGFloat] = [300, 480, 680]
@@ -390,7 +390,7 @@ final class NativeCodeEditingTest {
     }
     static func startSettingsAccent(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app)
-        DispatchQueue.main.asyncAfter(deadline: .now()+0.8) { running?.testSettingsAccent() }
+        running?.focusNoteEditor { running?.testSettingsAccent() }
     }
     private func testSettingsAccent() {
         app.showSettings()
@@ -411,7 +411,7 @@ final class NativeCodeEditingTest {
     }
     static func startBlockCalculation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { running?.testVariableHighlightEditing() }
+        running?.focusNoteEditor { running?.testVariableHighlightEditing() }
     }
     private func testVariableHighlightEditing() {
         key(7,"x"); later { [self] in
@@ -480,14 +480,14 @@ final class NativeCodeEditingTest {
     }
     static func startSnippets(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testSnippets() }
+        running?.focusNoteEditor { running?.testSnippets() }
     }
     /// Types "@ip" in the real page: previews must come from the network and from
     /// the app, not only in a browser.
     private func testSnippets() {
         let rows = "[...document.querySelectorAll('.cm-tooltip-autocomplete li')].map(li=>[li.querySelector('.cm-completionLabel')?.textContent,li.querySelector('.cm-completionDetail')?.textContent])"
         sequence([{ self.key(34,"i") }, { self.key(19,"@","2",.shift) }, { self.key(34,"i") }, { self.key(35,"p") }]) { [self] in
-            DispatchQueue.main.asyncAfter(deadline:.now()+4) { [self] in
+            waitForJavaScript("\(rows).some(row => /^\\d+\\.\\d+\\.\\d+\\.\\d+$/.test(row[1]))", timeout: 8) { [self] in
                 app.web.evaluateJavaScript(rows) { [self] value,error in
                     print("snippet rows: \(String(describing: value)) error: \(String(describing: error))")
                     // "@ip" opens the whole group; one of its rows previews the public IPv4.
@@ -533,9 +533,9 @@ final class NativeCodeEditingTest {
         guard editor.testInsertPlaceholder("ipv4") == "IP {ipv4}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "ip4", content: "IP {ipv4}") else { fail("insert placeholder") }
         print("PASS native placeholder menu")
         settings.window?.orderOut(nil); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.5) { [self] in
+        focusNoteEditor { [self] in
             sequence([{ self.key(31,"o") }, { self.key(19,"@","2",.shift) }, { self.key(0,"a") }, { self.key(2,"d") }, { self.key(2,"d") }, { self.key(15,"r") }]) { [self] in
-                DispatchQueue.main.asyncAfter(deadline:.now()+2) { [self] in
+                waitForJavaScript("document.querySelectorAll('.cm-tooltip-autocomplete li').length === 2") { [self] in
                     app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-tooltip-autocomplete li')].map(li=>li.querySelector('.cm-completionDetail')?.textContent)") { [self] value,error in
                         guard error == nil, let details = value as? [String], details == ["Home", "Office …"] else { fail("@addr rows: \(String(describing: value))") }
                         print("PASS native user snippets in the editor")
@@ -547,7 +547,7 @@ final class NativeCodeEditingTest {
     }
     static func startCommandPalette(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testCommandPalette() }
+        running?.focusNoteEditor { running?.testCommandPalette() }
     }
     private func testCommandPalette() {
         key(35,"P","p",[.command,.shift]);later { [self] in
@@ -599,7 +599,7 @@ final class NativeCodeEditingTest {
     }
     static func startDeleteNotices(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline:.now()+0.7) { running?.testDeleteNotices() }
+        running?.focusNoteEditor { running?.testDeleteNotices() }
     }
     private func testDeleteNotices() {
         app.web.evaluateJavaScript("window.confirm=()=>{window.__deleteAsked=true;return false};true") { [self] _,error in
@@ -665,7 +665,7 @@ final class NativeCodeEditingTest {
     }
     static func startVimBoundaries(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testVimBoundaries() }
+        running?.focusNoteEditor { running?.testVimBoundaries() }
     }
     private func testVimBoundaries() {
         key(48, "\t"); later { [self] in
@@ -733,7 +733,7 @@ final class NativeCodeEditingTest {
     }
     static func startVimToggle(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testVimToggle() }
+        running?.focusNoteEditor { running?.testVimToggle() }
     }
     private func testVimToggle() {
         if ProcessInfo.processInfo.environment["INKFLIT_VIM_RESTART_TEST"] == "1" {
@@ -794,7 +794,7 @@ final class NativeCodeEditingTest {
     }
     static func startChecklist(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { running?.testListIndentation(alreadySelected: true) }
+        running?.focusNoteEditor { running?.testListIndentation(alreadySelected: true) }
     }
     static func testCursorColors(_ app: AppDelegate) {
         let script = """
@@ -870,7 +870,7 @@ final class NativeCodeEditingTest {
     }
     static func startTypographyVim(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testTypographyVim(0) }
+        running?.focusNoteEditor { running?.testTypographyVim(0) }
     }
     static func startCommentVim(_ app: AppDelegate) {
         let test = NativeCodeEditingTest(app)
@@ -927,15 +927,15 @@ final class NativeCodeEditingTest {
     }
     static func startCommentGroupVim(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testCommentGroupVim() }
+        running?.focusNoteEditor { running?.testCommentGroupVim() }
     }
     static func startBlockBoundary(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testBlockBoundary() }
+        running?.focusNoteEditor { running?.testBlockBoundary() }
     }
     static func startPlainText(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testPlainText() }
+        running?.focusNoteEditor { running?.testPlainText() }
     }
     private func testPlainText() {
         key(40, "k", "k", .command); later { [self] in
@@ -1080,19 +1080,19 @@ final class NativeCodeEditingTest {
     }
     static func startFileStorage(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { running?.testFileStorage() }
+        running?.focusNoteEditor { running?.testFileStorage() }
     }
     static func startAutosave(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.testAutosave() }
+        running?.focusNoteEditor { running?.testAutosave() }
     }
     static func startOnboarding(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { running?.testOnboarding() }
+        running?.focusNoteEditor { running?.testOnboarding() }
     }
     static func startReadingNavigation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { running?.testReadingAndNavigation() }
+        running?.focusNoteEditor { running?.testReadingAndNavigation() }
     }
     private func testReadingAndNavigation() {
         let script = """
@@ -1279,7 +1279,7 @@ final class NativeCodeEditingTest {
     }
     static func startAutosaveStream(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { running?.key(34, "i"); running?.streamStartedAt = ProcessInfo.processInfo.systemUptime; running?.testAutosaveStream(0) }
+        running?.focusNoteEditor { running?.key(34, "i"); running?.streamStartedAt = ProcessInfo.processInfo.systemUptime; running?.testAutosaveStream(0) }
     }
     private func testAutosaveStream(_ index: Int) {
         if index == 15 {
@@ -1358,7 +1358,27 @@ final class NativeCodeEditingTest {
             }
         }
     }
+    private func testRecoveryConflict() {
+        let root = app.storageURL.deletingLastPathComponent()
+        do {
+            let backups = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+                .filter { $0.lastPathComponent.hasPrefix("inkflit-save-conflict-") }
+            guard backups.count == 1, !FileManager.default.fileExists(atPath: root.appendingPathComponent(".inkflit-save.json").path) else { fail("recovery record was not quarantined exactly once") }
+            let backup = backups[0]
+            let attributes = try FileManager.default.attributesOfItem(atPath: backup.path)
+            guard (attributes[.posixPermissions] as? NSNumber)?.intValue == 0o600 else { fail("recovery backup lost private permissions") }
+            app.web.evaluateJavaScript("[JSON.parse(window.exportNotesJSON()).notes[0].content, document.getElementById('save').title, document.getElementById('save').classList.contains('error')]") { [self] value, error in
+                let firstLaunch = ProcessInfo.processInfo.environment["INKFLIT_RECOVERY_FIRST_LAUNCH"] == "1"
+                guard error == nil, let result = value as? [Any], result[0] as? String == "current external body",
+                      let message = result[1] as? String, result[2] as? Bool == firstLaunch,
+                      firstLaunch ? URL(fileURLWithPath: message.components(separatedBy: "\n").last ?? "").resolvingSymlinksInPath() == backup.resolvingSymlinksInPath() : message.isEmpty else { fail("recovery notes or visible backup path (expected \(backup.path), first launch \(firstLaunch)): \(String(describing: value))") }
+                print("PASS native recovery opens notes, preserves private backup and reports its path only once")
+                app.restoreInputSource(); exit(0)
+            }
+        } catch { fail("recovery readback: \(error)") }
+    }
     private func testFileStorage() {
+        if ProcessInfo.processInfo.environment["INKFLIT_RECOVERY_CONFLICT_TEST"] == "1" { testRecoveryConflict(); return }
         let directory = app.storageURL.deletingLastPathComponent()
         sequence([{ self.key(0, "A", "a", .shift) }, { self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in
             content { [self] text in
@@ -1467,6 +1487,18 @@ final class NativeCodeEditingTest {
         }
     }
     private func later(_ block: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: block) }
+    private func waitForJavaScript(_ condition: String, timeout: TimeInterval = 3, _ completion: @escaping () -> Void) {
+        pollJavaScript(condition, until: ProcessInfo.processInfo.systemUptime + timeout, completion)
+    }
+    private func pollJavaScript(_ condition: String, until deadline: TimeInterval, _ completion: @escaping () -> Void) {
+        app.web.evaluateJavaScript(condition) { [self] value, error in
+            if value as? Bool == true { completion() }
+            else if ProcessInfo.processInfo.systemUptime >= deadline { fail("timed out waiting for \(condition): \(String(describing: error))") }
+            else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in pollJavaScript(condition, until: deadline, completion) }
+            }
+        }
+    }
     private func focusNoteEditor(_ completion: @escaping () -> Void) {
         app.showWindow()
         waitForEditorFocus(until: ProcessInfo.processInfo.systemUptime + 2, completion)

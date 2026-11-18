@@ -32,6 +32,10 @@ npm run build
 open build/Inkflit.app
 ```
 
+`npm run test:storage` 检查存储恢复；`npm run test:recovery` 使用独立原生应用验证恢复提示和重启。
+
+运行 `./scripts/install.sh` 可安装到 `~/Applications/Inkflit.app`，也可传入其他绝对 `.app` 路径。脚本拒绝覆盖已有应用。
+
 运行 `npm test` 检查编辑逻辑；`npm run test:native` 使用独立测试笔记和原生窗口验证代码输入、缩进与 Vim 撤销重做。
 
 应用常驻菜单栏。快捷键默认 `Control + Option + Space`，按一次显示，再按一次隐藏。点击菜单栏笔记图标，选择“设置…”，或在应用中按 `⌘,`，即可录制、清除或恢复全局快捷键；注册冲突时会显示提示，不覆盖已有快捷键。设置窗口支持 `⌘W` 关闭，并提供离线使用帮助。设置中也可选择登录 Mac 时自动启动；若系统要求授权，请在系统设置中允许。拖动窗口顶部的空白条可以移动浮窗；激活其他应用时浮窗自动收起。

@@ -403,7 +403,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         applySettingsAccent(appearance.theme)
         let storagePath = URL(fileURLWithPath: getStorage()).deletingLastPathComponent().path
         storageMessage.stringValue = storagePath; storageMessage.toolTip = storagePath
-        let defaults = UserDefaults.standard, limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
+        let defaults = UserDefaults.standard, limit = NoteFiles.backupVersionLimit(defaults)
         let mode = limit == 0 ? "off" : limit < 0 ? "unlimited" : "limited"
         if let index = backupMode.itemArray.firstIndex(where: { ($0.representedObject as? String) == mode }) { backupMode.selectItem(at: index) }
         backupCount.integerValue = limit > 0 ? limit : max(1, defaults.integer(forKey: "backupPreviousLimit"))

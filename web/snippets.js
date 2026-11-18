@@ -48,8 +48,8 @@ export function fieldTemplate(value) {
 }
 
 const pad = value => String(value).padStart(2, '0');
-export const formatDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-export const formatTime = (date, seconds = false) => `${pad(date.getHours())}:${pad(date.getMinutes())}${seconds ? `:${pad(date.getSeconds())}` : ''}`;
+const formatDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const formatTime = (date, seconds = false) => `${pad(date.getHours())}:${pad(date.getMinutes())}${seconds ? `:${pad(date.getSeconds())}` : ''}`;
 const intl = (context, options) => new Intl.DateTimeFormat(context.locale, options).format(context.now);
 function utcOffset(date) {
   const minutes = -date.getTimezoneOffset(), sign = minutes >= 0 ? '+' : '-';
@@ -155,7 +155,7 @@ export function allSnippets(except = new Set()) {
 
 // Letters of `query` appear in `word` in order, starting with its first
 // letter: "wk" fits "week", but "ip" does not fit "timestamp".
-export function fuzzy(query, word) {
+function fuzzy(query, word) {
   if (word[0] !== query[0]) return false;
   let at = 0; for (const letter of word) if (letter === query[at]) at++;
   return at === query.length;
