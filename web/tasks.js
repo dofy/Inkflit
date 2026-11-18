@@ -37,7 +37,7 @@ export function taskContentPosition(state, pos) {
   if(!match)return pos;
   const from=line.from+match[1].length, end=from+3;
   if(pos<from || pos>=end)return pos;
-  if(isInCode(syntaxTree(state),from) && scopeAt(state.doc.toString(),line.number)?.mode!=='list')return pos;
+  if(isInCode(syntaxTree(state),from) && scopeAt(state.doc,line.number)?.mode!=='list')return pos;
   return Math.min(line.to,end+(line.text[end-line.from]===' '?1:0));
 }
 function taskDecorations(view) {
@@ -48,7 +48,7 @@ function taskDecorations(view) {
       const match = /^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
       if (match) {
         const from = line.from + match[1].length, to = from + 3;
-        const inCode = isInCode(tree, from) && scopeAt(doc.toString(),line.number)?.mode !== 'list';
+        const inCode = isInCode(tree, from) && scopeAt(doc,line.number)?.mode !== 'list';
         if (!inCode) decorations.push(Decoration.replace({widget:new TaskCheckbox(from, /[xX]/.test(match[2]))}).range(from, to));
       }
       if (line.to >= doc.length) break;
@@ -59,5 +59,6 @@ function taskDecorations(view) {
 }
 export const tasks = ViewPlugin.fromClass(class {
   constructor(view) { this.decorations = taskDecorations(view); }
-  update(update) { if (update.docChanged || update.viewportChanged || update.selectionSet || update.geometryChanged) this.decorations = taskDecorations(update.view); }
+  // Checkboxes depend on the visible text, not on the selection.
+  update(update) { if (update.docChanged || update.viewportChanged || update.geometryChanged) this.decorations = taskDecorations(update.view); }
 }, {decorations: value => value.decorations});

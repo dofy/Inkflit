@@ -1,10 +1,10 @@
 import { EditorState, Transaction } from '@codemirror/state';
-import { featureScopes } from './features.js';
+import { scopesOf } from './features.js';
 import { taskContentPosition } from './tasks.js';
 
 export function markerRanges(doc) {
   const ranges=[];
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.kind!=='block')continue;
     const start=doc.line(scope.start);
     ranges.push({from:start.from,to:start.to,scope,kind:'start'});
@@ -58,7 +58,7 @@ export function trimFinalLineDeletion(doc, changes) {
   let edit=null,count=0;
   changes.iterChanges((from,to,_a,_b,inserted)=>{count++;edit={from,to,inserted};});
   if(count!==1 || !edit || edit.from===edit.to || edit.inserted.length!==0)return null;
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.kind!=='block' || !scope.closed || scope.start+1>=scope.end)continue;
     const first=doc.line(scope.start+1).from, end=doc.line(scope.end).from;
     // Vim dd on a final empty line includes the separator before the end

@@ -34,8 +34,8 @@ function lexicalContext(text, language) {
 export function planCodeEdit(state, key, options={}) {
   if(state.selection.ranges.length!==1)return null;
   const selection=state.selection.main, doc=state.doc;
-  const start=scopeAt(doc.toString(),doc.lineAt(selection.from).number);
-  const end=scopeAt(doc.toString(),doc.lineAt(selection.to).number);
+  const start=scopeAt(doc,doc.lineAt(selection.from).number);
+  const end=scopeAt(doc,doc.lineAt(selection.to).number);
   if(!start || start.mode!=='code' || !end || start.start!==end.start || start.end!==end.end)return null;
   const line=doc.lineAt(selection.head), pos=selection.head, empty=selection.empty;
   const scopeStart=doc.line(start.start+1).from;

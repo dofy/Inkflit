@@ -72,7 +72,7 @@ function tabKey(event) {
 // Typing "/x" at the end of a checklist line ticks or unticks it.
 function toggleTaskKey(event) {
   const editor = app.editor, sel = editor.state.selection.main, line = editor.state.doc.lineAt(sel.head);
-  if (scopeAt(editor.state.doc.toString(), line.number)?.mode !== 'list') return false;
+  if (scopeAt(editor.state.doc, line.number)?.mode !== 'list') return false;
   if (!sel.empty || sel.head !== line.to || !line.text.endsWith('/') || line.number <= 1 || /^\s*(?:\/\/|#)/.test(line.text)) return false;
   const match = /^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
   const changes = [{ from: line.to - 1, to: line.to }];
@@ -85,7 +85,7 @@ function toggleTaskKey(event) {
 // Return on the last empty line of a non-code block leaves the block.
 function leaveBlockKey(event) {
   const editor = app.editor, selection = editor.state.selection.main;
-  const line = editor.state.doc.lineAt(selection.head), scope = scopeAt(editor.state.doc.toString(), line.number);
+  const line = editor.state.doc.lineAt(selection.head), scope = scopeAt(editor.state.doc, line.number);
   if (!selection.empty || scope?.kind !== 'block' || scope.mode === 'code' || line.number !== scope.end - 1 || line.text.trim() || scope.end > editor.state.doc.lines) return false;
   const end = editor.state.doc.line(scope.end);
   consume(event);
@@ -97,7 +97,7 @@ function leaveBlockKey(event) {
 // ⌘C with nothing selected in a code block copies the whole block.
 function copyCodeBlock(event) {
   const editor = app.editor, doc = editor.state.doc, line = doc.lineAt(editor.state.selection.main.head);
-  const scope = scopeAt(doc.toString(), line.number);
+  const scope = scopeAt(doc, line.number);
   if (scope?.mode !== 'code') return false;
   const from = scope.start < doc.lines ? doc.line(scope.start + 1).from : doc.length;
   const to = !scope.global && scope.end <= doc.lines ? doc.line(scope.end).from - 1 : doc.length;

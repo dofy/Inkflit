@@ -166,9 +166,11 @@ enum NoteFiles {
         for name in archives.dropLast(keptIndexArchives) { try? files.removeItem(at: root.appendingPathComponent(name)) }
     }
     static func uniqueName(_ date: Date = Date()) -> String { "\(Int64(date.timeIntervalSince1970 * 1_000_000))-\(UUID().uuidString).md" }
-    static func save(_ snapshot: NoteSnapshot, directory: URL, backupLimit: Int, now: Date = Date()) throws {
+    /// `current` is the store as just read by the caller (to detect outside
+    /// changes), so it is not read a second time.
+    static func save(_ snapshot: NoteSnapshot, directory: URL, backupLimit: Int, now: Date = Date(), current: NoteSnapshot? = nil) throws {
         try snapshot.validate()
-        let root = directory, old = try read(directory)
+        let root = directory, old = try current ?? read(directory)
         let oldByID = Dictionary(uniqueKeysWithValues: old.notes.map { ($0.id, $0) })
         let newIDs = Set(snapshot.notes.map(\.id))
         // Archive before publishing the new index; a failed archive cannot delete a note.

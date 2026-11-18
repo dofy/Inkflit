@@ -26,7 +26,13 @@ function inCode(state, pos) {
 // Each is a template row; rows sharing a trigger form a group and lead the
 // built-in group of the same name.
 // Math rows are added first, so user rows still lead any group they share.
-addSnippetSource(() => [...functionSnippets, ...unitSnippets, ...currencySnippets(currencyCodes())]);
+let mathRows = null, mathCurrencies = null;
+addSnippetSource(() => {
+  // The same array while the currency rows are the same, so allSnippets can reuse its list.
+  const currencies = currencySnippets(currencyCodes());
+  if (currencies !== mathCurrencies) { mathCurrencies = currencies; mathRows = [...functionSnippets, ...unitSnippets, ...currencies]; }
+  return mathRows;
+});
 let userRows = [];
 addSnippetSource(() => userRows);
 export function setUserSnippets(list) {
@@ -108,7 +114,7 @@ export function snippetCompletions(context) {
   if (!word) return null;
   // Math blocks, ```math fences included, offer the math rows. A number may
   // come right before "@" there, as in "10@km".
-  const { state } = context, inMath = scopeAt(state.doc.toString(), state.doc.lineAt(word.from).number)?.mode === 'math';
+  const { state } = context, inMath = scopeAt(state.doc, state.doc.lineAt(word.from).number)?.mode === 'math';
   if ((inMath ? /[A-Za-z_@]/ : /[\w@]/).test(state.sliceDoc(word.from - 1, word.from))) return null;
   if (!inMath && inCode(state, word.from)) return null;
   // Formats that look the same in this language (English has no 年 or 日, so

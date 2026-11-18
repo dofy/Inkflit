@@ -59,18 +59,35 @@ export function featureScopes(text) {
 }
 // Calculation modes treat "12. 0.2" as numbers, not a Markdown list.
 export const calculationModes = new Set(['math','sum','avg','count']);
-let scopeCacheText=null, scopeCache=[];
-export function scopeAt(text, line) {
-  if(text!==scopeCacheText) {
-    scopeCacheText=text;
-    const lines=text.split('\n'), scopes=featureScopes(text), global=scopes.find(s=>s.global);
-    scopeCache=new Array(lines.length+1).fill(null);
-    if(global) for(let n=2;n<=lines.length;n++) scopeCache[n]=global;
-    for(const scope of scopes.filter(s=>!s.global)) {
-      for(let n=scope.start;n<=scope.end && n<=lines.length;n++) scopeCache[n]=n>scope.start && n<scope.end ? scope : null;
-    }
+// Scope of each line (1-based): the scope whose content the line is in, or
+// null for markers and plain text.
+function lineScopes(scopes, lineCount) {
+  const map=new Array(lineCount+1).fill(null), global=scopes.find(s=>s.global);
+  if(global) for(let n=2;n<=lineCount;n++) map[n]=global;
+  for(const scope of scopes.filter(s=>!s.global)) {
+    for(let n=scope.start;n<=scope.end && n<=lineCount;n++) map[n]=n>scope.start && n<scope.end ? scope : null;
   }
-  return scopeCache[line] || null;
+  return map;
+}
+// CodeMirror documents (Text) are immutable, so their scopes are cached per
+// document: callers pass state.doc and no longer flatten it to a string.
+const docScopes=new WeakMap();
+function scopeInfo(doc) {
+  let info=docScopes.get(doc);
+  if(!info) { const scopes=featureScopes(doc.toString()); info={scopes,lines:lineScopes(scopes,doc.lines)}; docScopes.set(doc,info); }
+  return info;
+}
+let textCache=null, textInfo=null;
+function textScopeInfo(text) {
+  if(text!==textCache) { const scopes=featureScopes(text); textCache=text; textInfo={scopes,lines:lineScopes(scopes,text.split('\n').length)}; }
+  return textInfo;
+}
+const infoOf=source=>typeof source==='string' ? textScopeInfo(source) : scopeInfo(source);
+// Every scope of a document (state.doc) or text, cached.
+export const scopesOf=source=>infoOf(source).scopes;
+// The scope a line's content belongs to, for a document (state.doc) or text.
+export function scopeAt(source, line) {
+  return infoOf(source).lines[line] || null;
 }
 export function evaluateExpression(expression, scope = {}, rates = null) {
   try {
@@ -215,8 +232,9 @@ export function nestedLines(scopes) {
   for(const scope of scopes) if(!scope.global) for(let n=scope.start;n<=scope.end;n++) nested.add(n);
   return nested;
 }
-export function analyzeScopes(text,rates=null) {
-  const lines=text.split('\n'), scopes=featureScopes(text), nested=nestedLines(scopes);
+// Pass the scopes when they are already known (scopesOf(state.doc)).
+export function analyzeScopes(text,rates=null,scopes=scopesOf(text)) {
+  const lines=text.split('\n'), nested=nestedLines(scopes);
   return scopes.map(scope=>{
     if(scope.mode==='code') return {...scope,results:[],summary:''};
     if(scope.global) return {...scope,...analyze(lines.map((line,i)=>nested.has(i+1) ? '' : line).join('\n'),rates)};

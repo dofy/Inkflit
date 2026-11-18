@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { featureScopes, scopeAt, markerPrefix } from './features.js';
+import { scopeAt, markerPrefix, scopesOf } from './features.js';
 const items = [
   ['list','block.checklist','block.checklistDetail'],['math','block.math','block.mathDetail'],
   ['sum','block.sum','block.sumDetail'],['avg','block.average','block.averageDetail'],
@@ -52,9 +52,9 @@ export function openBlockMenu({from, scope=null, trigger=false, preserveSelectio
   active={from,scope,trigger,preserveSelection,index:0,choices:[]};menu.hidden=false;render();position(from);
 }
 export function currentBlockScope(state) {
-  const selection=state.selection.main, text=state.doc.toString();
-  const first=scopeAt(text,state.doc.lineAt(selection.from).number);
-  const last=scopeAt(text,state.doc.lineAt(selection.to).number);
+  const selection=state.selection.main;
+  const first=scopeAt(state.doc,state.doc.lineAt(selection.from).number);
+  const last=scopeAt(state.doc,state.doc.lineAt(selection.to).number);
   if(!first || first.kind!=='block' || !first.closed || !last || first.start!==last.start || first.end!==last.end)return null;
   return first;
 }
@@ -75,7 +75,7 @@ export function planAdjacentBlockLine(state, above) {
 export function planAdjacentTextLine(state, above) {
   const doc=state.doc, selection=state.selection.main;
   const start=doc.lineAt(selection.from).number, end=doc.lineAt(selection.to).number;
-  if(featureScopes(doc.toString()).some(scope=>!scope.global && start<=scope.end && end>=scope.start))return null;
+  if(scopesOf(doc).some(scope=>!scope.global && start<=scope.end && end>=scope.start))return null;
   const line=doc.lineAt(selection.head), pos=above ? line.from : line.to;
   return {changes:{from:pos,insert:'\n'},selection:{anchor:above ? pos : pos+1},scrollIntoView:true,userEvent:'input.block.open'};
 }
@@ -125,7 +125,7 @@ function choose(mode) {
 }
 export function blockDeletion(state, scope) {
   if(!scope || scope.kind!=='block' || !scope.closed)return null;
-  const current=featureScopes(state.doc.toString()).find(item=>item.kind==='block' && item.start===scope.start && item.end===scope.end && item.closed);
+  const current=scopesOf(state.doc).find(item=>item.kind==='block' && item.start===scope.start && item.end===scope.end && item.closed);
   if(!current)return null;
   const start=state.doc.line(current.start), end=state.doc.line(current.end);
   return {from:start.from,to:end.to<state.doc.length ? end.to+1 : end.to};
@@ -134,8 +134,8 @@ export function deleteCurrentBlock(editor) {
   const state=editor.state, selection=state.selection.main;
   let scope=active?.scope;
   if(!scope) {
-    const first=scopeAt(state.doc.toString(),state.doc.lineAt(selection.from).number);
-    const last=scopeAt(state.doc.toString(),state.doc.lineAt(selection.to).number);
+    const first=scopeAt(state.doc,state.doc.lineAt(selection.from).number);
+    const last=scopeAt(state.doc,state.doc.lineAt(selection.to).number);
     if(!first || !last || first.start!==last.start || first.end!==last.end)return false;
     scope=first;
   }
@@ -155,7 +155,7 @@ export function handleBlockMenuKey(event) {
 }
 export function trySlash(event, editor) {
   if(event.key!=='/' || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || !editor.state.selection.main.empty)return false;
-  const pos=editor.state.selection.main.head,line=editor.state.doc.lineAt(pos),scope=scopeAt(editor.state.doc.toString(),line.number);
+  const pos=editor.state.selection.main.head,line=editor.state.doc.lineAt(pos),scope=scopeAt(editor.state.doc,line.number);
   if(line.text.trim() || (scope && (scope.mode==='code' || (!scope.global && scope.kind!=='block'))))return false;
   editor.dispatch({changes:{from:pos,insert:'/'},selection:{anchor:pos+1},userEvent:'input.type'});
   openBlockMenu({from:pos,scope:scope?.kind==='block'?scope:null,trigger:true});return true;
@@ -168,7 +168,7 @@ export function openMenuAfterInput(update) {
   if(!sel.empty || sel.head===0) return;
   const line=update.state.doc.lineAt(sel.head), oldLine=update.startState.doc.lineAt(Math.min(update.startState.selection.main.head,update.startState.doc.length));
   if(line.text.trim() !== '/' || oldLine.text.trim() || update.state.sliceDoc(sel.head-1,sel.head)!=='/')return;
-  const scope=scopeAt(update.state.doc.toString(),line.number);
+  const scope=scopeAt(update.state.doc,line.number);
   if(scope && (scope.mode==='code' || (!scope.global && scope.kind!=='block')))return;
   const from=sel.head-1;
   queueMicrotask(()=>{

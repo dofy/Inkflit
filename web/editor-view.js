@@ -49,7 +49,7 @@ export function plainEnterAfterList(state) {
   if (!selection.empty) return null;
   const line = state.doc.lineAt(selection.head);
   // In math, sum, avg and count, "12. 0.2" is data: Return never continues a list.
-  if (calculationModes.has(scopeAt(state.doc.toString(), line.number)?.mode)) return { changes: { from: selection.head, insert: '\n' }, selection: { anchor: selection.head + 1 }, scrollIntoView: true, userEvent: 'input' };
+  if (calculationModes.has(scopeAt(state.doc, line.number)?.mode)) return { changes: { from: selection.head, insert: '\n' }, selection: { anchor: selection.head + 1 }, scrollIntoView: true, userEvent: 'input' };
   if (/^\s/.test(line.text) || /^(?:[-+*]|\d+[.)])(?:\s|$)/.test(line.text) || isCodeAt(state, selection.head)) return null;
   let inList = false;
   for (let node = syntaxTree(state).resolveInner(line.from, 1); node; node = node.parent) if (node.name === 'ListItem') { inList = true; break; }
@@ -130,7 +130,7 @@ export function setVimEnabled(value) {
 // The summary line for feature blocks, shown under the editor.
 export function refreshInsights() {
   if (!app.editor) return;
-  const info = analyzeCurrent(app.editor.state.doc.toString());
+  const info = analyzeCurrent(app.editor.state.doc);
   $('insights').textContent = info.summary; $('insights').hidden = !info.summary;
 }
 // Recompute block results, for example after exchange rates arrive or the language changes.

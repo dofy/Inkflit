@@ -950,12 +950,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if usesNoteFiles {
             let directory = storageURL.deletingLastPathComponent(), snapshot = try NoteFiles.decode(data)
             if FileManager.default.fileExists(atPath: NoteFiles.index(directory).path) {
-                guard let expected = loadedSnapshot, try NoteFiles.read(directory) == expected else {
+                let current = try NoteFiles.read(directory)
+                guard let expected = loadedSnapshot, current == expected else {
                     throw NSError(domain: "Inkflit", code: 3, userInfo: [NSLocalizedDescriptionKey: L("error.notesChangedOutside")])
                 }
                 let defaults = UserDefaults.standard
                 let limit = defaults.object(forKey: "backupVersionLimit") == nil ? NoteFiles.defaultBackupLimit : defaults.integer(forKey: "backupVersionLimit")
-                try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit))
+                try NoteFiles.save(snapshot, directory: directory, backupLimit: max(-1, limit), current: current)
             } else if requireExistingStorage {
                 throw NSError(domain: "Inkflit", code: 1, userInfo: [NSLocalizedDescriptionKey: L("error.notesFileUnavailableRetry")])
             } else { try NoteFiles.create(snapshot, in: directory) }

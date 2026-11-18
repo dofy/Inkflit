@@ -136,13 +136,21 @@ export function addSnippetSource(source) {
 // Every row, later sources first, so their rows lead their groups. Each row
 // gets a stable id (trigger#position) for caching previews. Rows in `except`
 // are skipped.
+// Sources return the same array until their rows change, so the combined
+// list is reused while none of them changed and nothing is excluded.
+let cachedParts = null, cachedRows = null;
 export function allSnippets(except = new Set()) {
-  const rows = [...[...sources].reverse().flatMap(source => source()), ...builtinSnippets].filter(row => !except.has(row));
+  const parts = [...sources].reverse().map(source => source());
+  const reusable = !except.size && cachedParts && parts.length === cachedParts.length && parts.every((part, i) => part === cachedParts[i]);
+  if (reusable) return cachedRows;
+  const rows = [...parts.flat(), ...builtinSnippets].filter(row => !except.has(row));
   const counts = new Map();
-  return rows.map(row => {
+  const result = rows.map(row => {
     const position = counts.get(row.trigger) || 0; counts.set(row.trigger, position + 1);
     return { ...row, id: row.id ?? `${row.trigger}#${position}` };
   });
+  if (!except.size) { cachedParts = parts; cachedRows = result; }
+  return result;
 }
 
 // Letters of `query` appear in `word` in order, starting with its first

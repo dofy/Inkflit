@@ -1,6 +1,6 @@
 import { isolateHistory } from '@codemirror/commands';
 import { EditorState, Transaction } from '@codemirror/state';
-import { scopeAt, featureScopes } from './features.js';
+import { scopeAt, scopesOf } from './features.js';
 
 const unit=2;
 const leading=text=>/^[ \t]*/.exec(text)[0];
@@ -18,7 +18,7 @@ export function planListIndent(state, key) {
   if(key !== 'Tab' && key !== 'Shift-Tab') return null;
   const selection=state.selection.main;
   if(state.selection.ranges.length!==1 || !selection.empty) return null;
-  const doc=state.doc, line=doc.lineAt(selection.head), scope=scopeAt(doc.toString(),line.number);
+  const doc=state.doc, line=doc.lineAt(selection.head), scope=scopeAt(doc,line.number);
   if(scope?.mode!=='list' || !isItem(line.text)) return null;
   const tabSize=state.tabSize, indent=leading(line.text), depth=columns(indent,tabSize);
   if(key==='Tab') {
@@ -55,7 +55,7 @@ export function planListIndent(state, key) {
 // before the paste are left as they are. Headings start a new tree.
 export function listIndentFixes(state, from, to) {
   const doc=state.doc, tabSize=state.tabSize, firstLine=doc.lineAt(from).number, lastLine=doc.lineAt(to).number, changes=[];
-  for(const scope of featureScopes(doc.toString())) {
+  for(const scope of scopesOf(doc)) {
     if(scope.mode!=='list') continue;
     const last=Math.min(doc.lines, scope.global ? scope.end : scope.end-1);
     if(lastLine<=scope.start || firstLine>last) continue;

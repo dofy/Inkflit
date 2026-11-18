@@ -1,4 +1,4 @@
-import { markerPrefix, featureScopes } from './features.js';
+import { markerPrefix, scopesOf } from './features.js';
 import { t } from './i18n.js';
 import { currentBlockScope, closeBlockMenu } from './block-menu.js';
 
@@ -50,7 +50,7 @@ export function openLanguageMenu(editor, scope, button=null) {
   menu.hidden=false; render(); position(editor,scope,button); return true;
 }
 export function openCurrentLanguageMenu(editor) {
-  const {state}=editor, global=featureScopes(state.doc.toString()).find(item=>item.global);
+  const {state}=editor, global=scopesOf(state.doc).find(item=>item.global);
   // In a whole-note code mode the first line names the language.
   const scope=global?.mode==='code' ? global : currentBlockScope(state);
   if(scope?.mode!=='code')return false;

@@ -56,7 +56,7 @@ export function listIndentDecorations(state, ranges) {
   for (const range of ranges) {
     for (let number = doc.lineAt(range.from).number; number <= doc.lineAt(range.to).number; number++) {
       const line = doc.line(number), marker = /^(\s*(?:[-*+]|\d+[.)]) )(?!\[[ xX]\])/.exec(line.text);
-      if (marker && !isCodeAt(state, line.from) && !calculationModes.has(scopeAt(state.doc.toString(), number)?.mode)) result.push(hanging(marker[1].length).range(line.from));
+      if (marker && !isCodeAt(state, line.from) && !calculationModes.has(scopeAt(state.doc, number)?.mode)) result.push(hanging(marker[1].length).range(line.from));
     }
   }
   return Decoration.set(result, true);
