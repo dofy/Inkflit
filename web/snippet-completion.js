@@ -218,7 +218,13 @@ export function currentStop(state) {
 }
 const currentStopMarker = ViewPlugin.fromClass(class {
   constructor(view) { this.decorations = this.build(view.state); }
-  update(update) { if (update.docChanged || update.selectionSet || update.transactions.length) this.decorations = this.build(update.state); }
+  // Stops start and end with a document, selection or effect change (Esc
+  // ends them with an effect only); other updates leave the mark alone.
+  update(update) {
+    if (!update.docChanged && !update.selectionSet && !update.transactions.some(tr => tr.effects.length)) return;
+    const next = this.build(update.state);
+    if (next !== Decoration.none || this.decorations !== Decoration.none) this.decorations = next;
+  }
   build(state) {
     const stop = currentStop(state);
     if (!stop) return Decoration.none;
@@ -227,10 +233,10 @@ const currentStopMarker = ViewPlugin.fromClass(class {
 }, { decorations: plugin => plugin.decorations });
 
 export const snippets = [
-  currentStopMarker,
   pending,
   // No typing or interaction delays: the source is cheap, and a quick Tab right
   // after typing a name should accept it rather than be ignored.
   autocompletion({ override: [snippetCompletions], icons: false, closeOnBlur: true, defaultKeymap: false, activateOnTypingDelay: 0, interactionDelay: 0,
     addToOptions: [{ render: renderHint, position: 70 }, { render: renderPreview, position: 80 }] }),
+  currentStopMarker,
 ];
