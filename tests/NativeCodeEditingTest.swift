@@ -1098,8 +1098,13 @@ final class NativeCodeEditingTest {
                                     guard error == nil else { fail("could not click next") }
                                     later { [self] in checkNavigation("second", "2 / 3", false, false) { [self] in
                                         key(18, "1", "1", .command); later { [self] in checkNavigation("first", "1 / 3", true, false) { [self] in
-                                            print("PASS arrow buttons and Cmd bracket navigation follow page order")
-                                            app.restoreInputSource(); exit(0)
+                                            key(30, "}", "}", [.command, .shift]); later { [self] in checkNavigation("third", "3 / 3", false, true) { [self] in
+                                                key(33, "{", "{", [.command, .shift]); later { [self] in checkNavigation("first", "1 / 3", true, false) { [self] in
+                                                    print("PASS arrow buttons and Cmd bracket navigation follow page order")
+                                                    print("PASS Cmd-Shift brackets jump to the first and last note")
+                                                    app.restoreInputSource(); exit(0)
+                                                } }
+                                            } }
                                         } }
                                     } }
                                 }

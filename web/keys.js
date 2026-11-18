@@ -1,12 +1,12 @@
 import { Vim, getCM } from '@replit/codemirror-vim';
-import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection } from '@codemirror/autocomplete';
+import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection, hasNextSnippetField, hasPrevSnippetField, nextSnippetField, prevSnippetField, clearSnippet } from '@codemirror/autocomplete';
 import { toggleLineComment, indentMore, indentLess } from '@codemirror/commands';
 import { app, nativeHandler } from './app.js';
 import { isEditing } from './editor-view.js';
 import { acceptBestSnippet } from './snippet-completion.js';
 import { commandPalette, searchPalette, openCommands, openSearch } from './palettes.js';
 import { lastDeletedId, restoreDeletedNote, deleteNote } from './delete-notices.js';
-import { createNote, navigate, selectAt } from './notes.js';
+import { createNote, navigate, selectAt, selectFirst, selectLast } from './notes.js';
 import { blockMenuOpen, trySlash, handleBlockMenuKey, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine, planAdjacentTextLine } from './block-menu.js';
 import { languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
 import { scopeAt } from './features.js';
@@ -119,11 +119,13 @@ function toggleComments() {
   }
 }
 
-// Esc hides the window unless Vim still has something to finish.
+// Esc hides the window unless Vim still has something to finish. Caret stops
+// from a snippet end first, so Tab indents again; Vim still gets the Esc.
 function escapeKey(event) {
+  const endedStops = !!app.editor && clearSnippet(app.editor);
   const cm = getCM(app.editor), vimState = cm?.state?.vim, input = vimState?.inputState;
   const pending = !!(cm?.state?.dialog || vimState?.insertMode || vimState?.visualMode || vimState?.exMode || input?.keyBuffer?.length || input?.operator || input?.motion || input?.repeatOverride || input?.registerName);
-  if (!pending) { consume(event); hide(); }
+  if (!pending) { consume(event); if (!endedStops) hide(); }
 }
 
 // While the snippet list is open, its keys belong to it (snippet-completion.js).
@@ -146,10 +148,26 @@ function completionKey(event) {
   return true;
 }
 
+// After a snippet with caret stops, Tab and ⇧Tab move to the next and
+// previous stop. While stops are active both keys belong to them, so ⇧Tab
+// on the first stop does nothing rather than outdent. Reaching the last stop,
+// leaving the stops or Esc ends this.
+function snippetFieldKey(event) {
+  const editor = app.editor;
+  if (!editor?.hasFocus || event.key !== 'Tab' || !plain(event)) return false;
+  // An active snippet always has a next stop; the last one ends it.
+  if (!hasNextSnippetField(editor.state)) return false;
+  consume(event);
+  if (!event.shiftKey) nextSnippetField(editor);
+  else if (hasPrevSnippetField(editor.state)) prevSnippetField(editor);
+  return true;
+}
+
 function onKeyDown(event) {
   if (!app.state || event.isComposing || event.keyCode === 229) return;
   if (palettesKey(event)) return;
   if (completionKey(event)) return;
+  if (snippetFieldKey(event)) return;
   const editor = app.editor, focused = !!editor?.hasFocus, menusClosed = () => !languageMenuOpen() && !blockMenuOpen();
 
   if (command(event, 'u')) {
@@ -186,6 +204,13 @@ function onKeyDown(event) {
   if (!blockMenuOpen() && isEditing() && trySlash(event, editor)) { consume(event); return; }
   if (event.key.toLowerCase() === 'x' && plain(event) && isEditing() && toggleTaskKey(event)) return;
   if (event.key === 'Enter' && !event.repeat && plain(event) && isEditing() && leaveBlockKey(event)) return;
+  // ⌘⇧[ / ⌘⇧]: first and last note. Matched by physical key, because ⇧
+  // turns event.key into "{" and "}" (or other characters on other layouts).
+  if (event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && (event.code === 'BracketLeft' || event.code === 'BracketRight')) {
+    consume(event);
+    if (event.code === 'BracketLeft') selectFirst(); else selectLast();
+    return;
+  }
   if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
     const key = event.key.toLowerCase();
     if (key === 'c' && editor.state.selection.main.empty && copyCodeBlock(event)) return;

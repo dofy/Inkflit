@@ -19,6 +19,7 @@
       "rows": [
         {"keys": ["⌘N"], "en": "New note at the end", "zh-Hans": "在末尾新建笔记", "zh-Hant": "在最後新增筆記", "ja": "末尾に新規ノート"},
         {"keys": ["⌘[", "⌘]"], "en": "Previous / next note", "zh-Hans": "上一条 / 下一条笔记", "zh-Hant": "上一則 / 下一則筆記", "ja": "前 / 次のノート"},
+        {"keys": ["⌘⇧[", "⌘⇧]"], "en": "First / last note", "zh-Hans": "第一条 / 最后一条笔记", "zh-Hant": "第一則 / 最後一則筆記", "ja": "最初 / 最後のノート"},
         {"keys": ["⌘1", "⌘9"], "range": true, "en": "Jump to note 1–9", "zh-Hans": "跳到第 1–9 条笔记", "zh-Hant": "跳到第 1–9 則筆記", "ja": "1〜9 番目のノートへ移動"},
         {"keys": ["⌘D"], "en": "Delete the current note", "zh-Hans": "删除当前笔记", "zh-Hant": "刪除目前筆記", "ja": "現在のノートを削除"},
         {"keys": ["⌘U"], "en": "Restore the last deleted note (within 12 seconds)", "zh-Hans": "恢复刚删除的笔记（12 秒内）", "zh-Hant": "還原剛刪除的筆記（12 秒內）", "ja": "直前に削除したノートを復元（12 秒以内）"}

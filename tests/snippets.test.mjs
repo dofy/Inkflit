@@ -4,7 +4,7 @@ import { EditorState } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
 import { CompletionContext } from '@codemirror/autocomplete';
 import catalog from '../Resources/Translations.json' with { type: 'json' };
-import { builtinSnippets, matchSnippets, expandTemplate, templateSnippet, addSnippetSource, allSnippets, snippetContext, isoWeek } from '../web/snippets.js';
+import { builtinSnippets, matchSnippets, expandTemplate, templateSnippet, addSnippetSource, allSnippets, snippetContext, isoWeek, field, plainText, fieldTemplate } from '../web/snippets.js';
 import { snippetCompletions } from '../web/snippet-completion.js';
 import { setLanguage } from '../web/i18n.js';
 
@@ -112,11 +112,12 @@ test('templates name a default row, a numbered row or an alias', async () => {
 test('the placeholder catalog names every built-in row', async () => {
   const { placeholderCatalog, placeholderRow } = await import('../web/snippets.js');
   const catalog = placeholderCatalog(snippetContext({ now }));
-  assert.equal(catalog.length, builtinSnippets.length);
+  assert.equal(catalog.length, builtinSnippets.length + 1);
+  assert.deepEqual(catalog[0], { trigger: null, token: 'cursor', example: null, description: 'snippet.cursor' }, 'the caret stop is listed first, on its own');
   assert.deepEqual(catalog.filter(item => item.trigger === 'ip').map(item => item.token), ['ip', 'ipv4', 'ipv6', 'localip']);
   assert.deepEqual(catalog.filter(item => item.trigger === 'date').map(item => item.token), ['date', 'date#2', 'date#3', 'date#4', 'date#5']);
   assert.equal(catalog.find(item => item.token === 'timesec').example, '09:05:30');
-  for (const item of catalog) assert.ok(placeholderRow(item.token), `${item.token} resolves`);
+  for (const item of catalog.slice(1)) assert.ok(placeholderRow(item.token), `${item.token} resolves`);
   assert.equal(new Set(catalog.map(item => item.token)).size, catalog.length, 'tokens are unique');
 });
 
@@ -160,4 +161,75 @@ test('user snippets from the app join and lead their groups', async () => {
     assert.ok(matchSnippets('addr')[0].row.previewTTL, 'user rows are previewed');
   } finally { setUserSnippets([]); }
   assert.equal(matchSnippets('addr').length, 0);
+});
+
+test('math blocks offer functions, units and currencies; elsewhere they stay hidden', async () => {
+  const { functionSnippets, unitSnippets, unitNames, currencySnippets, currencyPreview } = await import('../web/math-snippets.js');
+  const { evaluateExpression } = await import('../web/features.js');
+  const { fallbackCurrencies } = await import('../web/rates.js');
+  const labels = doc => {
+    const pos = doc.indexOf('|'), text = doc.replace('|', '');
+    const state = EditorState.create({ doc: text, extensions: [markdown()] });
+    return snippetCompletions(new CompletionContext(state, pos, false))?.options.map(option => option.label) ?? null;
+  };
+  for (const name of unitNames) assert.ok(evaluateExpression(`1 ${name}`), `${name} parses`);
+  for (const row of [...functionSnippets, ...unitSnippets, ...currencySnippets(fallbackCurrencies)]) {
+    assert.ok(catalog[row.hint ?? row.description], `${row.trigger}: ${row.hint ?? row.description}`);
+    for (const alias of row.aliases) assert.match(alias, /^[a-z0-9]{2,}$/);
+  }
+  const aliases = [...functionSnippets, ...unitSnippets, ...currencySnippets(fallbackCurrencies)].flatMap(row => row.aliases);
+  assert.equal(new Set(aliases).size, aliases.length, 'aliases are unique');
+  assert.ok(!aliases.includes('ms'), 'built-in aliases stay with their rows');
+
+  assert.deepEqual(labels('@kilome|'), null, 'not outside math');
+  assert.deepEqual(labels('math\n10 @kilome|'), ['@kilometer']);
+  assert.deepEqual(labels('math\n10@km|'), ['@km'], 'a number may touch "@"');
+  assert.deepEqual(labels(':::inkflit math\n@sqrt|\n:::end'), ['@sqrt']);
+  assert.deepEqual(labels('```math\n@usd|\n```'), ['@usd'], 'math fences are not code here');
+  assert.equal(labels('```js\n@usd|\n```'), null);
+  assert.equal(labels('math\nprice@km|'), null, 'a word right before "@" still blocks');
+  assert.equal(labels('math\n@cur|').filter(label => label === '@cur').length, fallbackCurrencies.length);
+
+  assert.equal(plainText(functionSnippets[0].expand()), 'sqrt()');
+  assert.equal(fieldTemplate(functionSnippets[0].expand()), 'sqrt(${1:})${0}', 'the caret lands inside the brackets; Tab leaves them');
+  assert.equal(unitSnippets.find(row => row.aliases.includes('minute')).expand(), 'min');
+  const rates = () => Promise.resolve({ values: { EUR: 1, USD: 1.16, CNY: 8.24, JPY: 180 } });
+  assert.equal(await currencyPreview('USD', { locale: 'zh-Hans', rates }), 'USD · 美元 · 1 = 7.103 CNY');
+  assert.equal(await currencyPreview('USD', { locale: 'en', rates }), 'USD · US Dollar · 1 = 0.8621 EUR', 'the home currency compares with EUR');
+  assert.equal(await currencyPreview('JPY', { locale: 'en', rates: () => Promise.reject(new Error('offline')) }), 'JPY · Japanese Yen', 'offline still names it');
+});
+
+test('exchange rates are asked once an hour and shared', async () => {
+  const { refreshRates, currencyCodes, currentRates } = await import('../web/rates.js');
+  let calls = 0;
+  const fetch = async () => { calls++; return { ok: true, json: async () => ({ date: '2026-11-18', rates: { USD: 1.16, CNY: 8.24 } }) }; };
+  const [a, b] = await Promise.all([refreshRates(fetch), refreshRates(fetch)]);
+  assert.equal(calls, 1);
+  assert.equal(a, b);
+  assert.deepEqual(currentRates().values, { EUR: 1, USD: 1.16, CNY: 8.24 });
+  assert.deepEqual(currencyCodes(), ['CNY', 'EUR', 'USD']);
+  assert.equal(currencyCodes(), currencyCodes(), 'same array until the rates change');
+});
+
+test('{cursor} marks caret stops that Tab and Shift-Tab move between', async () => {
+  const { EditorView } = await import('@codemirror/view');
+  const { nextSnippetField, prevSnippetField, hasPrevSnippetField } = await import('@codemirror/autocomplete');
+  const { applySnippet } = await import('../web/snippet-completion.js');
+  const context = snippetContext({ now });
+  assert.equal(await expandTemplate('Dear {cursor:name},\n{cursor}\n{date}', context), `Dear ${field('name')},\n${field()}\n2026-11-18`);
+  assert.equal(fieldTemplate(`a {b} ${field('x')} c`), 'a \\{b\\} ${1:x} c${0}', 'literal braces are escaped and a last stop is added');
+  assert.equal(fieldTemplate(`a ${field()}`), 'a ${1:}', 'no extra stop when the last one is at the end');
+  assert.equal(plainText(`Dear ${field('name')}, ${field()}!`), 'Dear name, !');
+  const row = templateSnippet('mail', 'Dear {cursor:name},\n{cursor}\nBye');
+  const parent = { appendChild() {} };
+  if (typeof document === 'undefined') return;  // needs a DOM for EditorView
+  const view = new EditorView({ doc: '@mail', parent });
+  applySnippet(view, row, 0, 5);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const sel = () => [view.state.selection.main.from, view.state.selection.main.to];
+  assert.equal(view.state.doc.toString(), 'Dear name,\n\nBye');
+  assert.deepEqual(sel(), [5, 9], 'the first stop starts with its text selected');
+  nextSnippetField(view); assert.deepEqual(sel(), [11, 11]);
+  assert.ok(hasPrevSnippetField(view.state));
+  prevSnippetField(view); assert.deepEqual(sel(), [5, 9]);
 });

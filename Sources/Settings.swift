@@ -768,15 +768,17 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         while menu.items.count > 1 { menu.removeItem(at: 1) }
         var groups: [(String, NSMenu)] = []
         for item in placeholders {
-            guard let trigger = item["trigger"] as? String, let token = item["token"] as? String else { continue }
-            if groups.last?.0 != trigger { groups.append((trigger, NSMenu())) }
+            guard let token = item["token"] as? String else { continue }
+            // Without a trigger ({cursor}) the item goes straight into the menu.
+            let trigger = item["trigger"] as? String
+            if let trigger, groups.last?.0 != trigger { groups.append((trigger, NSMenu())) }
             let example = (item["example"] as? String) ?? (item["description"] as? String) ?? ""
             let entry = NSMenuItem(title: "{\(token)}", action: #selector(placeholderChosen(_:)), keyEquivalent: "")
             entry.target = self; entry.representedObject = token
             let title = NSMutableAttributedString(string: "{\(token)}", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)])
             if !example.isEmpty { title.append(NSAttributedString(string: "   \(example)", attributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.secondaryLabelColor])) }
             entry.attributedTitle = title
-            groups[groups.count - 1].1.addItem(entry)
+            if trigger == nil { menu.addItem(entry) } else { groups[groups.count - 1].1.addItem(entry) }
         }
         for (trigger, submenu) in groups {
             let item = NSMenuItem(title: "@\(trigger)", action: nil, keyEquivalent: ""); item.submenu = submenu; menu.addItem(item)

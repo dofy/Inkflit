@@ -1,13 +1,16 @@
-import { autocompletion, CompletionContext, closeCompletion } from '@codemirror/autocomplete';
+import { autocompletion, CompletionContext, closeCompletion, snippet as fieldSnippet, hasNextSnippetField } from '@codemirror/autocomplete';
 import { StateEffect, StateField } from '@codemirror/state';
-import { Decoration, EditorView } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { t, lang } from './i18n.js';
 import { nativeRequest } from './app.js';
 import { isCodeAt } from './comments.js';
-import { matchSnippets, snippetContext, addSnippetSource, templateSnippet } from './snippets.js';
+import { matchSnippets, snippetContext, addSnippetSource, templateSnippet, allSnippets, hasFields, fieldTemplate, plainText } from './snippets.js';
+import { functionSnippets, unitSnippets, currencySnippets } from './math-snippets.js';
+import { currencyCodes, loadRates } from './rates.js';
+import { scopeAt } from './features.js';
 
-const currentContext = () => snippetContext({ native: nativeRequest, locale: lang() });
+const currentContext = () => snippetContext({ native: nativeRequest, locale: lang(), rates: loadRates });
 
 // Editor side of snippets: typing "@" offers matching snippets; Return or Tab
 // replaces "@name" with the value. Not inside code, and not after a word
@@ -22,6 +25,8 @@ function inCode(state, pos) {
 // User snippets from snippets.json, sent by the app (Settings → Snippets).
 // Each is a template row; rows sharing a trigger form a group and lead the
 // built-in group of the same name.
+// Math rows are added first, so user rows still lead any group they share.
+addSnippetSource(() => [...functionSnippets, ...unitSnippets, ...currencySnippets(currencyCodes())]);
 let userRows = [];
 addSnippetSource(() => userRows);
 export function setUserSnippets(list) {
@@ -68,20 +73,32 @@ function reportFailure(snippet) {
   footer.className = 'error'; footer.title = footer.textContent;
 }
 
+// A value with caret stops goes through CodeMirror's snippet fields: the
+// caret lands on the first stop and Tab / ⇧Tab move between them (keys.js).
+// Later lines then follow the indentation of the line it is inserted on.
+// With `follow` false the caret stays where it is, and stops are dropped.
+function insertValue(view, value, from, to, follow = true) {
+  if (follow && hasFields(value)) { fieldSnippet(fieldTemplate(value))(view, null, from, to); return; }
+  const insert = plainText(value);
+  view.dispatch({ changes: { from, to, insert }, ...(follow ? { selection: { anchor: from + insert.length } } : {}), userEvent: 'input.complete' });
+}
+
 export function applySnippet(view, snippet, from, to) {
   let value;
   try { value = snippet.expand(currentContext()); } catch { reportFailure(snippet); return; }
-  if (typeof value === 'string') {
-    view.dispatch({ changes: { from, to, insert: value }, selection: { anchor: from + value.length }, userEvent: 'input.complete' });
-    return;
-  }
+  if (typeof value === 'string') { insertValue(view, value, from, to); return; }
   const id = {}, text = view.state.sliceDoc(from, to);
   view.dispatch({ effects: track.of({ id, from, to, text }) });
   const finish = result => {
     if (!view.dom.isConnected) return;  // the note was closed meanwhile
     const range = view.state.field(pending).get(id);
     const usable = range && typeof result === 'string' && view.state.sliceDoc(range.from, range.to) === range.text;
-    view.dispatch({ effects: untrack.of(id), ...(usable ? { changes: { from: range.from, to: range.to, insert: result }, userEvent: 'input.complete' } : {}) });
+    view.dispatch({ effects: untrack.of(id) });
+    if (!usable) return;
+    // The value arrives later (an IP lookup). If the caret has moved on
+    // meanwhile, it is not pulled back to the stops.
+    const { main } = view.state.selection;
+    insertValue(view, result, range.from, range.to, main.empty && main.head === range.to);
   };
   Promise.resolve(value).then(finish, () => { finish(null); reportFailure(snippet); });
 }
@@ -89,11 +106,16 @@ export function applySnippet(view, snippet, from, to) {
 export function snippetCompletions(context) {
   const word = context.matchBefore(/@[\w-]*/);
   if (!word) return null;
-  if (/[\w@]/.test(context.state.sliceDoc(word.from - 1, word.from)) || inCode(context.state, word.from)) return null;
+  // Math blocks, ```math fences included, offer the math rows. A number may
+  // come right before "@" there, as in "10@km".
+  const { state } = context, inMath = scopeAt(state.doc.toString(), state.doc.lineAt(word.from).number)?.mode === 'math';
+  if ((inMath ? /[A-Za-z_@]/ : /[\w@]/).test(state.sliceDoc(word.from - 1, word.from))) return null;
+  if (!inMath && inCode(state, word.from)) return null;
   // Formats that look the same in this language (English has no 年 or 日, so
   // "2026" and "18" repeat) are listed once.
   const now = currentContext(), shown = new Set();
-  const matches = matchSnippets(word.text.slice(1)).filter(({ row }) => {
+  const rows = allSnippets().filter(row => inMath || !row.math);
+  const matches = matchSnippets(word.text.slice(1), rows).filter(({ row }) => {
     if (!row.live) return true;
     let value; try { value = row.preview(now); } catch { return true; }
     const key = `${row.trigger}:${value}`;
@@ -141,7 +163,7 @@ function renderPreview(completion) {
     // One retry while the row is still shown, since the list may stay open.
     const show = retry => cachedPreview(snippet).then(text => {
       // Multi-line values show their first line.
-      if (text) element.textContent = text.includes('\n') ? `${text.split('\n')[0]} …` : text;
+      if (text) { text = plainText(text); element.textContent = text.includes('\n') ? `${text.split('\n')[0]} …` : text; }
       else if (retry) setTimeout(() => { if (element.isConnected) show(false); }, 1500);
     });
     show(true);
@@ -171,7 +193,41 @@ export function acceptBestSnippet(view) {
 }
 
 // Keys for the open list (Return, Tab, arrows, Esc) are handled in keys.js.
+// CodeMirror marks every caret stop alike, so the one being filled is hard to
+// tell apart. Its stop marks are among the editor's state decorations (not
+// exported otherwise): find the stop holding the caret and mark it current.
+class CurrentPoint extends WidgetType {
+  toDOM() { const element = document.createElement('span'); element.className = 'cm-snippetCurrentPoint'; return element; }
+  eq() { return true; }
+}
+const currentMark = Decoration.mark({ class: 'cm-snippetField-current' }), currentPoint = Decoration.widget({ widget: new CurrentPoint(), side: 1 });
+const isStopWidget = deco => { try { return deco.spec.widget?.toDOM?.()?.className === 'cm-snippetFieldPosition'; } catch { return false; } };
+export function currentStop(state) {
+  if (!hasNextSnippetField(state)) return null;
+  const { main } = state.selection, stops = [];
+  for (const source of state.facet(EditorView.decorations)) {
+    if (typeof source === 'function') continue;
+    source.between(0, state.doc.length, (from, to, deco) => {
+      if (deco.spec.class === 'cm-snippetField' || (from === to && isStopWidget(deco))) stops.push({ from, to });
+    });
+  }
+  // A jump selects the whole stop, so an exact match wins; adjacent stops
+  // ("{cursor:place}{cursor}") both touch the caret, so then the smallest.
+  return stops.find(stop => stop.from === main.from && stop.to === main.to)
+    ?? stops.filter(stop => stop.from <= main.from && main.to <= stop.to).sort((a, b) => (a.to - a.from) - (b.to - b.from))[0] ?? null;
+}
+const currentStopMarker = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = this.build(view.state); }
+  update(update) { if (update.docChanged || update.selectionSet || update.transactions.length) this.decorations = this.build(update.state); }
+  build(state) {
+    const stop = currentStop(state);
+    if (!stop) return Decoration.none;
+    return Decoration.set(stop.from === stop.to ? [currentPoint.range(stop.from)] : [currentMark.range(stop.from, stop.to)]);
+  }
+}, { decorations: plugin => plugin.decorations });
+
 export const snippets = [
+  currentStopMarker,
   pending,
   // No typing or interaction delays: the source is cheap, and a quick Tab right
   // after typing a name should accept it rather than be ignored.

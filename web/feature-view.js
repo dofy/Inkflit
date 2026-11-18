@@ -1,23 +1,12 @@
 import { t, lang } from './i18n.js';
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
-import { analyzeScopes, scopeAt, mathVariableRanges } from './features.js';
+import { analyzeScopes, scopeAt, mathHighlights, nestedLines } from './features.js';
 import { codeLanguage } from './code-languages.js';
 import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
 import { openLanguageMenu } from './language-menu.js';
-let rates = null, onRates = () => {}, requestedAt = 0;
-export function setRateListener(fn) { onRates = fn; }
-export async function refreshRates() {
-  if (Date.now()-requestedAt < 3600000) return;
-  requestedAt=Date.now();
-  try {
-    const response=await fetch('https://api.frankfurter.dev/v1/latest', {referrerPolicy:'no-referrer'});
-    if (!response.ok) throw new Error('exchange rates unavailable');
-    const data=await response.json();
-    if (!data.date || !data.rates || typeof data.rates.USD !== 'number') throw new Error('invalid rates');
-    rates={date:data.date,values:{EUR:1,...data.rates}}; onRates();
-  } catch (_) { requestedAt=Date.now()-3500000; onRates(); }
-}
+import { currentRates, currencyCodes, refreshRates } from './rates.js';
+export { setRateListener } from './rates.js';
 class Result extends WidgetType {
   constructor(text) { super(); this.text=text; }
   eq(other) { return this.text===other.text; }
@@ -66,7 +55,7 @@ function decorateCode(view,scope,decorations) {
   try { highlightTree(description.support.language.parser.parse(doc.sliceString(from,to)),classHighlighter,(a,b,classes)=>{if(classes && b>a) decorations.push(Decoration.mark({class:classes}).range(from+a,from+b));}); } catch (_) {}
 }
 function decorate(view) {
-  const doc=view.state.doc, text=doc.toString(), scopes=analyzeScopes(text,rates), decorations=[];
+  const doc=view.state.doc, text=doc.toString(), scopes=analyzeScopes(text,currentRates()), decorations=[], currencies=new Set(currencyCodes());
   if (scopes.some(s=>s.mode==='math')) refreshRates();
   for (const scope of scopes) {
     if(scope.kind==='block') {
@@ -77,11 +66,11 @@ function decorate(view) {
       if(scope.mode==='code') decorateCode(view,scope,decorations);
     }
     if(scope.mode==='math') {
-      const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[];
-      for(let n=first;n<=last;n++) lines.push(doc.line(n).text);
-      for(const range of mathVariableRanges(lines)) {
+      const first=scope.start+1, last=Math.min(doc.lines,scope.global ? scope.end : scope.end-1), lines=[], nested=scope.global ? nestedLines(scopes) : new Set();
+      for(let n=first;n<=last;n++) lines.push(nested.has(n) ? '' : doc.line(n).text);
+      for(const range of mathHighlights(lines,currencies)) {
         const line=doc.line(first+range.line);
-        decorations.push(Decoration.mark({class:'cm-math-variable'}).range(line.from+range.from,line.from+range.to));
+        decorations.push(Decoration.mark({class:'cm-math-'+range.kind}).range(line.from+range.from,line.from+range.to));
       }
     }
     for (const result of scope.results) { const line=doc.line(result.line); decorations.push(Decoration.widget({widget:new Result(result.text + (result.rateDate ? ` · ${result.rateDate}` : '')),side:1}).range(line.to)); }
@@ -102,4 +91,4 @@ export const features = ViewPlugin.fromClass(class {
 },{decorations:v=>v.decorations});
 import { StateEffect } from '@codemirror/state';
 export const rateEffect=StateEffect.define();
-export const analyzeCurrent = text => analyzeScopes(text,rates).find(scope=>scope.global) || {summary:''};
+export const analyzeCurrent = text => analyzeScopes(text,currentRates()).find(scope=>scope.global) || {summary:''};

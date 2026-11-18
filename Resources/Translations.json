@@ -713,6 +713,18 @@
     "zh-Hant": "下一則筆記",
     "ja": "次のノート"
   },
+  "note.first": {
+    "en": "First note",
+    "zh-Hans": "第一条笔记",
+    "zh-Hant": "第一則筆記",
+    "ja": "最初のノート"
+  },
+  "note.last": {
+    "en": "Last note",
+    "zh-Hans": "最后一条笔记",
+    "zh-Hant": "最後一則筆記",
+    "ja": "最後のノート"
+  },
   "note.new": {
     "en": "New note",
     "zh-Hans": "新建笔记",
@@ -1138,6 +1150,192 @@
     "zh-Hans": "无法获取 {name}",
     "zh-Hant": "無法取得 {name}",
     "ja": "{name} を取得できませんでした"
+  },
+  "snippet.currency": {
+    "en": "Currency code",
+    "zh-Hans": "货币代码",
+    "zh-Hant": "貨幣代碼",
+    "ja": "通貨コード"
+  },
+  "snippet.cursor": {
+    "en": "Caret stop; Tab / ⇧Tab move between stops",
+    "zh-Hans": "光标位置；Tab / ⇧Tab 在多个位置间跳转",
+    "zh-Hant": "游標位置；Tab / ⇧Tab 在多個位置間跳轉",
+    "ja": "カーソル位置。Tab / ⇧Tab で位置を移動"
+  },
+  "snippet.fn.sqrt": {
+    "en": "Square root",
+    "zh-Hans": "平方根",
+    "zh-Hant": "平方根",
+    "ja": "平方根"
+  },
+  "snippet.fn.abs": {
+    "en": "Absolute value",
+    "zh-Hans": "绝对值",
+    "zh-Hant": "絕對值",
+    "ja": "絶対値"
+  },
+  "snippet.fn.round": {
+    "en": "Round",
+    "zh-Hans": "四舍五入",
+    "zh-Hant": "四捨五入",
+    "ja": "四捨五入"
+  },
+  "snippet.fn.floor": {
+    "en": "Round down",
+    "zh-Hans": "向下取整",
+    "zh-Hant": "無條件捨去",
+    "ja": "切り捨て"
+  },
+  "snippet.fn.ceil": {
+    "en": "Round up",
+    "zh-Hans": "向上取整",
+    "zh-Hant": "無條件進位",
+    "ja": "切り上げ"
+  },
+  "snippet.fn.sin": {
+    "en": "Sine",
+    "zh-Hans": "正弦",
+    "zh-Hant": "正弦",
+    "ja": "正弦"
+  },
+  "snippet.fn.cos": {
+    "en": "Cosine",
+    "zh-Hans": "余弦",
+    "zh-Hant": "餘弦",
+    "ja": "余弦"
+  },
+  "snippet.fn.tan": {
+    "en": "Tangent",
+    "zh-Hans": "正切",
+    "zh-Hant": "正切",
+    "ja": "正接"
+  },
+  "snippet.fn.log": {
+    "en": "Natural logarithm",
+    "zh-Hans": "自然对数",
+    "zh-Hant": "自然對數",
+    "ja": "自然対数"
+  },
+  "snippet.fn.log10": {
+    "en": "Base-10 logarithm",
+    "zh-Hans": "常用对数",
+    "zh-Hant": "常用對數",
+    "ja": "常用対数"
+  },
+  "snippet.fn.exp": {
+    "en": "e to the power",
+    "zh-Hans": "e 的幂",
+    "zh-Hant": "e 的冪",
+    "ja": "e のべき乗"
+  },
+  "snippet.fn.min": {
+    "en": "Smallest",
+    "zh-Hans": "最小值",
+    "zh-Hant": "最小值",
+    "ja": "最小値"
+  },
+  "snippet.fn.max": {
+    "en": "Largest",
+    "zh-Hans": "最大值",
+    "zh-Hant": "最大值",
+    "ja": "最大値"
+  },
+  "snippet.unit.length": {
+    "en": "Length",
+    "zh-Hans": "长度",
+    "zh-Hant": "長度",
+    "ja": "長さ"
+  },
+  "snippet.unit.area": {
+    "en": "Area",
+    "zh-Hans": "面积",
+    "zh-Hant": "面積",
+    "ja": "面積"
+  },
+  "snippet.unit.volume": {
+    "en": "Volume",
+    "zh-Hans": "体积",
+    "zh-Hant": "體積",
+    "ja": "体積"
+  },
+  "snippet.unit.mass": {
+    "en": "Mass",
+    "zh-Hans": "质量",
+    "zh-Hant": "質量",
+    "ja": "質量"
+  },
+  "snippet.unit.time": {
+    "en": "Time",
+    "zh-Hans": "时间",
+    "zh-Hant": "時間",
+    "ja": "時間"
+  },
+  "snippet.unit.speed": {
+    "en": "Speed",
+    "zh-Hans": "速度",
+    "zh-Hant": "速度",
+    "ja": "速度"
+  },
+  "snippet.unit.temperature": {
+    "en": "Temperature",
+    "zh-Hans": "温度",
+    "zh-Hant": "溫度",
+    "ja": "温度"
+  },
+  "snippet.unit.angle": {
+    "en": "Angle",
+    "zh-Hans": "角度",
+    "zh-Hant": "角度",
+    "ja": "角度"
+  },
+  "snippet.unit.force": {
+    "en": "Force",
+    "zh-Hans": "力",
+    "zh-Hant": "力",
+    "ja": "力"
+  },
+  "snippet.unit.energy": {
+    "en": "Energy",
+    "zh-Hans": "能量",
+    "zh-Hant": "能量",
+    "ja": "エネルギー"
+  },
+  "snippet.unit.power": {
+    "en": "Power",
+    "zh-Hans": "功率",
+    "zh-Hant": "功率",
+    "ja": "仕事率"
+  },
+  "snippet.unit.pressure": {
+    "en": "Pressure",
+    "zh-Hans": "压强",
+    "zh-Hant": "壓力",
+    "ja": "圧力"
+  },
+  "snippet.unit.electric": {
+    "en": "Electric",
+    "zh-Hans": "电磁",
+    "zh-Hant": "電磁",
+    "ja": "電磁気"
+  },
+  "snippet.unit.data": {
+    "en": "Data",
+    "zh-Hans": "数据",
+    "zh-Hant": "資料",
+    "ja": "データ"
+  },
+  "snippet.unit.frequency": {
+    "en": "Frequency",
+    "zh-Hans": "频率",
+    "zh-Hant": "頻率",
+    "ja": "周波数"
+  },
+  "snippet.unit.other": {
+    "en": "Other",
+    "zh-Hans": "其他",
+    "zh-Hant": "其他",
+    "ja": "その他"
   },
   "error.settingsUnavailable": {
     "en": "Settings are unavailable.",

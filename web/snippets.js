@@ -17,14 +17,35 @@
 //   hint         short i18n label shown beside the preview, when rows of a
 //                group would otherwise look alike (IPv4 vs IPv6)
 //   aliases      other words that find this row directly, such as "timesec"
+//   math         offered only inside a math block (see math-snippets.js)
+//
+// A value may hold caret stops, made with field() or "{cursor}" in a
+// template: the caret lands on the first, and Tab / ⇧Tab move between them.
 //
 // The context carries everything a snippet may use, so this module has no
 // side effects and tests can replace any of it:
-//   now, locale (app language, for Intl), fetch, native(action), randomUUID
+//   now, locale (app language, for Intl), fetch, native(action), randomUUID,
+//   rates() (a Promise of exchange rates)
 //
 // Rows come from sources: built-ins, plus each addSnippetSource(). A later
 // source's rows go first in their group, so a user's own "date" row becomes
 // the default. The editor integration is in snippet-completion.js.
+
+// Caret stops travel inside values as private-use characters, so they survive
+// templates that name other templates. field('name') starts with "name" selected.
+const FIELD = /\uE000([^\uE000\uE001]*)\uE001/g;
+export const field = (text = '') => `\uE000${text}\uE001`;
+export const hasFields = value => typeof value === 'string' && value.includes('\uE000');
+// The value as text, for previews: stops vanish, their default text stays.
+export const plainText = value => value.replace(FIELD, '$1').replace(/[\uE000\uE001]/g, '');
+// The value as a CodeMirror snippet template: braces escaped, stops numbered
+// in order, and a last stop at the end ("${0}"), so Tab can leave the value and
+// ⇧Tab still reaches the stop before.
+export function fieldTemplate(value) {
+  let stop = 0;
+  const template = value.replace(/[{}]/g, '\\$&').replace(FIELD, (_, text) => `\${${++stop}:${text}}`);
+  return /\uE001$/.test(value) ? template : `${template}\${0}`;
+}
 
 const pad = value => String(value).padStart(2, '0');
 export const formatDate = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -140,7 +161,8 @@ export function fuzzy(query, word) {
 //                     alias starts with it, then rows whose alias fits it
 // Returns [{row, alias?}] in definition order within each step; `alias` is
 // the alias that matched.
-export function matchSnippets(prefix, rows = allSnippets()) {
+// Math rows are left out unless the caller passes them (see snippet-completion.js).
+export function matchSnippets(prefix, rows = allSnippets().filter(row => !row.math)) {
   const query = prefix.toLowerCase();
   if (!query) {
     const seen = new Set();
@@ -171,6 +193,7 @@ export const snippetContext = (overrides = {}) => ({
   fetch: (...args) => globalThis.fetch(...args),
   native: () => Promise.reject(new Error('Only available in the app')),
   randomUUID: () => crypto.randomUUID(),
+  rates: () => Promise.reject(new Error('Only available in the app')),
   ...overrides,
 });
 
@@ -188,11 +211,14 @@ export function placeholderRow(name, rows = allSnippets()) {
 
 // Templates let data define snippets: "Meeting {date} {time}" inserts the
 // rows named in braces (see placeholderRow). Unknown names stay as written;
-// "{{" is a literal brace. Async rows are awaited.
+// "{{" is a literal brace. Async rows are awaited. "{cursor}" is a caret stop
+// and "{cursor:name}" one that starts with "name" selected (see field()).
 export async function expandTemplate(template, context = snippetContext(), rows = allSnippets()) {
-  const parts = template.split(/(\{\{|\{[a-z][\w-]*(?:#\d+)?\})/);
+  const parts = template.split(/(\{\{|\{cursor(?::[^{}]*)?\}|\{[a-z][\w-]*(?:#\d+)?\})/);
   const values = await Promise.all(parts.map(part => {
     if (part === '{{') return '{';
+    const stop = /^\{cursor(?::([^{}]*))?\}$/.exec(part);
+    if (stop) return field(stop[1] ?? '');
     const row = part.startsWith('{') && part.endsWith('}') ? placeholderRow(part.slice(1, -1), rows) : null;
     return row ? row.expand(context) : part;
   }));
@@ -201,15 +227,16 @@ export async function expandTemplate(template, context = snippetContext(), rows 
 
 // Every built-in row as a placeholder, for the Settings menu: grouped by
 // trigger, with the shortest way to name it and an example value.
+// The caret stop comes first, without a trigger, so it is listed on its own.
 export function placeholderCatalog(context = snippetContext()) {
   const positions = new Map();
-  return builtinSnippets.map(row => {
+  return [{ trigger: null, token: 'cursor', example: null, description: 'snippet.cursor' }, ...builtinSnippets.map(row => {
     const position = (positions.get(row.trigger) || 0) + 1; positions.set(row.trigger, position);
     const token = position === 1 ? row.trigger : row.aliases?.[0] ?? `${row.trigger}#${position}`;
     let example = null;
     if (row.live) { try { example = row.preview(context); } catch {} }
     return { trigger: row.trigger, token, example, description: row.description ?? null };
-  });
+  })];
 }
 
 // A row built from a template, the shape user-defined snippets take. While it

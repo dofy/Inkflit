@@ -12,7 +12,10 @@
   <p>視窗會出現在滑鼠所在的顯示器、你目前所在的桌面上，不會把你拉回其他桌面。視窗位置會被記住，重新啟動後也一樣。</p>
   <p>拖曳工具列中間的空白處可以移動視窗，拖曳邊緣可以調整大小。</p>
   <h3>引導筆記</h3>
-  <p>第一次啟動時，Inkflit 會依你的語言建立七篇引導筆記，可以隨意修改或刪除。點設定視窗底部的「重新產生引導筆記」，會在最前面放一套新的引導，並開啟歡迎頁。</p>
+  <ul>
+    <li>第一次啟動時，Inkflit 依你的語言建立七篇引導筆記，可以隨意修改或刪除。</li>
+    <li>設定視窗底部的「重新產生引導筆記」：在最前面放一套新的引導，並開啟歡迎頁。</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -20,7 +23,7 @@
   <p>筆記像筆記本的書頁一樣排列：第一則是最早寫的，新增的筆記加在最後。工具列會顯示目前位置，例如 <code>2 / 5</code>。</p>
   <ul>
     <li><b>新增：</b><kbd>⌘N</kbd>，或工具列上的 <b>+</b>。</li>
-    <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。</li>
+    <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。<kbd>⌘⇧[</kbd> 和 <kbd>⌘⇧]</kbd> 跳到第一則和最後一則筆記。</li>
     <li><b>跳到某一頁：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 開啟第 1 到第 9 則。</li>
   </ul>
   <p>底列顯示目前筆記的建立時間（本地時間）。在開始記錄建立時間之前就有的筆記不顯示日期。</p>
@@ -33,7 +36,11 @@
   <h2>搜尋與命令</h2>
   <p>兩個面板的按鍵一樣：輸入文字篩選，<kbd>↑</kbd> <kbd>↓</kbd> 選擇，<kbd>Return</kbd> 開啟，<kbd>Esc</kbd> 關閉。</p>
   <h3>搜尋筆記 <kbd>⌘⇧F</kbd></h3>
-  <p>在所有目前筆記的內文中尋找，每則筆記列出一筆符合結果。輸入框為空時會列出全部筆記，可以當目錄使用。備份和回收站裡的內容不會被搜尋。</p>
+  <ul>
+    <li>在所有目前筆記的內文中搜尋，每篇筆記列一筆結果。</li>
+    <li>輸入框為空時列出全部筆記，可以當目錄用。</li>
+    <li>不搜尋備份和垃圾桶。</li>
+  </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
   <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
   <ul>
@@ -55,7 +62,14 @@
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
   <h3>片段</h3>
-  <p>輸入 <code>@</code> 加一個詞插入常用值。一個詞可以有多種格式：<code>@date</code> 會列出所有日期格式，<kbd>Return</kbd> 插入第一種，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 選擇其他格式。只輸入詞的一部分，或依序輸入其中幾個字母（<code>@wk</code> 能找到 <code>@week</code>），也會列出符合詞的全部格式；只輸入 <code>@</code> 時每個詞顯示一行。預覽就是將要插入的內容，時間類的值即時更新；<kbd>Esc</kbd> 關閉清單。</p>
+  <p>輸入 <code>@</code> 加一個詞，插入常用值。</p>
+  <ul>
+    <li><kbd>Return</kbd> 插入第一種格式，<kbd>↑</kbd> <kbd>↓</kbd> 選其他格式，<kbd>Esc</kbd> 關閉清單。</li>
+    <li>一個詞有多種格式時全部列出：<code>@date</code> 列出所有日期格式。</li>
+    <li>只打一部分，或依序打幾個字母也能找到：<code>@wk</code> 找到 <code>@week</code>。</li>
+    <li>只輸入 <code>@</code>：每個詞顯示一行。</li>
+    <li>預覽就是要插入的內容，時間類的值即時更新。</li>
+  </ul>
   <table>
     <thead><tr><th>詞</th><th>格式</th></tr></thead>
     <tbody>
@@ -69,11 +83,56 @@
       <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
       <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>只在計算區塊中：函式、單位和貨幣，見<a href="#math">計算</a></td></tr>
     </tbody>
   </table>
-  <p>括號裡的詞可以直接插入那一種格式。公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
+  <ul>
+    <li>括號裡的詞直接插入那一種格式，例如 <code>@timesec</code>。</li>
+    <li>公用 IP 在清單顯示或插入時向 ipify 查詢，不傳送其他內容。</li>
+    <li>在程式碼裡、或緊接在字母後面時不彈出，所以電子郵件地址不受影響。</li>
+  </ul>
   <h4>自訂片段</h4>
-  <p>在「設定 → 片段」或命令面板的「管理片段」中新增。和 macOS 的文字替代一樣，幾行可以用同一個觸發詞，例如幾個地址都用 <code>addr</code>；輸入 <code>@addr</code> 會全部列出，預設插入第一行。內容可以多行，也可以用預留位置：<code>{date}</code> 插入預設日期，<code>{date#2}</code> 插入第二種日期格式，<code>{ipv4}</code> 這樣的別名插入指定格式；「插入預留位置」選單列出了全部預留位置和範例。自己的列會排在同名內建組的前面，所以自己寫的 <code>date</code> 會成為預設格式。片段儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <p>在「設定 → 片段」或命令面板的「管理片段」中新增。儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <ul>
+    <li><b>一個觸發詞可以有幾行：</b>和 macOS 的文字替代一樣。幾個地址都用 <code>addr</code>，<code>@addr</code> 會全部列出，預設插入第一行。</li>
+    <li><b>和內建詞同名：</b>你的列排在前面，所以自己寫的 <code>date</code> 會成為預設格式。</li>
+    <li><b>內容可以多行。</b></li>
+  </ul>
+  <h4>預留位置</h4>
+  <table>
+    <thead><tr><th>寫法</th><th>插入</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>這個詞的預設格式</td></tr>
+      <tr><td><code>{date#2}</code></td><td>這個詞的第 2 種格式</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>別名對應的那一種格式</td></tr>
+      <tr><td><code>{cursor}</code></td><td>游標位置，見下文</td></tr>
+      <tr><td><code>{cursor:姓名}</code></td><td>游標位置，插入後先選取「姓名」</td></tr>
+      <tr><td><code>{{</code></td><td>一個 <code>{</code> 字元</td></tr>
+    </tbody>
+  </table>
+  <p>「插入預留位置」選單列出全部預留位置和範例。</p>
+  <h4>游標位置</h4>
+  <pre><code>您好 {cursor:姓名}：
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>插入後「姓名」被選取，直接輸入就能取代。</li>
+    <li>按 <kbd>Tab</kbd> 跳到空行。</li>
+    <li>按 <kbd>⇧Tab</kbd> 回到「姓名」，填過的內容會再次被選取。</li>
+  </ol>
+  <ul>
+    <li><b>標記：</b>正在填的位置是深色底紋加實線底線；其他位置是淺色底紋加點狀底線，空位置是一條直線。有沒有修改過都一樣，直到跳轉結束。</li>
+    <li><b>Tab 只管跳轉：</b>跳轉期間 <kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 只用來跳轉，清單中也一樣。</li>
+    <li><b>結束跳轉：</b>到達最後一個位置、把游標移出這些位置、或按 <kbd>Esc</kbd>。之後 <kbd>Tab</kbd> 恢復縮排。</li>
+    <li><b>這次 <kbd>Esc</kbd></b> 不收起視窗；Vim 模式下同時回到一般模式。</li>
+    <li><b>最後一個位置不在結尾時</b>，再按一次 <kbd>Tab</kbd> 跳到片段結尾。</li>
+  </ul>
+  <h4>注意</h4>
+  <ul>
+    <li>多行片段從第二行起跟隨目前這行的縮排。</li>
+    <li>在一個位置中再插入帶游標位置的片段，外層剩下的位置會失效。</li>
+    <li>值要等一下才取得的片段（例如 IP）：如果期間游標移開了，插入時不會把游標拉回來。</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -85,20 +144,209 @@
     <li>用方向鍵和 <kbd>Return</kbd> 選擇，或直接點擊。</li>
     <li>要離開功能區塊，在區塊的最後一個空行再按一次 <kbd>Return</kbd>。</li>
   </ol>
-  <p>用區塊的標題列或 <kbd>⌘K</kbd> 變更類型、轉回一般文字或刪除。<kbd>⌘⇧D</kbd> 刪除目前區塊。這些操作都可以復原。<kbd>⌘O</kbd> 和 <kbd>⌘⇧O</kbd> 在目前行或區塊的下方、上方插入一個空行。</p>
+  <ul>
+    <li>區塊的標題列或 <kbd>⌘K</kbd>：變更類型、轉回一般文字或刪除。</li>
+    <li><kbd>⌘⇧D</kbd>：刪除目前區塊。</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>：在目前這行或區塊的下方 / 上方插入空行。</li>
+  </ul>
+  <p>這些操作都可以還原。</p>
   <h3>功能區塊類型</h3>
   <table>
     <thead><tr><th>功能區塊</th><th>作用</th></tr></thead>
     <tbody>
       <tr><td>清單</td><td>每行一個核取方塊。點擊勾選，或在行尾輸入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
-      <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果。支援百分比、函式、單位和變數，例如 <code>price: 80</code>。貨幣使用大寫代碼：<code>10 USD to TWD =</code>。</td></tr>
+      <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果，支援變數、函式、單位和貨幣，見<a href="#math">計算</a>。</td></tr>
       <tr><td>加總 / 平均值</td><td>對區塊裡的數字加總或求平均，不計算運算式。</td></tr>
       <tr><td>計數</td><td>統計項目數、字數和字元數。</td></tr>
       <tr><td>程式碼</td><td>依語言突顯程式碼，見<a href="#code">程式碼</a>。</td></tr>
     </tbody>
   </table>
   <p>以 <code>//</code> 開頭的行不列入加總和計數。</p>
-  <p class="tip">匯率來自 Frankfurter。Inkflit 只下載公開匯率，不會上傳你的筆記。取得不到匯率時，功能區塊會直接提示，不會給出猜測的結果。</p>
+</section>
+
+<section id="math">
+  <h2>計算</h2>
+  <p class="lead">計算區塊是隨手可算的草稿紙：一行一個算式，行尾寫 <code>=</code>，結果就顯示在後面。可以定義變數、呼叫函式、換算單位和貨幣。</p>
+  <h3>建立計算區塊</h3>
+  <ul>
+    <li><b>功能區塊：</b>在空行輸入 <code>/</code>，選擇「計算」。區塊以 <code>:::inkflit math</code> 開頭，以 <code>:::end</code> 結尾。</li>
+    <li><b>整篇筆記：</b>第一行只寫 <code>math</code>，也可以加標題，例如 <code>math: 旅行預算</code>。
+      <ul>
+        <li>一直算到筆記結尾，沒有結束標記。</li>
+        <li>筆記中的其他功能區塊和程式碼區塊不參與計算。</li>
+        <li>只想算一部分：用功能區塊或 <code>```math</code>。</li>
+      </ul>
+    </li>
+    <li><b>Markdown 程式碼區塊：</b>以 <code>```math</code> 開頭，<code>```</code> 結尾。</li>
+  </ul>
+  <pre><code>math: 旅行預算
+機票: 12000
+飯店: 2800 * 4
+機票 + 飯店 =
+ans / 2 =
+// 兩個人平分</code></pre>
+  <h3>每一行怎麼寫</h3>
+  <table>
+    <thead><tr><th>寫法</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>名稱: 算式</code></td><td>定義變數，不顯示結果。<br>名稱可以用中文等任何文字：<code>單價: 80</code>。<br>再定義一次會覆蓋舊值。</td></tr>
+      <tr><td><code>算式 =</code></td><td>計算並在行尾顯示結果。結果不會寫進筆記，複製時也不會帶上。</td></tr>
+      <tr><td><code>ans</code></td><td>上一個 <code>=</code> 行的結果。</td></tr>
+      <tr><td><code>// …</code></td><td>註解，不參與計算。</td></tr>
+      <tr><td>其他行</td><td>當作一般文字，原樣保留。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>算式寫錯或沒寫完：不顯示結果，也不報錯；改正後自動出現。</li>
+    <li>變數裡也能寫換算：<code>預算: 1000 USD to HKD</code>。之後 <code>預算 / 2 =</code> 得到數字，不帶貨幣代碼。</li>
+  </ul>
+  <h3>數字和運算子</h3>
+  <table>
+    <thead><tr><th>寫法</th><th>意思</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>加、減、乘、除。也可以寫 <code>×</code> 和 <code>÷</code>。</td></tr>
+      <tr><td><code>^</code></td><td>次方，例如 <code>2^10</code> 是 1,024。指數必須是數字，絕對值不超過 100。</td></tr>
+      <tr><td><code>( )</code></td><td>括號。數字緊貼括號表示相乘：<code>2(3+4)</code> 是 14。</td></tr>
+      <tr><td><code>%</code></td><td>百分比：<code>200 - 10%</code> 是 180，<code>price + 25%</code> 是 <code>price</code> 加上它的 25%。<code>%</code> 不是取餘數。</td></tr>
+      <tr><td><code>of</code></td><td>相乘，用於百分比：<code>50% of 200</code> 是 100。</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>換算單位或貨幣，見下文。</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>常數 π、e、τ、φ。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>數字：</b>整數、小數或科學記號（<code>1.5e3</code>），不能寫千分位逗號。</li>
+    <li><b>結果：</b>最多 10 位有效數字，以 <code>1,234.5</code> 的格式顯示。</li>
+  </ul>
+  <h3>函式</h3>
+  <table>
+    <thead><tr><th>函式</th><th>作用</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>平方根</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>絕對值</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>四捨五入；<code>n</code> 是保留的小數位數</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>無條件捨去</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>無條件進位</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>正弦。預設為弧度，加 <code>deg</code> 改用角度</td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>餘弦</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>正切</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>自然對數；<code>b</code> 指定底數</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>常用對數</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e 的冪</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>最小值</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>最大值</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>單位</h3>
+  <p>數字後面接單位，用 <code>to</code> 換算。</p>
+  <table>
+    <thead><tr><th>算式</th><th>結果</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td>用 <code>to</code> 換算</td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td>不寫 <code>to</code>：用第一個單位</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>單位相乘</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>單位相除，再換算</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>溫度</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>類別</th><th>常用單位</th></tr></thead>
+    <tbody>
+      <tr><td>長度</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>體積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>溫度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>壓力</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>電磁</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>資料</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>頻率</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>其他</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>公制單位可以加字首 <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code> 等：<code>mg</code>、<code>kN</code>、<code>GHz</code>。</li>
+    <li>表外的 mathjs 內建單位也能用，全名和複數也行：<code>meters</code>、<code>inches</code>。</li>
+    <li>單位區分大小寫：<code>t</code> 是公噸，<code>T</code> 是特斯拉；<code>b</code> 是位元，<code>B</code> 是位元組。<code>MB</code> 是 1000² 位元組，<code>MiB</code> 是 1024² 位元組。</li>
+    <li><code>min</code> 單獨寫是分鐘，寫成 <code>min(…)</code> 是函式。<code>in</code> 接在數字後面是英寸（<code>5 in to cm</code>），其他位置是換算（<code>10 km in mi</code>）。</li>
+    <li>變數和單位同名時，以變數為準。</li>
+  </ul>
+  <h3>貨幣</h3>
+  <ul>
+    <li><b>寫法：</b><code>10 USD to HKD =</code>。<code>to</code> 也可以寫成 <code>in</code>。</li>
+    <li><b>代碼：</b>三個大寫字母。小寫的 <code>usd</code> 不算貨幣。</li>
+    <li><b>一行一筆：</b><code>10 USD + 5 EUR</code>、<code>price USD to HKD</code> 都不行。</li>
+  </ul>
+  <h4>匯率</h4>
+  <ul>
+    <li><b>來源：</b>Frankfurter 提供的歐洲央行參考匯率，工作日每天更新一次。</li>
+    <li><b>日期：</b>結果後面附上匯率日期，例如 <code>78.30 HKD · 2026-11-18</code>。</li>
+    <li><b>下載：</b>開啟計算區塊時下載，最多每小時一次；失敗後約 100 秒重試。</li>
+    <li><b>提示：</b>還沒取得匯率時顯示「匯率載入中或無法使用」；代碼不在下表中時顯示「不支援的幣別」。</li>
+  </ul>
+  <p>目前支援以下 30 種貨幣，以 Frankfurter 實際提供為準。不包括新臺幣 TWD：</p>
+  <table>
+    <thead><tr><th>代碼</th><th>貨幣</th><th>代碼</th><th>貨幣</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>澳幣</td><td><code>BRL</code></td><td>巴西雷亞爾</td></tr>
+      <tr><td><code>CAD</code></td><td>加幣</td><td><code>CHF</code></td><td>瑞士法郎</td></tr>
+      <tr><td><code>CNY</code></td><td>人民幣</td><td><code>CZK</code></td><td>捷克克朗</td></tr>
+      <tr><td><code>DKK</code></td><td>丹麥克朗</td><td><code>EUR</code></td><td>歐元</td></tr>
+      <tr><td><code>GBP</code></td><td>英鎊</td><td><code>HKD</code></td><td>港幣</td></tr>
+      <tr><td><code>HUF</code></td><td>匈牙利福林</td><td><code>IDR</code></td><td>印尼盾</td></tr>
+      <tr><td><code>ILS</code></td><td>以色列新謝克爾</td><td><code>INR</code></td><td>印度盧比</td></tr>
+      <tr><td><code>ISK</code></td><td>冰島克朗</td><td><code>JPY</code></td><td>日圓</td></tr>
+      <tr><td><code>KRW</code></td><td>韓元</td><td><code>MXN</code></td><td>墨西哥披索</td></tr>
+      <tr><td><code>MYR</code></td><td>馬來西亞令吉</td><td><code>NOK</code></td><td>挪威克朗</td></tr>
+      <tr><td><code>NZD</code></td><td>紐西蘭幣</td><td><code>PHP</code></td><td>菲律賓披索</td></tr>
+      <tr><td><code>PLN</code></td><td>波蘭茲羅提</td><td><code>RON</code></td><td>羅馬尼亞列伊</td></tr>
+      <tr><td><code>SEK</code></td><td>瑞典克朗</td><td><code>SGD</code></td><td>新加坡幣</td></tr>
+      <tr><td><code>THB</code></td><td>泰銖</td><td><code>TRY</code></td><td>土耳其里拉</td></tr>
+      <tr><td><code>USD</code></td><td>美元</td><td><code>ZAR</code></td><td>南非蘭特</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit 只下載公開匯率，不會上傳你的筆記。取不到匯率時會直接提示，不會給出猜測的結果。</p>
+  <h3>用 @ 插入函式、單位和貨幣</h3>
+  <p>在計算區塊中輸入 <code>@</code>，除了日期等一般片段，還會多出三個詞。它們只在計算區塊中出現。</p>
+  <table>
+    <thead><tr><th>詞</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>全部函式，旁邊附說明。插入 <code>sqrt()</code> 後游標停在括號內，寫完參數按 <kbd>Tab</kbd> 跳到括號後面。</td></tr>
+      <tr><td><code>@unit</code></td><td>上表中的單位，旁邊附類別。</td></tr>
+      <tr><td><code>@cur</code></td><td>全部貨幣，顯示名稱和對本地貨幣的匯率：簡體中文對 CNY，繁體中文對 HKD，日文對 JPY，英文對 USD。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>名稱可以單獨使用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一項。</li>
+    <li>數字後面可以緊接 <code>@</code>：<code>10@km</code>。</li>
+    <li>和既有片段重名時讓給既有片段：分鐘用 <code>@minute</code>（<code>@min</code> 是函式），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是時間戳）。</li>
+  </ul>
+  <h3>醒目標示</h3>
+  <p>計算區塊依「設定 → 外觀」中的程式碼配色為算式上色，淺色和深色外觀各有一套：</p>
+  <table>
+    <thead><tr><th>元素</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td>數字和常數</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>函式</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>單位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>貨幣代碼（粗體）</td><td><code>USD</code> <code>HKD</code></td></tr>
+      <tr><td>運算子和換算詞</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>括號、逗號、冒號</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>行尾的等號（粗體，與結果同色）</td><td><code>=</code></td></tr>
+      <tr><td>已定義的變數（粗體）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>註解</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>限制</h3>
+  <ul>
+    <li>一個算式最長 256 個字元。</li>
+    <li>不支援取餘數、矩陣、字串、比較、自訂函式，也不能在算式中用 <code>=</code> 指定值。</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -154,7 +402,11 @@
   backups/     歷史版本
   trash/       已刪除的筆記</code></pre>
   <h3>儲存</h3>
-  <p>停止輸入半秒後儲存，連續輸入時至少每兩秒儲存一次。切換筆記、收起視窗或結束應用程式時會立即儲存。儲存失敗時底列會提示，並且在儲存成功之前無法結束應用程式。</p>
+  <ul>
+    <li>停止輸入半秒後儲存；連續輸入時至少每兩秒儲存一次。</li>
+    <li>切換筆記、收起視窗、結束應用程式時立即儲存。</li>
+    <li>儲存失敗時底列會提示；儲存成功之前無法結束應用程式。</li>
+  </ul>
   <h3>備份與還原</h3>
   <ul>
     <li>編輯時，每則筆記最多每五分鐘保留一個舊版本。保留幾個可以在「設定 → 備份」中選擇。</li>

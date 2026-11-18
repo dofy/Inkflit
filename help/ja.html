@@ -12,7 +12,10 @@
   <p>ウインドウはポインタがあるディスプレイの、いま使っているデスクトップに表示されます。別のデスクトップに引き戻されることはありません。位置は記憶され、再起動後も保たれます。</p>
   <p>ツールバー中央の空いている部分をドラッグすると移動、端をドラッグするとサイズを変更できます。</p>
   <h3>ガイドノート</h3>
-  <p>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。設定ウインドウ下部の「ガイドノートを再作成」を押すと、新しいガイドが先頭に追加され、ようこそページが開きます。</p>
+  <ul>
+    <li>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。</li>
+    <li>設定ウインドウ下部の「ガイドノートを再作成」：新しいガイドを先頭に追加し、ようこそページを開きます。</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -20,7 +23,7 @@
   <p>ノートはノートブックのページのように並びます。最初のノートがいちばん古く、新しいノートは末尾に追加されます。ツールバーには現在の位置が表示されます（例：<code>2 / 5</code>）。</p>
   <ul>
     <li><b>新規作成：</b><kbd>⌘N</kbd>、またはツールバーの <b>+</b>。</li>
-    <li><b>ページをめくる：</b><kbd>⌘[</kbd> と <kbd>⌘]</kbd>、またはツールバーの矢印。</li>
+    <li><b>ページをめくる：</b><kbd>⌘[</kbd> と <kbd>⌘]</kbd>、またはツールバーの矢印。<kbd>⌘⇧[</kbd> と <kbd>⌘⇧]</kbd> で最初と最後のノートへ移動します。</li>
     <li><b>ページへ移動：</b><kbd>⌘1</kbd>〜<kbd>⌘9</kbd> で 1〜9 番目のノートを開きます。</li>
   </ul>
   <p>フッターには現在のノートの作成日時（ローカル時刻）が表示されます。作成日時の記録が始まる前からあるノートには表示されません。</p>
@@ -33,7 +36,11 @@
   <h2>検索とコマンド</h2>
   <p>2 つのパネルは同じキーで操作します。入力して絞り込み、<kbd>↑</kbd> <kbd>↓</kbd> で選択、<kbd>Return</kbd> で開き、<kbd>Esc</kbd> で閉じます。</p>
   <h3>ノートを検索 <kbd>⌘⇧F</kbd></h3>
-  <p>現在のすべてのノートの本文を検索し、ノートごとに 1 件ずつ一致箇所を表示します。入力欄が空のときは全ノートを一覧するので、目次としても使えます。バックアップとゴミ箱は検索対象外です。</p>
+  <ul>
+    <li>現在のすべてのノートの本文を検索し、ノートごとに 1 件表示します。</li>
+    <li>入力欄が空なら全ノートを一覧するので、目次として使えます。</li>
+    <li>バックアップとゴミ箱は検索しません。</li>
+  </ul>
   <h3>コマンドパレット <kbd>⌘⇧P</kbd></h3>
   <p>設定ウインドウを開かずに、ノートの操作や設定の変更ができます。</p>
   <ul>
@@ -55,7 +62,14 @@
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
   <h3>スニペット</h3>
-  <p><code>@</code> と単語を入力すると値を挿入できます。1 つの単語に複数の形式があり、<code>@date</code> ならすべての日付形式が一覧され、<kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選べます。単語の途中まで、または文字を順に入力しても（<code>@wk</code> で <code>@week</code>）、一致する単語のすべての形式を表示します。<code>@</code> だけのときは単語ごとに 1 行です。プレビューは挿入される内容そのもので、時刻の値は常に最新です。<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <p><code>@</code> と単語を入力すると値を挿入できます。</p>
+  <ul>
+    <li><kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選択、<kbd>Esc</kbd> で一覧を閉じます。</li>
+    <li>複数の形式がある単語はすべて表示されます：<code>@date</code> ならすべての日付形式。</li>
+    <li>単語の途中まで、または文字を順に入力しても見つかります：<code>@wk</code> で <code>@week</code>。</li>
+    <li><code>@</code> だけなら単語ごとに 1 行です。</li>
+    <li>プレビューは挿入される内容そのもので、時刻の値は常に最新です。</li>
+  </ul>
   <table>
     <thead><tr><th>単語</th><th>形式</th></tr></thead>
     <tbody>
@@ -69,11 +83,56 @@
       <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
       <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>計算ブロック内のみ：関数、単位、通貨。<a href="#math">計算</a>を参照</td></tr>
     </tbody>
   </table>
-  <p>括弧内の単語を入力すると、その形式を直接挿入できます。グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
+  <ul>
+    <li>括弧内の単語はその形式を直接挿入します（例：<code>@timesec</code>）。</li>
+    <li>グローバル IP は一覧に表示したときと挿入したときに ipify から取得し、それ以外は送信しません。</li>
+    <li>コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</li>
+  </ul>
   <h4>自分のスニペット</h4>
-  <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。macOS のユーザ辞書と同じように、複数の行で同じトリガーを使えます。たとえば住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。内容は複数行にでき、プレースホルダも使えます：<code>{date}</code> は既定の日付、<code>{date#2}</code> は 2 番目の日付形式、<code>{ipv4}</code> のような別名はその形式を挿入します。「プレースホルダを挿入」に例と一緒に一覧されます。自分の行は同じ名前の組み込みグループの先頭に入るので、自分の <code>date</code> が既定になります。スニペットはノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。ノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <ul>
+    <li><b>1 つのトリガーに複数の行：</b>macOS のユーザ辞書と同じです。住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。</li>
+    <li><b>組み込みの単語と同じ名前：</b>自分の行が先頭に入るので、自分の <code>date</code> が既定になります。</li>
+    <li><b>内容は複数行にできます。</b></li>
+  </ul>
+  <h4>プレースホルダ</h4>
+  <table>
+    <thead><tr><th>書き方</th><th>挿入されるもの</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>その単語の既定の形式</td></tr>
+      <tr><td><code>{date#2}</code></td><td>2 番目の形式</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>その別名の形式</td></tr>
+      <tr><td><code>{cursor}</code></td><td>カーソル位置（後述）</td></tr>
+      <tr><td><code>{cursor:名前}</code></td><td>「名前」を選択した状態で始まるカーソル位置</td></tr>
+      <tr><td><code>{{</code></td><td><code>{</code> そのもの</td></tr>
+    </tbody>
+  </table>
+  <p>「プレースホルダを挿入」に例と一緒に一覧されます。</p>
+  <h4>カーソル位置</h4>
+  <pre><code>{cursor:名前} 様
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>挿入すると「名前」が選択されます。そのまま入力すれば置き換わります。</li>
+    <li><kbd>Tab</kbd> で空の行へ移動します。</li>
+    <li><kbd>⇧Tab</kbd> で名前に戻ると、入力した内容がまた選択されます。</li>
+  </ol>
+  <ul>
+    <li><b>表示：</b>入力中の位置は濃い背景と実線の下線、ほかの位置は薄い背景と点線の下線、空の位置は細い縦線です。変更の有無にかかわらず、移動が終わるまで表示されます。</li>
+    <li><b>Tab は移動専用：</b>移動中は <kbd>Tab</kbd> と <kbd>⇧Tab</kbd> で位置を移動するだけです。チェックリストの中でも同じです。</li>
+    <li><b>終了：</b>最後の位置に着く、カーソルを位置の外へ動かす、<kbd>Esc</kbd> を押す。その後 <kbd>Tab</kbd> はインデントに戻ります。</li>
+    <li><b>このときの <kbd>Esc</kbd></b> ではウインドウは隠れません。Vim モードではノーマルモードにも戻ります。</li>
+    <li><b>最後の位置が末尾でないとき：</b>もう一度 <kbd>Tab</kbd> でスニペットの末尾へ移動します。</li>
+  </ul>
+  <h4>注意</h4>
+  <ul>
+    <li>複数行のスニペットでは、2 行目以降が挿入した行のインデントに揃います。</li>
+    <li>位置の中にカーソル位置付きのスニペットを挿入すると、外側の残りの位置は終了します。</li>
+    <li>値の取得に時間がかかるスニペット（IP アドレスなど）：その間にカーソルを動かしていれば、カーソルは戻されません。</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -85,20 +144,209 @@
     <li>矢印キーと <kbd>Return</kbd>、またはクリックでブロックを選びます。</li>
     <li>ブロックから出るには、最後の空行でもう一度 <kbd>Return</kbd> を押します。</li>
   </ol>
-  <p>ブロックのヘッダーか <kbd>⌘K</kbd> で、種類の変更、通常のテキストへの変換、削除ができます。<kbd>⌘⇧D</kbd> は現在のブロックを削除します。どれも取り消せます。<kbd>⌘O</kbd> と <kbd>⌘⇧O</kbd> は現在の行またはブロックの下・上に空行を追加します。</p>
+  <ul>
+    <li>ブロックのヘッダーか <kbd>⌘K</kbd>：種類の変更、通常のテキストへの変換、削除。</li>
+    <li><kbd>⌘⇧D</kbd>：現在のブロックを削除。</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>：現在の行またはブロックの下 / 上に空行を追加。</li>
+  </ul>
+  <p>どれも取り消せます。</p>
   <h3>ブロックの種類</h3>
   <table>
     <thead><tr><th>ブロック</th><th>機能</th></tr></thead>
     <tbody>
       <tr><td>チェックリスト</td><td>各行にチェックボックスが付きます。クリックするか、行末に <code>/x</code> と入力します。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
-      <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。パーセント、関数、単位、<code>price: 80</code> のような変数に対応します。通貨は大文字のコードで指定します：<code>10 USD to JPY =</code>。</td></tr>
+      <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。変数、関数、単位、通貨に対応します。<a href="#math">計算</a>を参照。</td></tr>
       <tr><td>合計 / 平均</td><td>ブロック内の数値を合計または平均します。式は計算しません。</td></tr>
       <tr><td>カウント</td><td>項目数、単語数、文字数を数えます。</td></tr>
       <tr><td>コード</td><td>言語ごとにコードを色分けします。<a href="#code">コード</a>を参照してください。</td></tr>
     </tbody>
   </table>
   <p><code>//</code> で始まる行は合計とカウントから除外されます。</p>
-  <p class="tip">為替レートは Frankfurter から取得します。Inkflit は公開レートをダウンロードするだけで、ノートを送信することはありません。レートを取得できないときは、推測した値ではなくその旨を表示します。</p>
+</section>
+
+<section id="math">
+  <h2>計算</h2>
+  <p class="lead">計算ブロックは計算できるメモ用紙です。1 行に 1 つの式を書き、行末に <code>=</code> を付けると結果が後ろに表示されます。変数、関数、単位と通貨の換算が使えます。</p>
+  <h3>計算ブロックを作る</h3>
+  <ul>
+    <li><b>ブロック：</b>空の行で <code>/</code> を入力し、「計算」を選びます。ブロックは <code>:::inkflit math</code> で始まり <code>:::end</code> で終わります。</li>
+    <li><b>ノート全体：</b>1 行目を <code>math</code> だけにします。<code>math: 旅行の予算</code> のようにタイトルも付けられます。
+      <ul>
+        <li>ノートの末尾まで計算されます。終わりの記号はありません。</li>
+        <li>ノート内のほかのブロックやコードブロックは計算されません。</li>
+        <li>一部だけ計算したいときは、ブロックか <code>```math</code> を使います。</li>
+      </ul>
+    </li>
+    <li><b>Markdown のコードブロック：</b><code>```math</code> で始め、<code>```</code> で終えます。</li>
+  </ul>
+  <pre><code>math: 旅行の予算
+航空券: 36000
+ホテル: 9000 * 4
+航空券 + ホテル =
+ans / 2 =
+// 2 人で割り勘</code></pre>
+  <h3>行の書き方</h3>
+  <table>
+    <thead><tr><th>書き方</th><th>働き</th></tr></thead>
+    <tbody>
+      <tr><td><code>名前: 式</code></td><td>変数を定義します。結果は表示されません。<br>名前には日本語など任意の文字を使えます：<code>単価: 80</code>。<br>もう一度定義すると値が置き換わります。</td></tr>
+      <tr><td><code>式 =</code></td><td>計算して行末に結果を表示します。結果はノートには書き込まれず、コピーにも含まれません。</td></tr>
+      <tr><td><code>ans</code></td><td>直前の <code>=</code> 行の結果。</td></tr>
+      <tr><td><code>// …</code></td><td>コメント。計算されません。</td></tr>
+      <tr><td>それ以外の行</td><td>普通のテキストとしてそのまま残ります。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>式が間違っているか書きかけのとき：結果もエラーも表示されず、直すと結果が出ます。</li>
+    <li>定義に換算も書けます：<code>予算: 1000 USD to JPY</code>。<code>予算 / 2 =</code> は通貨コードなしの数値になります。</li>
+  </ul>
+  <h3>数値と演算子</h3>
+  <table>
+    <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>加算、減算、乗算、除算。<code>×</code> と <code>÷</code> も使えます。</td></tr>
+      <tr><td><code>^</code></td><td>べき乗。<code>2^10</code> は 1,024。指数は絶対値 100 以下の数値に限ります。</td></tr>
+      <tr><td><code>( )</code></td><td>括弧。数値の直後の括弧は掛け算です：<code>2(3+4)</code> は 14。</td></tr>
+      <tr><td><code>%</code></td><td>パーセント：<code>200 - 10%</code> は 180、<code>price + 25%</code> は <code>price</code> にその 25% を足します。<code>%</code> は剰余ではありません。</td></tr>
+      <tr><td><code>of</code></td><td>掛け算。パーセントと一緒に使います：<code>50% of 200</code> は 100。</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>単位や通貨を換算します（後述）。</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>定数 π、e、τ、φ。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>数値：</b>整数、小数、指数表記（<code>1.5e3</code>）。桁区切りのカンマは使えません。</li>
+    <li><b>結果：</b>有効数字 10 桁まで、<code>1,234.5</code> の形式で表示します。</li>
+  </ul>
+  <h3>関数</h3>
+  <table>
+    <thead><tr><th>関数</th><th>働き</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>平方根</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>絶対値</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>四捨五入。<code>n</code> は残す小数の桁数</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>切り捨て</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>切り上げ</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>正弦。既定はラジアン、<code>deg</code> を付けると度</td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>余弦</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>正接</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>自然対数。<code>b</code> で底を指定</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>常用対数</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e のべき乗</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>最小値</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>最大値</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>単位</h3>
+  <p>数値の後ろに単位を書き、<code>to</code> で換算します。</p>
+  <table>
+    <thead><tr><th>式</th><th>結果</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td><code>to</code> で換算</td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td><code>to</code> なし：最初の単位</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>単位の掛け算</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>単位の割り算と換算</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>温度</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>種類</th><th>主な単位</th></tr></thead>
+    <tbody>
+      <tr><td>長さ</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>体積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>エネルギー</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>仕事率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>圧力</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>電磁気</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>データ</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>周波数</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>その他</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>メートル法の単位には <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code> などの接頭辞を付けられます：<code>mg</code>、<code>kN</code>、<code>GHz</code>。</li>
+    <li>表にない mathjs の組み込み単位も使えます。正式名や複数形も可：<code>meters</code>、<code>inches</code>。</li>
+    <li>単位は大文字と小文字を区別します：<code>t</code> はトン、<code>T</code> はテスラ。<code>b</code> はビット、<code>B</code> はバイト。<code>MB</code> は 1000² バイト、<code>MiB</code> は 1024² バイトです。</li>
+    <li><code>min</code> だけなら分、<code>min(…)</code> なら関数です。<code>in</code> は数値の直後ならインチ（<code>5 in to cm</code>）、それ以外では換算です（<code>10 km in mi</code>）。</li>
+    <li>変数と単位が同じ名前なら変数が優先されます。</li>
+  </ul>
+  <h3>通貨</h3>
+  <ul>
+    <li><b>書き方：</b><code>10 USD to JPY =</code>。<code>to</code> の代わりに <code>in</code> も使えます。</li>
+    <li><b>コード：</b>大文字 3 文字。小文字の <code>usd</code> は通貨になりません。</li>
+    <li><b>1 行に 1 つ：</b><code>10 USD + 5 EUR</code> や <code>price USD to JPY</code> は使えません。</li>
+  </ul>
+  <h4>レート</h4>
+  <ul>
+    <li><b>出典：</b>Frankfurter が提供する欧州中央銀行の参照レート。営業日に 1 日 1 回更新されます。</li>
+    <li><b>日付：</b>結果にレートの日付が付きます（例：<code>1,507 JPY · 2026-11-18</code>）。</li>
+    <li><b>取得：</b>計算ブロックを開いているとき、最大 1 時間に 1 回。失敗したら約 100 秒後に再試行します。</li>
+    <li><b>表示：</b>レート取得前は「為替レートを取得中、または利用できません」、表にないコードは「未対応の通貨」。</li>
+  </ul>
+  <p>現在は次の 30 通貨に対応しています（一覧は Frankfurter に準じます）：</p>
+  <table>
+    <thead><tr><th>コード</th><th>通貨</th><th>コード</th><th>通貨</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>オーストラリア ドル</td><td><code>BRL</code></td><td>ブラジル レアル</td></tr>
+      <tr><td><code>CAD</code></td><td>カナダ ドル</td><td><code>CHF</code></td><td>スイス フラン</td></tr>
+      <tr><td><code>CNY</code></td><td>中国人民元</td><td><code>CZK</code></td><td>チェコ コルナ</td></tr>
+      <tr><td><code>DKK</code></td><td>デンマーク クローネ</td><td><code>EUR</code></td><td>ユーロ</td></tr>
+      <tr><td><code>GBP</code></td><td>英国ポンド</td><td><code>HKD</code></td><td>香港ドル</td></tr>
+      <tr><td><code>HUF</code></td><td>ハンガリー フォリント</td><td><code>IDR</code></td><td>インドネシア ルピア</td></tr>
+      <tr><td><code>ILS</code></td><td>イスラエル新シェケル</td><td><code>INR</code></td><td>インド ルピー</td></tr>
+      <tr><td><code>ISK</code></td><td>アイスランド クローナ</td><td><code>JPY</code></td><td>日本円</td></tr>
+      <tr><td><code>KRW</code></td><td>韓国ウォン</td><td><code>MXN</code></td><td>メキシコ ペソ</td></tr>
+      <tr><td><code>MYR</code></td><td>マレーシア リンギット</td><td><code>NOK</code></td><td>ノルウェー クローネ</td></tr>
+      <tr><td><code>NZD</code></td><td>ニュージーランド ドル</td><td><code>PHP</code></td><td>フィリピン ペソ</td></tr>
+      <tr><td><code>PLN</code></td><td>ポーランド ズウォティ</td><td><code>RON</code></td><td>ルーマニア レイ</td></tr>
+      <tr><td><code>SEK</code></td><td>スウェーデン クローナ</td><td><code>SGD</code></td><td>シンガポール ドル</td></tr>
+      <tr><td><code>THB</code></td><td>タイ バーツ</td><td><code>TRY</code></td><td>トルコ リラ</td></tr>
+      <tr><td><code>USD</code></td><td>米ドル</td><td><code>ZAR</code></td><td>南アフリカ ランド</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit が取得するのは公開されている為替レートだけで、ノートは送信しません。レートを取得できないときは推測せず、そのことを表示します。</p>
+  <h3>@ で関数・単位・通貨を挿入する</h3>
+  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 3 つの単語が表示されます。これらは計算ブロックの中でだけ表示されます。</p>
+  <table>
+    <thead><tr><th>単語</th><th>一覧</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>すべての関数と説明。<code>sqrt()</code> を挿入するとカーソルが括弧の中に入ります。引数を書いたら <kbd>Tab</kbd> で括弧の後ろへ移動できます。</td></tr>
+      <tr><td><code>@unit</code></td><td>上の表の単位と、その種類。</td></tr>
+      <tr><td><code>@cur</code></td><td>すべての通貨と名前、表示言語の通貨に対するレート（日本語は JPY、英語は USD、簡体字中国語は CNY、繁体字中国語は HKD）。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>名前だけでも使えます：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> でその項目が直接見つかります。</li>
+    <li>数値の直後に <code>@</code> を書けます：<code>10@km</code>。</li>
+    <li>既存のスニペットと重なる名前はそちらが優先です：分は <code>@minute</code>（<code>@min</code> は関数）、ミリ秒は <code>@millisecond</code>（<code>@ms</code> はタイムスタンプ）。</li>
+  </ul>
+  <h3>ハイライト</h3>
+  <p>計算ブロックは「設定 → 外観」のコードの配色で色分けされます。ライトとダークのどちらにも対応します：</p>
+  <table>
+    <thead><tr><th>要素</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td>数値と定数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>関数</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>単位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>通貨コード（太字）</td><td><code>USD</code> <code>JPY</code></td></tr>
+      <tr><td>演算子と換算の単語</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>括弧・カンマ・コロン</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>行末の等号（太字、結果と同じ色）</td><td><code>=</code></td></tr>
+      <tr><td>定義済みの変数（太字）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>コメント</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>制限</h3>
+  <ul>
+    <li>式は最大 256 文字です。</li>
+    <li>剰余、行列、文字列、比較、独自の関数、式の中での <code>=</code> による代入には対応していません。</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -154,7 +402,11 @@
   backups/     以前のバージョン
   trash/       削除したノート</code></pre>
   <h3>保存</h3>
-  <p>入力を止めて 0.5 秒後に保存し、入力中も少なくとも 2 秒ごとに保存します。ノートの切り替え、ウインドウを隠す操作、アプリの終了ではすぐに保存します。保存に失敗するとフッターに表示され、保存に成功するまでアプリを終了できません。</p>
+  <ul>
+    <li>入力を止めて 0.5 秒後に保存します。入力中も少なくとも 2 秒ごとに保存します。</li>
+    <li>ノートの切り替え、ウインドウを隠す、アプリの終了ではすぐに保存します。</li>
+    <li>保存に失敗するとフッターに表示され、保存に成功するまで終了できません。</li>
+  </ul>
   <h3>バックアップと復元</h3>
   <ul>
     <li>編集中、各ノートの以前のバージョンを最大 5 分に 1 回保存します。保持する数は「設定 → バックアップ」で選べます。</li>

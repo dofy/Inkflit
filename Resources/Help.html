@@ -109,7 +109,10 @@
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it.</p>
   <h3>Guide notes</h3>
-  <p>The first launch creates seven guide notes in your language. Edit or delete them freely. <b>Restore Guide Notes</b> at the bottom of Settings brings back a fresh set at the front and opens the welcome note.</p>
+  <ul>
+    <li>The first launch creates seven guide notes in your language. Edit or delete them freely.</li>
+    <li><b>Restore Guide Notes</b> at the bottom of Settings adds a fresh set at the front and opens the welcome note.</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -117,7 +120,7 @@
   <p>Notes are kept in order like the pages of a notebook: the first note is the oldest, and a new note is added at the end. The toolbar shows where you are, for example <code>2 / 5</code>.</p>
   <ul>
     <li><b>New note:</b> <kbd>⌘N</kbd> or the <b>+</b> button.</li>
-    <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar.</li>
+    <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar. <kbd>⌘⇧[</kbd> and <kbd>⌘⇧]</kbd> jump to the first and the last note.</li>
     <li><b>Jump to a page:</b> <kbd>⌘1</kbd> to <kbd>⌘9</kbd> open notes 1 to 9.</li>
   </ul>
   <p>The footer shows when the current note was created, in your local time. Notes created before this was recorded show no date.</p>
@@ -130,7 +133,11 @@
   <h2>Search and commands</h2>
   <p>Two panels share the same keys: type to filter, <kbd>↑</kbd> <kbd>↓</kbd> to choose, <kbd>Return</kbd> to open, <kbd>Esc</kbd> to close.</p>
   <h3>Search notes <kbd>⌘⇧F</kbd></h3>
-  <p>Searches the text of all current notes and lists one match per note. With an empty field it lists every note, so it also works as a table of contents. Backups and the Trash are not searched.</p>
+  <ul>
+    <li>Searches the text of all current notes, one match per note.</li>
+    <li>With an empty field it lists every note, so it works as a table of contents.</li>
+    <li>Backups and the Trash are not searched.</li>
+  </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
   <p>Runs note actions and changes settings without opening the Settings window.</p>
   <ul>
@@ -152,7 +159,14 @@
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
   <h3>Snippets</h3>
-  <p>Type <code>@</code> and a word to insert a value. A word can have several formats: <code>@date</code> lists every date format, and <kbd>Return</kbd> inserts the first, or choose another with <kbd>↑</kbd> <kbd>↓</kbd>. Each matching word lists all of its formats, also when you type only part of it or letters in order (<code>@wk</code> finds <code>@week</code>); <code>@</code> alone lists one row per word. Previews show exactly what will be inserted, and clock values stay up to date; <kbd>Esc</kbd> closes the list.</p>
+  <p>Type <code>@</code> and a word to insert a value.</p>
+  <ul>
+    <li><kbd>Return</kbd> inserts the first format, <kbd>↑</kbd> <kbd>↓</kbd> pick another, <kbd>Esc</kbd> closes the list.</li>
+    <li>A word with several formats lists them all: <code>@date</code> lists every date format.</li>
+    <li>Part of a word, or letters in order, also work: <code>@wk</code> finds <code>@week</code>.</li>
+    <li><code>@</code> alone lists one row per word.</li>
+    <li>The preview is exactly what will be inserted; clock values stay up to date.</li>
+  </ul>
   <table>
     <thead><tr><th>Word</th><th>Formats</th></tr></thead>
     <tbody>
@@ -166,11 +180,56 @@
       <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
       <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
       <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>Only in math blocks: functions, units and currencies. See <a href="#math">Math</a></td></tr>
     </tbody>
   </table>
-  <p>Words in parentheses insert that one format directly. The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
+  <ul>
+    <li>Words in parentheses insert that one format directly, such as <code>@timesec</code>.</li>
+    <li>The public IP comes from ipify when the list shows it or you insert it; nothing else is sent.</li>
+    <li>Snippets do not appear inside code or right after a letter, so e-mail addresses are left alone.</li>
+  </ul>
   <h4>Your own snippets</h4>
-  <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. Like macOS text replacements, several rows can share a trigger, such as a few addresses under <code>addr</code>; typing <code>@addr</code> lists them all and inserts the first by default. Content can span lines and use placeholders: <code>{date}</code> inserts the default date, <code>{date#2}</code> the second date format and <code>{ipv4}</code> a format by its alias; <b>Insert placeholder</b> lists them all with examples. A row of your own leads a built-in group of the same name, so your own <code>date</code> becomes the default. Snippets are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. They are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <ul>
+    <li><b>One trigger, several rows:</b> like macOS text replacements. Put a few addresses under <code>addr</code>; <code>@addr</code> lists them all and inserts the first by default.</li>
+    <li><b>Same name as a built-in word:</b> your row comes first, so your own <code>date</code> becomes the default.</li>
+    <li><b>Content can span lines.</b></li>
+  </ul>
+  <h4>Placeholders</h4>
+  <table>
+    <thead><tr><th>Write</th><th>Inserts</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>The word’s default format</td></tr>
+      <tr><td><code>{date#2}</code></td><td>Its second format</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>The format with that alias</td></tr>
+      <tr><td><code>{cursor}</code></td><td>A caret stop; see below</td></tr>
+      <tr><td><code>{cursor:name}</code></td><td>A caret stop that starts with “name” selected</td></tr>
+      <tr><td><code>{{</code></td><td>A literal <code>{</code></td></tr>
+    </tbody>
+  </table>
+  <p><b>Insert placeholder</b> lists them all with examples.</p>
+  <h4>Caret stops</h4>
+  <pre><code>Dear {cursor:name},
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>After inserting, “name” is selected; type to replace it.</li>
+    <li>Press <kbd>Tab</kbd> to go to the empty line.</li>
+    <li>Press <kbd>⇧Tab</kbd> to go back to the name; what you typed is selected again.</li>
+  </ol>
+  <ul>
+    <li><b>Marked:</b> the stop you are filling has a strong tint and a solid underline; the others a light tint and a dotted underline, and an empty one is a thin bar. Changed or not, until the stops end.</li>
+    <li><b>Tab is for stops:</b> while they are active, <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> only move between stops, also in a checklist.</li>
+    <li><b>Ending:</b> reach the last stop, move the caret out of them, or press <kbd>Esc</kbd>. Then <kbd>Tab</kbd> indents again.</li>
+    <li><b>That <kbd>Esc</kbd></b> does not hide the window; in Vim mode it also returns to Normal mode.</li>
+    <li><b>Last stop not at the end:</b> one more <kbd>Tab</kbd> lands at the end of the snippet.</li>
+  </ul>
+  <h4>Good to know</h4>
+  <ul>
+    <li>Later lines of a multi-line snippet follow the indentation of the line it goes on.</li>
+    <li>A snippet with stops inserted inside another one’s stop ends the outer stops.</li>
+    <li>A snippet whose value takes a moment (an IP address): if you move the caret meanwhile, it is not pulled back.</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -182,20 +241,209 @@
     <li>Pick a block with the arrow keys and <kbd>Return</kbd>, or click it.</li>
     <li>To leave a block, press <kbd>Return</kbd> on its last empty line.</li>
   </ol>
-  <p>Use the block header or <kbd>⌘K</kbd> to change the type, turn it back into plain text, or delete it. <kbd>⌘⇧D</kbd> deletes the current block. All of these can be undone. <kbd>⌘O</kbd> and <kbd>⌘⇧O</kbd> add an empty line below or above the current line or block.</p>
+  <ul>
+    <li>Block header or <kbd>⌘K</kbd>: change the type, turn it back into plain text, or delete it.</li>
+    <li><kbd>⌘⇧D</kbd>: delete the current block.</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>: add an empty line below / above the current line or block.</li>
+  </ul>
+  <p>All of these can be undone.</p>
   <h3>Block types</h3>
   <table>
     <thead><tr><th>Block</th><th>What it does</th></tr></thead>
     <tbody>
       <tr><td>Checklist</td><td>A checkbox on every line. Click it or end a line with <code>/x</code>. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
-      <tr><td>Math</td><td>End a line with <code>=</code> to calculate. Supports percentages, functions, units and variables such as <code>price: 80</code>. Currency uses uppercase codes: <code>10 USD to CNY =</code>.</td></tr>
+      <tr><td>Math</td><td>End a line with <code>=</code> to calculate, with variables, functions, units and currencies. See <a href="#math">Math</a>.</td></tr>
       <tr><td>Sum / Average</td><td>Adds up or averages the numbers in the block, without evaluating expressions.</td></tr>
       <tr><td>Count</td><td>Counts items, words and characters.</td></tr>
       <tr><td>Code</td><td>Highlights code by language. See <a href="#code">Code</a>.</td></tr>
     </tbody>
   </table>
   <p>Lines starting with <code>//</code> are left out of totals and counts.</p>
-  <p class="tip">Exchange rates come from Frankfurter. Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the block says so instead of guessing.</p>
+</section>
+
+<section id="math">
+  <h2>Math</h2>
+  <p class="lead">A math block is scratch paper that calculates: one expression per line, end it with <code>=</code>, and the result appears after it. Define variables, call functions, and convert units and currencies.</p>
+  <h3>Start a math block</h3>
+  <ul>
+    <li><b>Block:</b> on an empty line type <code>/</code> and choose <b>Math</b>. The block starts with <code>:::inkflit math</code> and ends with <code>:::end</code>.</li>
+    <li><b>Whole note:</b> make the first line just <code>math</code>, optionally with a title such as <code>math: Trip budget</code>.
+      <ul>
+        <li>Everything to the end of the note is calculated; there is no end marker.</li>
+        <li>Other blocks and code fences in the note are left out.</li>
+        <li>To calculate only part of a note, use a block or <code>```math</code>.</li>
+      </ul>
+    </li>
+    <li><b>Markdown fence:</b> start with <code>```math</code> and end with <code>```</code>.</li>
+  </ul>
+  <pre><code>math: Trip budget
+flights: 2400
+hotel: 380 * 4
+flights + hotel =
+ans / 2 =
+// split between two</code></pre>
+  <h3>Writing lines</h3>
+  <table>
+    <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>name: expression</code></td><td>Defines a variable without a result.<br>Names may use any script: <code>単価: 80</code>.<br>Defining it again replaces the value.</td></tr>
+      <tr><td><code>expression =</code></td><td>Calculates and shows the result at the end of the line. The result is not written into the note and is not copied with it.</td></tr>
+      <tr><td><code>ans</code></td><td>The result of the previous <code>=</code> line.</td></tr>
+      <tr><td><code>// …</code></td><td>A comment; not calculated.</td></tr>
+      <tr><td>Anything else</td><td>Plain text, kept as written.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>A wrong or unfinished expression shows no result and no error; the result appears once it is fixed.</li>
+    <li>A definition can hold a conversion: <code>budget: 1000 USD to EUR</code>. Then <code>budget / 2 =</code> gives a plain number without the code.</li>
+  </ul>
+  <h3>Numbers and operators</h3>
+  <table>
+    <thead><tr><th>Write</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>Add, subtract, multiply, divide. <code>×</code> and <code>÷</code> work too.</td></tr>
+      <tr><td><code>^</code></td><td>Power, such as <code>2^10</code> = 1,024. The exponent must be a number between -100 and 100.</td></tr>
+      <tr><td><code>( )</code></td><td>Brackets. A number right before a bracket multiplies: <code>2(3+4)</code> = 14.</td></tr>
+      <tr><td><code>%</code></td><td>Percent: <code>200 - 10%</code> = 180, and <code>price + 25%</code> adds 25% of <code>price</code>. <code>%</code> is not modulo.</td></tr>
+      <tr><td><code>of</code></td><td>Multiplies, for percentages: <code>50% of 200</code> = 100.</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>Converts units or currencies; see below.</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>The constants π, e, τ and φ.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>Numbers:</b> whole, decimal or scientific (<code>1.5e3</code>); no thousands separators.</li>
+    <li><b>Results:</b> up to 10 significant digits, shown like <code>1,234.5</code>.</li>
+  </ul>
+  <h3>Functions</h3>
+  <table>
+    <thead><tr><th>Function</th><th>What it does</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>Square root</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>Absolute value</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>Round; <code>n</code> keeps that many decimals</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>Round down</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>Round up</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>Sine. Radians unless you add <code>deg</code></td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>Cosine</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>Tangent</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>Natural logarithm; <code>b</code> sets the base</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>Base-10 logarithm</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e to the power</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>Smallest</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>Largest</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>Units</h3>
+  <p>Put a unit after a number and convert with <code>to</code>.</p>
+  <table>
+    <thead><tr><th>Expression</th><th>Result</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td>Convert with <code>to</code></td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td>Without <code>to</code>: the first unit</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>Units multiply</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>Units divide, then convert</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>Temperature</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Kind</th><th>Common units</th></tr></thead>
+    <tbody>
+      <tr><td>Length</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>Area</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>Volume</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>Mass</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>Time</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>Speed</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>Temperature</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>Angle</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>Force</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>Energy</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>Power</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>Pressure</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>Electric</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>Data</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>Frequency</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>Other</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Metric units take prefixes such as <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code>: <code>mg</code>, <code>kN</code>, <code>GHz</code>.</li>
+    <li>Every other built-in mathjs unit works too, with full names and plurals: <code>meters</code>, <code>inches</code>.</li>
+    <li>Units are case-sensitive: <code>t</code> is a tonne and <code>T</code> a tesla; <code>b</code> is a bit and <code>B</code> a byte. <code>MB</code> is 1000² bytes, <code>MiB</code> is 1024² bytes.</li>
+    <li><code>min</code> on its own is minutes; <code>min(…)</code> is the function. <code>in</code> right after a number is inches (<code>5 in to cm</code>); elsewhere it converts (<code>10 km in mi</code>).</li>
+    <li>A variable wins over a unit with the same name.</li>
+  </ul>
+  <h3>Currency</h3>
+  <ul>
+    <li><b>Write:</b> <code>10 USD to EUR =</code>. <code>in</code> works in place of <code>to</code>.</li>
+    <li><b>Codes:</b> three uppercase letters. Lowercase <code>usd</code> is not a currency.</li>
+    <li><b>One amount per line:</b> <code>10 USD + 5 EUR</code> and <code>price USD to EUR</code> do not work.</li>
+  </ul>
+  <h4>Rates</h4>
+  <ul>
+    <li><b>Source:</b> European Central Bank reference rates from Frankfurter, updated once each working day.</li>
+    <li><b>Date:</b> results carry the rate date, such as <code>8.62 EUR · 2026-11-18</code>.</li>
+    <li><b>Download:</b> while a math block is open, at most once an hour; about 100 seconds after a failure.</li>
+    <li><b>Messages:</b> before rates arrive the line shows “Exchange rates loading or unavailable”; a code missing from the table shows “Unsupported currency”.</li>
+  </ul>
+  <p>These 30 currencies are supported today; Frankfurter decides the list:</p>
+  <table>
+    <thead><tr><th>Code</th><th>Currency</th><th>Code</th><th>Currency</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>Australian Dollar</td><td><code>BRL</code></td><td>Brazilian Real</td></tr>
+      <tr><td><code>CAD</code></td><td>Canadian Dollar</td><td><code>CHF</code></td><td>Swiss Franc</td></tr>
+      <tr><td><code>CNY</code></td><td>Chinese Yuan</td><td><code>CZK</code></td><td>Czech Koruna</td></tr>
+      <tr><td><code>DKK</code></td><td>Danish Krone</td><td><code>EUR</code></td><td>Euro</td></tr>
+      <tr><td><code>GBP</code></td><td>British Pound</td><td><code>HKD</code></td><td>Hong Kong Dollar</td></tr>
+      <tr><td><code>HUF</code></td><td>Hungarian Forint</td><td><code>IDR</code></td><td>Indonesian Rupiah</td></tr>
+      <tr><td><code>ILS</code></td><td>Israeli New Shekel</td><td><code>INR</code></td><td>Indian Rupee</td></tr>
+      <tr><td><code>ISK</code></td><td>Icelandic Króna</td><td><code>JPY</code></td><td>Japanese Yen</td></tr>
+      <tr><td><code>KRW</code></td><td>South Korean Won</td><td><code>MXN</code></td><td>Mexican Peso</td></tr>
+      <tr><td><code>MYR</code></td><td>Malaysian Ringgit</td><td><code>NOK</code></td><td>Norwegian Krone</td></tr>
+      <tr><td><code>NZD</code></td><td>New Zealand Dollar</td><td><code>PHP</code></td><td>Philippine Peso</td></tr>
+      <tr><td><code>PLN</code></td><td>Polish Zloty</td><td><code>RON</code></td><td>Romanian Leu</td></tr>
+      <tr><td><code>SEK</code></td><td>Swedish Krona</td><td><code>SGD</code></td><td>Singapore Dollar</td></tr>
+      <tr><td><code>THB</code></td><td>Thai Baht</td><td><code>TRY</code></td><td>Turkish Lira</td></tr>
+      <tr><td><code>USD</code></td><td>US Dollar</td><td><code>ZAR</code></td><td>South African Rand</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the line says so instead of guessing.</p>
+  <h3>Insert functions, units and currencies with @</h3>
+  <p>In a math block, <code>@</code> offers three more words besides the usual snippets. They appear only in math blocks.</p>
+  <table>
+    <thead><tr><th>Word</th><th>Lists</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>Every function with a description. After inserting <code>sqrt()</code> the caret is inside the brackets; press <kbd>Tab</kbd> after the argument to jump past them.</td></tr>
+      <tr><td><code>@unit</code></td><td>The units in the table above, with their kind.</td></tr>
+      <tr><td><code>@cur</code></td><td>Every currency with its name and its rate against your language’s currency: USD for English, CNY for Simplified Chinese, HKD for Traditional Chinese, JPY for Japanese.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Each name works on its own: <code>@sqrt</code>, <code>@km</code>, <code>@kilometer</code> and <code>@usd</code> find that row directly.</li>
+    <li>A number may come right before <code>@</code>: <code>10@km</code>.</li>
+    <li>Names other snippets already use stay with them: use <code>@minute</code> for minutes (<code>@min</code> is the function) and <code>@millisecond</code> for milliseconds (<code>@ms</code> is the timestamp).</li>
+  </ul>
+  <h3>Highlighting</h3>
+  <p>Math blocks are coloured with the code colors from <b>Settings → Appearance</b>, in both light and dark appearance:</p>
+  <table>
+    <thead><tr><th>Part</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Numbers and constants</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>Functions</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>Units</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>Currency codes (bold)</td><td><code>USD</code> <code>EUR</code></td></tr>
+      <tr><td>Operators and conversion words</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>Brackets, commas, colons</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>The closing equals sign (bold, like the result)</td><td><code>=</code></td></tr>
+      <tr><td>Defined variables (bold)</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>Comments</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>Limits</h3>
+  <ul>
+    <li>An expression is at most 256 characters.</li>
+    <li>No modulo, matrices, strings, comparisons, custom functions, or assignment with <code>=</code> inside an expression.</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -239,7 +487,7 @@
 <section id="shortcuts">
   <h2>Keyboard shortcuts</h2>
   <p>The global shortcut works from any app and can be changed in Settings. The others work while the note window is active.</p>
-  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide the window (in Vim, leave insert mode first)</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
+  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide the window (in Vim, leave insert mode first)</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>First / last note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -251,7 +499,11 @@
   backups/     previous versions
   trash/       deleted notes</code></pre>
   <h3>Saving</h3>
-  <p>Changes are saved half a second after you stop typing, and at least every two seconds while you type. Switching notes, hiding the window or quitting saves at once. If a save fails, the footer says so and Inkflit will not quit until it succeeds.</p>
+  <ul>
+    <li>Saves half a second after you stop typing, and at least every two seconds while you type.</li>
+    <li>Switching notes, hiding the window or quitting saves at once.</li>
+    <li>If a save fails, the footer says so, and Inkflit will not quit until a save succeeds.</li>
+  </ul>
   <h3>Backups and recovery</h3>
   <ul>
     <li>While you edit, the previous version of a note is kept at most once every five minutes. Choose how many to keep in <b>Settings → Backups</b>.</li>
@@ -314,7 +566,10 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>窗口会出现在鼠标所在的显示器、你当前所在的桌面上，不会把你拉回别的桌面。窗口位置会被记住，重启后也一样。</p>
   <p>拖动工具栏中间的空白处可以移动窗口，拖动边缘可以调整大小。</p>
   <h3>引导笔记</h3>
-  <p>第一次启动时，Inkflit 会按你的语言创建七篇引导笔记，可以随意修改或删除。点设置窗口底部的“重新生成引导笔记”，会在最前面放一套新的引导，并打开欢迎页。</p>
+  <ul>
+    <li>第一次启动时，Inkflit 按你的语言创建七篇引导笔记，可以随意修改或删除。</li>
+    <li>设置窗口底部的“重新生成引导笔记”：在最前面放一套新的引导，并打开欢迎页。</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -322,7 +577,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>笔记像本子的书页一样排列：第一篇是最早写的，新建的笔记加在最后。工具栏会显示当前位置，比如 <code>2 / 5</code>。</p>
   <ul>
     <li><b>新建：</b><kbd>⌘N</kbd>，或工具栏上的 <b>+</b>。</li>
-    <li><b>翻页：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具栏上的箭头。</li>
+    <li><b>翻页：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具栏上的箭头。<kbd>⌘⇧[</kbd> 和 <kbd>⌘⇧]</kbd> 跳到第一条和最后一条笔记。</li>
     <li><b>跳到某一页：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 打开第 1 到第 9 篇。</li>
   </ul>
   <p>底栏显示当前笔记的创建时间（本地时间）。在记录创建时间之前就有的笔记不显示日期。</p>
@@ -335,7 +590,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h2>搜索与命令</h2>
   <p>两个面板的按键一样：输入文字筛选，<kbd>↑</kbd> <kbd>↓</kbd> 选择，<kbd>Return</kbd> 打开，<kbd>Esc</kbd> 关闭。</p>
   <h3>搜索笔记 <kbd>⌘⇧F</kbd></h3>
-  <p>在所有当前笔记的正文里查找，每篇笔记列出一条匹配结果。输入框为空时会列出全部笔记，可以当目录用。备份和回收站里的内容不会被搜索。</p>
+  <ul>
+    <li>在所有当前笔记的正文里查找，每篇笔记列一条结果。</li>
+    <li>输入框为空时列出全部笔记，可以当目录用。</li>
+    <li>不搜索备份和回收站。</li>
+  </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
   <p>不用打开设置窗口，就能执行笔记操作、修改设置。</p>
   <ul>
@@ -357,7 +616,14 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>在长笔记里移动光标时，光标上下始终保留三行可见。</p>
   <h3>片段</h3>
-  <p>输入 <code>@</code> 加一个词插入常用值。一个词可以有多种格式：<code>@date</code> 会列出所有日期格式，<kbd>Return</kbd> 插入第一种，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 选择其他格式。只输入词的一部分，或按顺序输入其中几个字母（<code>@wk</code> 能找到 <code>@week</code>），也会列出匹配词的全部格式；只输入 <code>@</code> 时每个词显示一行。预览就是将要插入的内容，时间类的值实时更新；<kbd>Esc</kbd> 关闭列表。</p>
+  <p>输入 <code>@</code> 加一个词，插入常用值。</p>
+  <ul>
+    <li><kbd>Return</kbd> 插入第一种格式，<kbd>↑</kbd> <kbd>↓</kbd> 选其他格式，<kbd>Esc</kbd> 关闭列表。</li>
+    <li>一个词有多种格式时全部列出：<code>@date</code> 列出所有日期格式。</li>
+    <li>只打一部分，或按顺序打几个字母也能找到：<code>@wk</code> 找到 <code>@week</code>。</li>
+    <li>只输入 <code>@</code>：每个词显示一行。</li>
+    <li>预览就是要插入的内容，时间类的值实时更新。</li>
+  </ul>
   <table>
     <thead><tr><th>词</th><th>格式</th></tr></thead>
     <tbody>
@@ -371,11 +637,56 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>公网地址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、局域网（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>网卡 MAC 地址</td></tr>
       <tr><td><code>@host</code></td><td>主机名（<code>@hostname</code>）、电脑名称（<code>@computer</code>）、当前用户名（<code>@whoami</code>）</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>只在计算块里：函数、单位和货币，见<a href="#math">计算</a></td></tr>
     </tbody>
   </table>
-  <p>括号里的词可以直接插入那一种格式。公网地址在列表显示或插入时向 ipify 查询，不会发送其他内容。在代码里或紧跟在字母后面时不会弹出，所以邮箱地址不受影响。</p>
+  <ul>
+    <li>括号里的词直接插入那一种格式，比如 <code>@timesec</code>。</li>
+    <li>公网 IP 在列表显示或插入时向 ipify 查询，不发送其他内容。</li>
+    <li>在代码里、或紧跟在字母后面时不弹出，所以邮箱地址不受影响。</li>
+  </ul>
   <h4>自定义片段</h4>
-  <p>在“设置 → 片段”或命令面板的“管理片段”中添加。和 macOS 的文字替换一样，几行可以用同一个触发词，比如几个地址都用 <code>addr</code>；输入 <code>@addr</code> 会全部列出，默认插入第一行。内容可以多行，也可以用占位符：<code>{date}</code> 插入默认日期，<code>{date#2}</code> 插入第二种日期格式，<code>{ipv4}</code> 这样的别名插入指定格式；“插入占位符”菜单列出了全部占位符和示例。自己的行会排在同名内置组的前面，所以自己写的 <code>date</code> 会成为默认格式。片段保存在笔记文件夹里的 <code>snippets.json</code>，随笔记一起迁移和备份。</p>
+  <p>在“设置 → 片段”或命令面板的“管理片段”中添加。保存在笔记文件夹里的 <code>snippets.json</code>，随笔记一起迁移和备份。</p>
+  <ul>
+    <li><b>一个触发词可以有几行：</b>像 macOS 的文字替换。几个地址都用 <code>addr</code>，<code>@addr</code> 会全部列出，默认插入第一行。</li>
+    <li><b>和内置词同名：</b>你的行排在前面，所以自己写的 <code>date</code> 会成为默认格式。</li>
+    <li><b>内容可以多行。</b></li>
+  </ul>
+  <h4>占位符</h4>
+  <table>
+    <thead><tr><th>写法</th><th>插入</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>这个词的默认格式</td></tr>
+      <tr><td><code>{date#2}</code></td><td>这个词的第 2 种格式</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>别名对应的那一种格式</td></tr>
+      <tr><td><code>{cursor}</code></td><td>光标位置，见下文</td></tr>
+      <tr><td><code>{cursor:姓名}</code></td><td>光标位置，插入后先选中“姓名”</td></tr>
+      <tr><td><code>{{</code></td><td>一个 <code>{</code> 字符</td></tr>
+    </tbody>
+  </table>
+  <p>“插入占位符”菜单列出全部占位符和示例。</p>
+  <h4>光标位置</h4>
+  <pre><code>您好 {cursor:姓名}：
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>插入后“姓名”被选中，直接输入就能替换。</li>
+    <li>按 <kbd>Tab</kbd> 跳到空行。</li>
+    <li>按 <kbd>⇧Tab</kbd> 回到“姓名”，填过的内容会再次被选中。</li>
+  </ol>
+  <ul>
+    <li><b>标记：</b>正在填的位置是深色底纹加实线下划线；其他位置是浅色底纹加点状下划线，空位置是一条竖线。改没改过都一样，直到跳转结束。</li>
+    <li><b>Tab 只管跳转：</b>跳转期间 <kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 只用来跳转，清单里也一样。</li>
+    <li><b>结束跳转：</b>到达最后一个位置、把光标移出这些位置、或按 <kbd>Esc</kbd>。之后 <kbd>Tab</kbd> 恢复缩进。</li>
+    <li><b>这次 <kbd>Esc</kbd></b> 不收起窗口；Vim 模式下同时回到普通模式。</li>
+    <li><b>最后一个位置不在末尾时</b>，再按一次 <kbd>Tab</kbd> 跳到片段末尾。</li>
+  </ul>
+  <h4>注意</h4>
+  <ul>
+    <li>多行片段从第二行起跟随当前行的缩进。</li>
+    <li>在一个位置里再插入带光标位置的片段，外层剩下的位置会失效。</li>
+    <li>值要等一会儿才拿到的片段（比如 IP）：如果期间光标移走了，插入时不会把光标拉回来。</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -387,20 +698,209 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>用方向键和 <kbd>Return</kbd> 选择，或直接点击。</li>
     <li>要离开功能块，在块的最后一个空行再按一次 <kbd>Return</kbd>。</li>
   </ol>
-  <p>用块的标题栏或 <kbd>⌘K</kbd> 更改类型、转回普通文本或删除。<kbd>⌘⇧D</kbd> 删除当前块。这些操作都可以撤销。<kbd>⌘O</kbd> 和 <kbd>⌘⇧O</kbd> 在当前行或块的下方、上方插入一个空行。</p>
+  <ul>
+    <li>块的标题栏或 <kbd>⌘K</kbd>：更改类型、转回普通文本或删除。</li>
+    <li><kbd>⌘⇧D</kbd>：删除当前块。</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>：在当前行或块的下方 / 上方插入空行。</li>
+  </ul>
+  <p>这些操作都可以撤销。</p>
   <h3>功能块类型</h3>
   <table>
     <thead><tr><th>功能块</th><th>作用</th></tr></thead>
     <tbody>
       <tr><td>清单</td><td>每行一个复选框。点击勾选，或在行尾输入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 缩进和取消缩进，子项会跟着父项一起移动。</td></tr>
-      <tr><td>计算</td><td>在行尾输入 <code>=</code> 得出结果。支持百分比、函数、单位和变量，比如 <code>price: 80</code>。货币用大写代码：<code>10 USD to CNY =</code>。</td></tr>
+      <tr><td>计算</td><td>在行尾输入 <code>=</code> 得出结果，支持变量、函数、单位和货币，见<a href="#math">计算</a>。</td></tr>
       <tr><td>求和 / 平均值</td><td>对块里的数字求和或求平均，不计算表达式。</td></tr>
       <tr><td>计数</td><td>统计项目数、词数和字符数。</td></tr>
       <tr><td>代码</td><td>按语言高亮代码，见<a href="#code">代码</a>。</td></tr>
     </tbody>
   </table>
   <p>以 <code>//</code> 开头的行不参与合计和计数。</p>
-  <p class="tip">汇率来自 Frankfurter。Inkflit 只下载公开汇率，不会上传你的笔记。拿不到汇率时，功能块会直接提示，不会给出猜测的结果。</p>
+</section>
+
+<section id="math">
+  <h2>计算</h2>
+  <p class="lead">计算块是随手可算的草稿纸：一行一个式子，行尾写 <code>=</code>，结果就显示在后面。可以定义变量、调用函数、换算单位和货币。</p>
+  <h3>创建计算块</h3>
+  <ul>
+    <li><b>功能块：</b>在空行输入 <code>/</code>，选择“计算”。块以 <code>:::inkflit math</code> 开头，以 <code>:::end</code> 结尾。</li>
+    <li><b>整篇笔记：</b>第一行只写 <code>math</code>，也可以带标题，比如 <code>math: 旅行预算</code>。
+      <ul>
+        <li>一直算到笔记末尾，没有结束标记。</li>
+        <li>笔记里的其他功能块和代码块不参与计算。</li>
+        <li>只想算一部分：用功能块或 <code>```math</code>。</li>
+      </ul>
+    </li>
+    <li><b>Markdown 代码块：</b>用 <code>```math</code> 开头，<code>```</code> 结尾。</li>
+  </ul>
+  <pre><code>math: 旅行预算
+机票: 2400
+酒店: 380 * 4
+机票 + 酒店 =
+ans / 2 =
+// 两个人平分</code></pre>
+  <h3>每一行怎么写</h3>
+  <table>
+    <thead><tr><th>写法</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>名字: 式子</code></td><td>定义变量，不显示结果。<br>名字可以用中文等任何文字：<code>单价: 80</code>。<br>再定义一次会覆盖旧值。</td></tr>
+      <tr><td><code>式子 =</code></td><td>计算并在行尾显示结果。结果不写进笔记，复制时也不会带上。</td></tr>
+      <tr><td><code>ans</code></td><td>上一个 <code>=</code> 行的结果。</td></tr>
+      <tr><td><code>// …</code></td><td>注释，不参与计算。</td></tr>
+      <tr><td>其他行</td><td>当作普通文字，原样保留。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>式子写错或没写完：不显示结果，也不报错；改对后自动出现。</li>
+    <li>变量里也能写换算：<code>预算: 1000 USD to CNY</code>。之后 <code>预算 / 2 =</code> 得到数字，不带货币代码。</li>
+  </ul>
+  <h3>数字和运算符</h3>
+  <table>
+    <thead><tr><th>写法</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>加、减、乘、除。也可以写 <code>×</code> 和 <code>÷</code>。</td></tr>
+      <tr><td><code>^</code></td><td>乘方，比如 <code>2^10</code> 是 1,024。指数必须是数字，绝对值不超过 100。</td></tr>
+      <tr><td><code>( )</code></td><td>括号。数字紧挨括号表示相乘：<code>2(3+4)</code> 是 14。</td></tr>
+      <tr><td><code>%</code></td><td>百分比：<code>200 - 10%</code> 是 180，<code>price + 25%</code> 是 <code>price</code> 加上它的 25%。<code>%</code> 不是取余。</td></tr>
+      <tr><td><code>of</code></td><td>相乘，用于百分比：<code>50% of 200</code> 是 100。</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>换算单位或货币，见下文。</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>常数 π、e、τ、φ。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>数字：</b>整数、小数或科学计数法（<code>1.5e3</code>），不能写千分位逗号。</li>
+    <li><b>结果：</b>最多 10 位有效数字，按 <code>1,234.5</code> 的格式显示。</li>
+  </ul>
+  <h3>函数</h3>
+  <table>
+    <thead><tr><th>函数</th><th>作用</th><th>例子</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>平方根</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>绝对值</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>四舍五入；<code>n</code> 是保留的小数位数</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>向下取整</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>向上取整</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>正弦。默认按弧度，加 <code>deg</code> 按角度</td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>余弦</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>正切</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>自然对数；<code>b</code> 指定底数</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>常用对数</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e 的幂</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>最小值</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>最大值</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>单位</h3>
+  <p>数字后面跟单位，用 <code>to</code> 换算。</p>
+  <table>
+    <thead><tr><th>式子</th><th>结果</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td>用 <code>to</code> 换算</td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td>不写 <code>to</code>：用第一个单位</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>单位相乘</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>单位相除，再换算</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>温度</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>类别</th><th>常用单位</th></tr></thead>
+    <tbody>
+      <tr><td>长度</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>面积</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>体积</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>质量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>时间</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>压强</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>电磁</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>数据</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>频率</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>其他</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>公制单位可以加前缀 <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code> 等：<code>mg</code>、<code>kN</code>、<code>GHz</code>。</li>
+    <li>表外的 mathjs 内置单位也能用，全称和复数也行：<code>meters</code>、<code>inches</code>。</li>
+    <li>单位区分大小写：<code>t</code> 是吨，<code>T</code> 是特斯拉；<code>b</code> 是比特，<code>B</code> 是字节。<code>MB</code> 是 1000² 字节，<code>MiB</code> 是 1024² 字节。</li>
+    <li><code>min</code> 单独写是分钟，写成 <code>min(…)</code> 是函数。<code>in</code> 跟在数字后面是英寸（<code>5 in to cm</code>），其他位置是换算（<code>10 km in mi</code>）。</li>
+    <li>变量和单位同名时，变量优先。</li>
+  </ul>
+  <h3>货币</h3>
+  <ul>
+    <li><b>写法：</b><code>10 USD to CNY =</code>。<code>to</code> 也可以写成 <code>in</code>。</li>
+    <li><b>代码：</b>三个大写字母。小写的 <code>usd</code> 不算货币。</li>
+    <li><b>一行一笔：</b><code>10 USD + 5 EUR</code>、<code>price USD to CNY</code> 都不行。</li>
+  </ul>
+  <h4>汇率</h4>
+  <ul>
+    <li><b>来源：</b>Frankfurter 提供的欧洲央行参考汇率，工作日每天更新一次。</li>
+    <li><b>日期：</b>结果后面带汇率日期，比如 <code>66.67 CNY · 2026-11-18</code>。</li>
+    <li><b>下载：</b>打开计算块时下载，最多每小时一次；失败后约 100 秒重试。</li>
+    <li><b>提示：</b>还没拿到汇率时显示“汇率加载中或不可用”；代码不在下表中时显示“不支持的币种”。</li>
+  </ul>
+  <p>目前支持以下 30 种货币，以 Frankfurter 实际返回为准：</p>
+  <table>
+    <thead><tr><th>代码</th><th>货币</th><th>代码</th><th>货币</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>澳大利亚元</td><td><code>BRL</code></td><td>巴西雷亚尔</td></tr>
+      <tr><td><code>CAD</code></td><td>加拿大元</td><td><code>CHF</code></td><td>瑞士法郎</td></tr>
+      <tr><td><code>CNY</code></td><td>人民币</td><td><code>CZK</code></td><td>捷克克朗</td></tr>
+      <tr><td><code>DKK</code></td><td>丹麦克朗</td><td><code>EUR</code></td><td>欧元</td></tr>
+      <tr><td><code>GBP</code></td><td>英镑</td><td><code>HKD</code></td><td>港元</td></tr>
+      <tr><td><code>HUF</code></td><td>匈牙利福林</td><td><code>IDR</code></td><td>印度尼西亚卢比</td></tr>
+      <tr><td><code>ILS</code></td><td>以色列新谢克尔</td><td><code>INR</code></td><td>印度卢比</td></tr>
+      <tr><td><code>ISK</code></td><td>冰岛克朗</td><td><code>JPY</code></td><td>日元</td></tr>
+      <tr><td><code>KRW</code></td><td>韩元</td><td><code>MXN</code></td><td>墨西哥比索</td></tr>
+      <tr><td><code>MYR</code></td><td>马来西亚林吉特</td><td><code>NOK</code></td><td>挪威克朗</td></tr>
+      <tr><td><code>NZD</code></td><td>新西兰元</td><td><code>PHP</code></td><td>菲律宾比索</td></tr>
+      <tr><td><code>PLN</code></td><td>波兰兹罗提</td><td><code>RON</code></td><td>罗马尼亚列伊</td></tr>
+      <tr><td><code>SEK</code></td><td>瑞典克朗</td><td><code>SGD</code></td><td>新加坡元</td></tr>
+      <tr><td><code>THB</code></td><td>泰铢</td><td><code>TRY</code></td><td>土耳其里拉</td></tr>
+      <tr><td><code>USD</code></td><td>美元</td><td><code>ZAR</code></td><td>南非兰特</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit 只下载公开汇率，不会上传你的笔记。拿不到汇率时会直接提示，不会给出猜测的结果。</p>
+  <h3>用 @ 插入函数、单位和货币</h3>
+  <p>在计算块里输入 <code>@</code>，除了日期等普通片段，还会多出三个词。它们只在计算块里出现。</p>
+  <table>
+    <thead><tr><th>词</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>全部函数，旁边是说明。插入 <code>sqrt()</code> 后光标停在括号里，写完参数按 <kbd>Tab</kbd> 跳到括号后面。</td></tr>
+      <tr><td><code>@unit</code></td><td>上表中的单位，旁边是类别。</td></tr>
+      <tr><td><code>@cur</code></td><td>全部货币，显示名称和对本地货币的汇率：简体中文对 CNY，繁体中文对 HKD，日语对 JPY，英语对 USD。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>名字可以单独用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一项。</li>
+    <li>数字后面可以紧接 <code>@</code>：<code>10@km</code>。</li>
+    <li>和已有片段重名时让给已有片段：分钟用 <code>@minute</code>（<code>@min</code> 是函数），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是时间戳）。</li>
+  </ul>
+  <h3>高亮</h3>
+  <p>计算块按“设置 → 外观”里的代码配色给式子上色，浅色和深色外观各有一套：</p>
+  <table>
+    <thead><tr><th>元素</th><th>例子</th></tr></thead>
+    <tbody>
+      <tr><td>数字和常数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>函数</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>单位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>货币代码（加粗）</td><td><code>USD</code> <code>CNY</code></td></tr>
+      <tr><td>运算符和换算词</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>括号、逗号、冒号</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>行尾的等号（加粗，和结果同色）</td><td><code>=</code></td></tr>
+      <tr><td>已定义的变量（加粗）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>注释</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>限制</h3>
+  <ul>
+    <li>一个式子最长 256 个字符。</li>
+    <li>不支持取余、矩阵、字符串、比较、自定义函数，也不能在式子里用 <code>=</code> 赋值。</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -444,7 +944,7 @@ open 'inkflit://note/get?index=1'</code></pre>
 <section id="shortcuts">
   <h2>快捷键</h2>
   <p>全局快捷键在任何应用里都能用，可以在设置中更改。其他快捷键在笔记窗口激活时可用。</p>
-  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>隐藏窗口（Vim 模式下先退出插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
+  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>隐藏窗口（Vim 模式下先退出插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一条 / 最后一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -456,7 +956,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   backups/     历史版本
   trash/       已删除的笔记</code></pre>
   <h3>保存</h3>
-  <p>停止输入半秒后保存，连续输入时至少每两秒保存一次。切换笔记、收起窗口或退出应用时会立即保存。保存失败时底栏会提示，并且在保存成功之前无法退出应用。</p>
+  <ul>
+    <li>停止输入半秒后保存；连续输入时至少每两秒保存一次。</li>
+    <li>切换笔记、收起窗口、退出应用时立即保存。</li>
+    <li>保存失败时底栏会提示；保存成功之前无法退出应用。</li>
+  </ul>
   <h3>备份与恢复</h3>
   <ul>
     <li>编辑时，每篇笔记最多每五分钟保留一个旧版本。保留多少个可以在“设置 → 备份”中选择。</li>
@@ -519,7 +1023,10 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>視窗會出現在滑鼠所在的顯示器、你目前所在的桌面上，不會把你拉回其他桌面。視窗位置會被記住，重新啟動後也一樣。</p>
   <p>拖曳工具列中間的空白處可以移動視窗，拖曳邊緣可以調整大小。</p>
   <h3>引導筆記</h3>
-  <p>第一次啟動時，Inkflit 會依你的語言建立七篇引導筆記，可以隨意修改或刪除。點設定視窗底部的「重新產生引導筆記」，會在最前面放一套新的引導，並開啟歡迎頁。</p>
+  <ul>
+    <li>第一次啟動時，Inkflit 依你的語言建立七篇引導筆記，可以隨意修改或刪除。</li>
+    <li>設定視窗底部的「重新產生引導筆記」：在最前面放一套新的引導，並開啟歡迎頁。</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -527,7 +1034,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>筆記像筆記本的書頁一樣排列：第一則是最早寫的，新增的筆記加在最後。工具列會顯示目前位置，例如 <code>2 / 5</code>。</p>
   <ul>
     <li><b>新增：</b><kbd>⌘N</kbd>，或工具列上的 <b>+</b>。</li>
-    <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。</li>
+    <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。<kbd>⌘⇧[</kbd> 和 <kbd>⌘⇧]</kbd> 跳到第一則和最後一則筆記。</li>
     <li><b>跳到某一頁：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 開啟第 1 到第 9 則。</li>
   </ul>
   <p>底列顯示目前筆記的建立時間（本地時間）。在開始記錄建立時間之前就有的筆記不顯示日期。</p>
@@ -540,7 +1047,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h2>搜尋與命令</h2>
   <p>兩個面板的按鍵一樣：輸入文字篩選，<kbd>↑</kbd> <kbd>↓</kbd> 選擇，<kbd>Return</kbd> 開啟，<kbd>Esc</kbd> 關閉。</p>
   <h3>搜尋筆記 <kbd>⌘⇧F</kbd></h3>
-  <p>在所有目前筆記的內文中尋找，每則筆記列出一筆符合結果。輸入框為空時會列出全部筆記，可以當目錄使用。備份和回收站裡的內容不會被搜尋。</p>
+  <ul>
+    <li>在所有目前筆記的內文中搜尋，每篇筆記列一筆結果。</li>
+    <li>輸入框為空時列出全部筆記，可以當目錄用。</li>
+    <li>不搜尋備份和垃圾桶。</li>
+  </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
   <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
   <ul>
@@ -562,7 +1073,14 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>在長筆記裡移動游標時，游標上下始終保留三行可見。</p>
   <h3>片段</h3>
-  <p>輸入 <code>@</code> 加一個詞插入常用值。一個詞可以有多種格式：<code>@date</code> 會列出所有日期格式，<kbd>Return</kbd> 插入第一種，也可以用 <kbd>↑</kbd> <kbd>↓</kbd> 選擇其他格式。只輸入詞的一部分，或依序輸入其中幾個字母（<code>@wk</code> 能找到 <code>@week</code>），也會列出符合詞的全部格式；只輸入 <code>@</code> 時每個詞顯示一行。預覽就是將要插入的內容，時間類的值即時更新；<kbd>Esc</kbd> 關閉清單。</p>
+  <p>輸入 <code>@</code> 加一個詞，插入常用值。</p>
+  <ul>
+    <li><kbd>Return</kbd> 插入第一種格式，<kbd>↑</kbd> <kbd>↓</kbd> 選其他格式，<kbd>Esc</kbd> 關閉清單。</li>
+    <li>一個詞有多種格式時全部列出：<code>@date</code> 列出所有日期格式。</li>
+    <li>只打一部分，或依序打幾個字母也能找到：<code>@wk</code> 找到 <code>@week</code>。</li>
+    <li>只輸入 <code>@</code>：每個詞顯示一行。</li>
+    <li>預覽就是要插入的內容，時間類的值即時更新。</li>
+  </ul>
   <table>
     <thead><tr><th>詞</th><th>格式</th></tr></thead>
     <tbody>
@@ -576,11 +1094,56 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
       <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>只在計算區塊中：函式、單位和貨幣，見<a href="#math">計算</a></td></tr>
     </tbody>
   </table>
-  <p>括號裡的詞可以直接插入那一種格式。公用位址在清單顯示或插入時向 ipify 查詢，不會傳送其他內容。在程式碼裡或緊接在字母後面時不會彈出，所以電子郵件地址不受影響。</p>
+  <ul>
+    <li>括號裡的詞直接插入那一種格式，例如 <code>@timesec</code>。</li>
+    <li>公用 IP 在清單顯示或插入時向 ipify 查詢，不傳送其他內容。</li>
+    <li>在程式碼裡、或緊接在字母後面時不彈出，所以電子郵件地址不受影響。</li>
+  </ul>
   <h4>自訂片段</h4>
-  <p>在「設定 → 片段」或命令面板的「管理片段」中新增。和 macOS 的文字替代一樣，幾行可以用同一個觸發詞，例如幾個地址都用 <code>addr</code>；輸入 <code>@addr</code> 會全部列出，預設插入第一行。內容可以多行，也可以用預留位置：<code>{date}</code> 插入預設日期，<code>{date#2}</code> 插入第二種日期格式，<code>{ipv4}</code> 這樣的別名插入指定格式；「插入預留位置」選單列出了全部預留位置和範例。自己的列會排在同名內建組的前面，所以自己寫的 <code>date</code> 會成為預設格式。片段儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <p>在「設定 → 片段」或命令面板的「管理片段」中新增。儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <ul>
+    <li><b>一個觸發詞可以有幾行：</b>和 macOS 的文字替代一樣。幾個地址都用 <code>addr</code>，<code>@addr</code> 會全部列出，預設插入第一行。</li>
+    <li><b>和內建詞同名：</b>你的列排在前面，所以自己寫的 <code>date</code> 會成為預設格式。</li>
+    <li><b>內容可以多行。</b></li>
+  </ul>
+  <h4>預留位置</h4>
+  <table>
+    <thead><tr><th>寫法</th><th>插入</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>這個詞的預設格式</td></tr>
+      <tr><td><code>{date#2}</code></td><td>這個詞的第 2 種格式</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>別名對應的那一種格式</td></tr>
+      <tr><td><code>{cursor}</code></td><td>游標位置，見下文</td></tr>
+      <tr><td><code>{cursor:姓名}</code></td><td>游標位置，插入後先選取「姓名」</td></tr>
+      <tr><td><code>{{</code></td><td>一個 <code>{</code> 字元</td></tr>
+    </tbody>
+  </table>
+  <p>「插入預留位置」選單列出全部預留位置和範例。</p>
+  <h4>游標位置</h4>
+  <pre><code>您好 {cursor:姓名}：
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>插入後「姓名」被選取，直接輸入就能取代。</li>
+    <li>按 <kbd>Tab</kbd> 跳到空行。</li>
+    <li>按 <kbd>⇧Tab</kbd> 回到「姓名」，填過的內容會再次被選取。</li>
+  </ol>
+  <ul>
+    <li><b>標記：</b>正在填的位置是深色底紋加實線底線；其他位置是淺色底紋加點狀底線，空位置是一條直線。有沒有修改過都一樣，直到跳轉結束。</li>
+    <li><b>Tab 只管跳轉：</b>跳轉期間 <kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 只用來跳轉，清單中也一樣。</li>
+    <li><b>結束跳轉：</b>到達最後一個位置、把游標移出這些位置、或按 <kbd>Esc</kbd>。之後 <kbd>Tab</kbd> 恢復縮排。</li>
+    <li><b>這次 <kbd>Esc</kbd></b> 不收起視窗；Vim 模式下同時回到一般模式。</li>
+    <li><b>最後一個位置不在結尾時</b>，再按一次 <kbd>Tab</kbd> 跳到片段結尾。</li>
+  </ul>
+  <h4>注意</h4>
+  <ul>
+    <li>多行片段從第二行起跟隨目前這行的縮排。</li>
+    <li>在一個位置中再插入帶游標位置的片段，外層剩下的位置會失效。</li>
+    <li>值要等一下才取得的片段（例如 IP）：如果期間游標移開了，插入時不會把游標拉回來。</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -592,20 +1155,209 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>用方向鍵和 <kbd>Return</kbd> 選擇，或直接點擊。</li>
     <li>要離開功能區塊，在區塊的最後一個空行再按一次 <kbd>Return</kbd>。</li>
   </ol>
-  <p>用區塊的標題列或 <kbd>⌘K</kbd> 變更類型、轉回一般文字或刪除。<kbd>⌘⇧D</kbd> 刪除目前區塊。這些操作都可以復原。<kbd>⌘O</kbd> 和 <kbd>⌘⇧O</kbd> 在目前行或區塊的下方、上方插入一個空行。</p>
+  <ul>
+    <li>區塊的標題列或 <kbd>⌘K</kbd>：變更類型、轉回一般文字或刪除。</li>
+    <li><kbd>⌘⇧D</kbd>：刪除目前區塊。</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>：在目前這行或區塊的下方 / 上方插入空行。</li>
+  </ul>
+  <p>這些操作都可以還原。</p>
   <h3>功能區塊類型</h3>
   <table>
     <thead><tr><th>功能區塊</th><th>作用</th></tr></thead>
     <tbody>
       <tr><td>清單</td><td>每行一個核取方塊。點擊勾選，或在行尾輸入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
-      <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果。支援百分比、函式、單位和變數，例如 <code>price: 80</code>。貨幣使用大寫代碼：<code>10 USD to TWD =</code>。</td></tr>
+      <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果，支援變數、函式、單位和貨幣，見<a href="#math">計算</a>。</td></tr>
       <tr><td>加總 / 平均值</td><td>對區塊裡的數字加總或求平均，不計算運算式。</td></tr>
       <tr><td>計數</td><td>統計項目數、字數和字元數。</td></tr>
       <tr><td>程式碼</td><td>依語言突顯程式碼，見<a href="#code">程式碼</a>。</td></tr>
     </tbody>
   </table>
   <p>以 <code>//</code> 開頭的行不列入加總和計數。</p>
-  <p class="tip">匯率來自 Frankfurter。Inkflit 只下載公開匯率，不會上傳你的筆記。取得不到匯率時，功能區塊會直接提示，不會給出猜測的結果。</p>
+</section>
+
+<section id="math">
+  <h2>計算</h2>
+  <p class="lead">計算區塊是隨手可算的草稿紙：一行一個算式，行尾寫 <code>=</code>，結果就顯示在後面。可以定義變數、呼叫函式、換算單位和貨幣。</p>
+  <h3>建立計算區塊</h3>
+  <ul>
+    <li><b>功能區塊：</b>在空行輸入 <code>/</code>，選擇「計算」。區塊以 <code>:::inkflit math</code> 開頭，以 <code>:::end</code> 結尾。</li>
+    <li><b>整篇筆記：</b>第一行只寫 <code>math</code>，也可以加標題，例如 <code>math: 旅行預算</code>。
+      <ul>
+        <li>一直算到筆記結尾，沒有結束標記。</li>
+        <li>筆記中的其他功能區塊和程式碼區塊不參與計算。</li>
+        <li>只想算一部分：用功能區塊或 <code>```math</code>。</li>
+      </ul>
+    </li>
+    <li><b>Markdown 程式碼區塊：</b>以 <code>```math</code> 開頭，<code>```</code> 結尾。</li>
+  </ul>
+  <pre><code>math: 旅行預算
+機票: 12000
+飯店: 2800 * 4
+機票 + 飯店 =
+ans / 2 =
+// 兩個人平分</code></pre>
+  <h3>每一行怎麼寫</h3>
+  <table>
+    <thead><tr><th>寫法</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>名稱: 算式</code></td><td>定義變數，不顯示結果。<br>名稱可以用中文等任何文字：<code>單價: 80</code>。<br>再定義一次會覆蓋舊值。</td></tr>
+      <tr><td><code>算式 =</code></td><td>計算並在行尾顯示結果。結果不會寫進筆記，複製時也不會帶上。</td></tr>
+      <tr><td><code>ans</code></td><td>上一個 <code>=</code> 行的結果。</td></tr>
+      <tr><td><code>// …</code></td><td>註解，不參與計算。</td></tr>
+      <tr><td>其他行</td><td>當作一般文字，原樣保留。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>算式寫錯或沒寫完：不顯示結果，也不報錯；改正後自動出現。</li>
+    <li>變數裡也能寫換算：<code>預算: 1000 USD to HKD</code>。之後 <code>預算 / 2 =</code> 得到數字，不帶貨幣代碼。</li>
+  </ul>
+  <h3>數字和運算子</h3>
+  <table>
+    <thead><tr><th>寫法</th><th>意思</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>加、減、乘、除。也可以寫 <code>×</code> 和 <code>÷</code>。</td></tr>
+      <tr><td><code>^</code></td><td>次方，例如 <code>2^10</code> 是 1,024。指數必須是數字，絕對值不超過 100。</td></tr>
+      <tr><td><code>( )</code></td><td>括號。數字緊貼括號表示相乘：<code>2(3+4)</code> 是 14。</td></tr>
+      <tr><td><code>%</code></td><td>百分比：<code>200 - 10%</code> 是 180，<code>price + 25%</code> 是 <code>price</code> 加上它的 25%。<code>%</code> 不是取餘數。</td></tr>
+      <tr><td><code>of</code></td><td>相乘，用於百分比：<code>50% of 200</code> 是 100。</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>換算單位或貨幣，見下文。</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>常數 π、e、τ、φ。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>數字：</b>整數、小數或科學記號（<code>1.5e3</code>），不能寫千分位逗號。</li>
+    <li><b>結果：</b>最多 10 位有效數字，以 <code>1,234.5</code> 的格式顯示。</li>
+  </ul>
+  <h3>函式</h3>
+  <table>
+    <thead><tr><th>函式</th><th>作用</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>平方根</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>絕對值</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>四捨五入；<code>n</code> 是保留的小數位數</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>無條件捨去</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>無條件進位</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>正弦。預設為弧度，加 <code>deg</code> 改用角度</td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>餘弦</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>正切</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>自然對數；<code>b</code> 指定底數</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>常用對數</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e 的冪</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>最小值</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>最大值</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>單位</h3>
+  <p>數字後面接單位，用 <code>to</code> 換算。</p>
+  <table>
+    <thead><tr><th>算式</th><th>結果</th><th>說明</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td>用 <code>to</code> 換算</td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td>不寫 <code>to</code>：用第一個單位</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>單位相乘</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>單位相除，再換算</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>溫度</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>類別</th><th>常用單位</th></tr></thead>
+    <tbody>
+      <tr><td>長度</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>體積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>溫度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>壓力</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>電磁</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>資料</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>頻率</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>其他</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>公制單位可以加字首 <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code> 等：<code>mg</code>、<code>kN</code>、<code>GHz</code>。</li>
+    <li>表外的 mathjs 內建單位也能用，全名和複數也行：<code>meters</code>、<code>inches</code>。</li>
+    <li>單位區分大小寫：<code>t</code> 是公噸，<code>T</code> 是特斯拉；<code>b</code> 是位元，<code>B</code> 是位元組。<code>MB</code> 是 1000² 位元組，<code>MiB</code> 是 1024² 位元組。</li>
+    <li><code>min</code> 單獨寫是分鐘，寫成 <code>min(…)</code> 是函式。<code>in</code> 接在數字後面是英寸（<code>5 in to cm</code>），其他位置是換算（<code>10 km in mi</code>）。</li>
+    <li>變數和單位同名時，以變數為準。</li>
+  </ul>
+  <h3>貨幣</h3>
+  <ul>
+    <li><b>寫法：</b><code>10 USD to HKD =</code>。<code>to</code> 也可以寫成 <code>in</code>。</li>
+    <li><b>代碼：</b>三個大寫字母。小寫的 <code>usd</code> 不算貨幣。</li>
+    <li><b>一行一筆：</b><code>10 USD + 5 EUR</code>、<code>price USD to HKD</code> 都不行。</li>
+  </ul>
+  <h4>匯率</h4>
+  <ul>
+    <li><b>來源：</b>Frankfurter 提供的歐洲央行參考匯率，工作日每天更新一次。</li>
+    <li><b>日期：</b>結果後面附上匯率日期，例如 <code>78.30 HKD · 2026-11-18</code>。</li>
+    <li><b>下載：</b>開啟計算區塊時下載，最多每小時一次；失敗後約 100 秒重試。</li>
+    <li><b>提示：</b>還沒取得匯率時顯示「匯率載入中或無法使用」；代碼不在下表中時顯示「不支援的幣別」。</li>
+  </ul>
+  <p>目前支援以下 30 種貨幣，以 Frankfurter 實際提供為準。不包括新臺幣 TWD：</p>
+  <table>
+    <thead><tr><th>代碼</th><th>貨幣</th><th>代碼</th><th>貨幣</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>澳幣</td><td><code>BRL</code></td><td>巴西雷亞爾</td></tr>
+      <tr><td><code>CAD</code></td><td>加幣</td><td><code>CHF</code></td><td>瑞士法郎</td></tr>
+      <tr><td><code>CNY</code></td><td>人民幣</td><td><code>CZK</code></td><td>捷克克朗</td></tr>
+      <tr><td><code>DKK</code></td><td>丹麥克朗</td><td><code>EUR</code></td><td>歐元</td></tr>
+      <tr><td><code>GBP</code></td><td>英鎊</td><td><code>HKD</code></td><td>港幣</td></tr>
+      <tr><td><code>HUF</code></td><td>匈牙利福林</td><td><code>IDR</code></td><td>印尼盾</td></tr>
+      <tr><td><code>ILS</code></td><td>以色列新謝克爾</td><td><code>INR</code></td><td>印度盧比</td></tr>
+      <tr><td><code>ISK</code></td><td>冰島克朗</td><td><code>JPY</code></td><td>日圓</td></tr>
+      <tr><td><code>KRW</code></td><td>韓元</td><td><code>MXN</code></td><td>墨西哥披索</td></tr>
+      <tr><td><code>MYR</code></td><td>馬來西亞令吉</td><td><code>NOK</code></td><td>挪威克朗</td></tr>
+      <tr><td><code>NZD</code></td><td>紐西蘭幣</td><td><code>PHP</code></td><td>菲律賓披索</td></tr>
+      <tr><td><code>PLN</code></td><td>波蘭茲羅提</td><td><code>RON</code></td><td>羅馬尼亞列伊</td></tr>
+      <tr><td><code>SEK</code></td><td>瑞典克朗</td><td><code>SGD</code></td><td>新加坡幣</td></tr>
+      <tr><td><code>THB</code></td><td>泰銖</td><td><code>TRY</code></td><td>土耳其里拉</td></tr>
+      <tr><td><code>USD</code></td><td>美元</td><td><code>ZAR</code></td><td>南非蘭特</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit 只下載公開匯率，不會上傳你的筆記。取不到匯率時會直接提示，不會給出猜測的結果。</p>
+  <h3>用 @ 插入函式、單位和貨幣</h3>
+  <p>在計算區塊中輸入 <code>@</code>，除了日期等一般片段，還會多出三個詞。它們只在計算區塊中出現。</p>
+  <table>
+    <thead><tr><th>詞</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>全部函式，旁邊附說明。插入 <code>sqrt()</code> 後游標停在括號內，寫完參數按 <kbd>Tab</kbd> 跳到括號後面。</td></tr>
+      <tr><td><code>@unit</code></td><td>上表中的單位，旁邊附類別。</td></tr>
+      <tr><td><code>@cur</code></td><td>全部貨幣，顯示名稱和對本地貨幣的匯率：簡體中文對 CNY，繁體中文對 HKD，日文對 JPY，英文對 USD。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>名稱可以單獨使用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一項。</li>
+    <li>數字後面可以緊接 <code>@</code>：<code>10@km</code>。</li>
+    <li>和既有片段重名時讓給既有片段：分鐘用 <code>@minute</code>（<code>@min</code> 是函式），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是時間戳）。</li>
+  </ul>
+  <h3>醒目標示</h3>
+  <p>計算區塊依「設定 → 外觀」中的程式碼配色為算式上色，淺色和深色外觀各有一套：</p>
+  <table>
+    <thead><tr><th>元素</th><th>範例</th></tr></thead>
+    <tbody>
+      <tr><td>數字和常數</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>函式</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>單位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>貨幣代碼（粗體）</td><td><code>USD</code> <code>HKD</code></td></tr>
+      <tr><td>運算子和換算詞</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>括號、逗號、冒號</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>行尾的等號（粗體，與結果同色）</td><td><code>=</code></td></tr>
+      <tr><td>已定義的變數（粗體）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>註解</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>限制</h3>
+  <ul>
+    <li>一個算式最長 256 個字元。</li>
+    <li>不支援取餘數、矩陣、字串、比較、自訂函式，也不能在算式中用 <code>=</code> 指定值。</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -649,7 +1401,7 @@ open 'inkflit://note/get?index=1'</code></pre>
 <section id="shortcuts">
   <h2>快捷鍵</h2>
   <p>全域快捷鍵在任何應用程式裡都能使用，可以在設定中變更。其他快捷鍵在筆記視窗作用中時可用。</p>
-  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>隱藏視窗（Vim 模式下先離開插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
+  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>隱藏視窗（Vim 模式下先離開插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一則 / 最後一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -661,7 +1413,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   backups/     歷史版本
   trash/       已刪除的筆記</code></pre>
   <h3>儲存</h3>
-  <p>停止輸入半秒後儲存，連續輸入時至少每兩秒儲存一次。切換筆記、收起視窗或結束應用程式時會立即儲存。儲存失敗時底列會提示，並且在儲存成功之前無法結束應用程式。</p>
+  <ul>
+    <li>停止輸入半秒後儲存；連續輸入時至少每兩秒儲存一次。</li>
+    <li>切換筆記、收起視窗、結束應用程式時立即儲存。</li>
+    <li>儲存失敗時底列會提示；儲存成功之前無法結束應用程式。</li>
+  </ul>
   <h3>備份與還原</h3>
   <ul>
     <li>編輯時，每則筆記最多每五分鐘保留一個舊版本。保留幾個可以在「設定 → 備份」中選擇。</li>
@@ -724,7 +1480,10 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>ウインドウはポインタがあるディスプレイの、いま使っているデスクトップに表示されます。別のデスクトップに引き戻されることはありません。位置は記憶され、再起動後も保たれます。</p>
   <p>ツールバー中央の空いている部分をドラッグすると移動、端をドラッグするとサイズを変更できます。</p>
   <h3>ガイドノート</h3>
-  <p>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。設定ウインドウ下部の「ガイドノートを再作成」を押すと、新しいガイドが先頭に追加され、ようこそページが開きます。</p>
+  <ul>
+    <li>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。</li>
+    <li>設定ウインドウ下部の「ガイドノートを再作成」：新しいガイドを先頭に追加し、ようこそページを開きます。</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -732,7 +1491,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <p>ノートはノートブックのページのように並びます。最初のノートがいちばん古く、新しいノートは末尾に追加されます。ツールバーには現在の位置が表示されます（例：<code>2 / 5</code>）。</p>
   <ul>
     <li><b>新規作成：</b><kbd>⌘N</kbd>、またはツールバーの <b>+</b>。</li>
-    <li><b>ページをめくる：</b><kbd>⌘[</kbd> と <kbd>⌘]</kbd>、またはツールバーの矢印。</li>
+    <li><b>ページをめくる：</b><kbd>⌘[</kbd> と <kbd>⌘]</kbd>、またはツールバーの矢印。<kbd>⌘⇧[</kbd> と <kbd>⌘⇧]</kbd> で最初と最後のノートへ移動します。</li>
     <li><b>ページへ移動：</b><kbd>⌘1</kbd>〜<kbd>⌘9</kbd> で 1〜9 番目のノートを開きます。</li>
   </ul>
   <p>フッターには現在のノートの作成日時（ローカル時刻）が表示されます。作成日時の記録が始まる前からあるノートには表示されません。</p>
@@ -745,7 +1504,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h2>検索とコマンド</h2>
   <p>2 つのパネルは同じキーで操作します。入力して絞り込み、<kbd>↑</kbd> <kbd>↓</kbd> で選択、<kbd>Return</kbd> で開き、<kbd>Esc</kbd> で閉じます。</p>
   <h3>ノートを検索 <kbd>⌘⇧F</kbd></h3>
-  <p>現在のすべてのノートの本文を検索し、ノートごとに 1 件ずつ一致箇所を表示します。入力欄が空のときは全ノートを一覧するので、目次としても使えます。バックアップとゴミ箱は検索対象外です。</p>
+  <ul>
+    <li>現在のすべてのノートの本文を検索し、ノートごとに 1 件表示します。</li>
+    <li>入力欄が空なら全ノートを一覧するので、目次として使えます。</li>
+    <li>バックアップとゴミ箱は検索しません。</li>
+  </ul>
   <h3>コマンドパレット <kbd>⌘⇧P</kbd></h3>
   <p>設定ウインドウを開かずに、ノートの操作や設定の変更ができます。</p>
   <ul>
@@ -767,7 +1530,14 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <p>長いノートでカーソルを動かすと、カーソルの上下に常に 3 行が見えるようにスクロールします。</p>
   <h3>スニペット</h3>
-  <p><code>@</code> と単語を入力すると値を挿入できます。1 つの単語に複数の形式があり、<code>@date</code> ならすべての日付形式が一覧され、<kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選べます。単語の途中まで、または文字を順に入力しても（<code>@wk</code> で <code>@week</code>）、一致する単語のすべての形式を表示します。<code>@</code> だけのときは単語ごとに 1 行です。プレビューは挿入される内容そのもので、時刻の値は常に最新です。<kbd>Esc</kbd> で一覧を閉じます。</p>
+  <p><code>@</code> と単語を入力すると値を挿入できます。</p>
+  <ul>
+    <li><kbd>Return</kbd> で最初の形式を挿入、<kbd>↑</kbd> <kbd>↓</kbd> で別の形式を選択、<kbd>Esc</kbd> で一覧を閉じます。</li>
+    <li>複数の形式がある単語はすべて表示されます：<code>@date</code> ならすべての日付形式。</li>
+    <li>単語の途中まで、または文字を順に入力しても見つかります：<code>@wk</code> で <code>@week</code>。</li>
+    <li><code>@</code> だけなら単語ごとに 1 行です。</li>
+    <li>プレビューは挿入される内容そのもので、時刻の値は常に最新です。</li>
+  </ul>
   <table>
     <thead><tr><th>単語</th><th>形式</th></tr></thead>
     <tbody>
@@ -781,11 +1551,56 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
       <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>計算ブロック内のみ：関数、単位、通貨。<a href="#math">計算</a>を参照</td></tr>
     </tbody>
   </table>
-  <p>括弧内の単語を入力すると、その形式を直接挿入できます。グローバルアドレスは一覧に表示したときと挿入したときに ipify から取得し、それ以外は何も送信しません。コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</p>
+  <ul>
+    <li>括弧内の単語はその形式を直接挿入します（例：<code>@timesec</code>）。</li>
+    <li>グローバル IP は一覧に表示したときと挿入したときに ipify から取得し、それ以外は送信しません。</li>
+    <li>コードの中や英字の直後では表示されないので、メールアドレスはそのままです。</li>
+  </ul>
   <h4>自分のスニペット</h4>
-  <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。macOS のユーザ辞書と同じように、複数の行で同じトリガーを使えます。たとえば住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。内容は複数行にでき、プレースホルダも使えます：<code>{date}</code> は既定の日付、<code>{date#2}</code> は 2 番目の日付形式、<code>{ipv4}</code> のような別名はその形式を挿入します。「プレースホルダを挿入」に例と一緒に一覧されます。自分の行は同じ名前の組み込みグループの先頭に入るので、自分の <code>date</code> が既定になります。スニペットはノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。ノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <ul>
+    <li><b>1 つのトリガーに複数の行：</b>macOS のユーザ辞書と同じです。住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。</li>
+    <li><b>組み込みの単語と同じ名前：</b>自分の行が先頭に入るので、自分の <code>date</code> が既定になります。</li>
+    <li><b>内容は複数行にできます。</b></li>
+  </ul>
+  <h4>プレースホルダ</h4>
+  <table>
+    <thead><tr><th>書き方</th><th>挿入されるもの</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>その単語の既定の形式</td></tr>
+      <tr><td><code>{date#2}</code></td><td>2 番目の形式</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>その別名の形式</td></tr>
+      <tr><td><code>{cursor}</code></td><td>カーソル位置（後述）</td></tr>
+      <tr><td><code>{cursor:名前}</code></td><td>「名前」を選択した状態で始まるカーソル位置</td></tr>
+      <tr><td><code>{{</code></td><td><code>{</code> そのもの</td></tr>
+    </tbody>
+  </table>
+  <p>「プレースホルダを挿入」に例と一緒に一覧されます。</p>
+  <h4>カーソル位置</h4>
+  <pre><code>{cursor:名前} 様
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>挿入すると「名前」が選択されます。そのまま入力すれば置き換わります。</li>
+    <li><kbd>Tab</kbd> で空の行へ移動します。</li>
+    <li><kbd>⇧Tab</kbd> で名前に戻ると、入力した内容がまた選択されます。</li>
+  </ol>
+  <ul>
+    <li><b>表示：</b>入力中の位置は濃い背景と実線の下線、ほかの位置は薄い背景と点線の下線、空の位置は細い縦線です。変更の有無にかかわらず、移動が終わるまで表示されます。</li>
+    <li><b>Tab は移動専用：</b>移動中は <kbd>Tab</kbd> と <kbd>⇧Tab</kbd> で位置を移動するだけです。チェックリストの中でも同じです。</li>
+    <li><b>終了：</b>最後の位置に着く、カーソルを位置の外へ動かす、<kbd>Esc</kbd> を押す。その後 <kbd>Tab</kbd> はインデントに戻ります。</li>
+    <li><b>このときの <kbd>Esc</kbd></b> ではウインドウは隠れません。Vim モードではノーマルモードにも戻ります。</li>
+    <li><b>最後の位置が末尾でないとき：</b>もう一度 <kbd>Tab</kbd> でスニペットの末尾へ移動します。</li>
+  </ul>
+  <h4>注意</h4>
+  <ul>
+    <li>複数行のスニペットでは、2 行目以降が挿入した行のインデントに揃います。</li>
+    <li>位置の中にカーソル位置付きのスニペットを挿入すると、外側の残りの位置は終了します。</li>
+    <li>値の取得に時間がかかるスニペット（IP アドレスなど）：その間にカーソルを動かしていれば、カーソルは戻されません。</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -797,20 +1612,209 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>矢印キーと <kbd>Return</kbd>、またはクリックでブロックを選びます。</li>
     <li>ブロックから出るには、最後の空行でもう一度 <kbd>Return</kbd> を押します。</li>
   </ol>
-  <p>ブロックのヘッダーか <kbd>⌘K</kbd> で、種類の変更、通常のテキストへの変換、削除ができます。<kbd>⌘⇧D</kbd> は現在のブロックを削除します。どれも取り消せます。<kbd>⌘O</kbd> と <kbd>⌘⇧O</kbd> は現在の行またはブロックの下・上に空行を追加します。</p>
+  <ul>
+    <li>ブロックのヘッダーか <kbd>⌘K</kbd>：種類の変更、通常のテキストへの変換、削除。</li>
+    <li><kbd>⌘⇧D</kbd>：現在のブロックを削除。</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>：現在の行またはブロックの下 / 上に空行を追加。</li>
+  </ul>
+  <p>どれも取り消せます。</p>
   <h3>ブロックの種類</h3>
   <table>
     <thead><tr><th>ブロック</th><th>機能</th></tr></thead>
     <tbody>
       <tr><td>チェックリスト</td><td>各行にチェックボックスが付きます。クリックするか、行末に <code>/x</code> と入力します。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
-      <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。パーセント、関数、単位、<code>price: 80</code> のような変数に対応します。通貨は大文字のコードで指定します：<code>10 USD to JPY =</code>。</td></tr>
+      <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。変数、関数、単位、通貨に対応します。<a href="#math">計算</a>を参照。</td></tr>
       <tr><td>合計 / 平均</td><td>ブロック内の数値を合計または平均します。式は計算しません。</td></tr>
       <tr><td>カウント</td><td>項目数、単語数、文字数を数えます。</td></tr>
       <tr><td>コード</td><td>言語ごとにコードを色分けします。<a href="#code">コード</a>を参照してください。</td></tr>
     </tbody>
   </table>
   <p><code>//</code> で始まる行は合計とカウントから除外されます。</p>
-  <p class="tip">為替レートは Frankfurter から取得します。Inkflit は公開レートをダウンロードするだけで、ノートを送信することはありません。レートを取得できないときは、推測した値ではなくその旨を表示します。</p>
+</section>
+
+<section id="math">
+  <h2>計算</h2>
+  <p class="lead">計算ブロックは計算できるメモ用紙です。1 行に 1 つの式を書き、行末に <code>=</code> を付けると結果が後ろに表示されます。変数、関数、単位と通貨の換算が使えます。</p>
+  <h3>計算ブロックを作る</h3>
+  <ul>
+    <li><b>ブロック：</b>空の行で <code>/</code> を入力し、「計算」を選びます。ブロックは <code>:::inkflit math</code> で始まり <code>:::end</code> で終わります。</li>
+    <li><b>ノート全体：</b>1 行目を <code>math</code> だけにします。<code>math: 旅行の予算</code> のようにタイトルも付けられます。
+      <ul>
+        <li>ノートの末尾まで計算されます。終わりの記号はありません。</li>
+        <li>ノート内のほかのブロックやコードブロックは計算されません。</li>
+        <li>一部だけ計算したいときは、ブロックか <code>```math</code> を使います。</li>
+      </ul>
+    </li>
+    <li><b>Markdown のコードブロック：</b><code>```math</code> で始め、<code>```</code> で終えます。</li>
+  </ul>
+  <pre><code>math: 旅行の予算
+航空券: 36000
+ホテル: 9000 * 4
+航空券 + ホテル =
+ans / 2 =
+// 2 人で割り勘</code></pre>
+  <h3>行の書き方</h3>
+  <table>
+    <thead><tr><th>書き方</th><th>働き</th></tr></thead>
+    <tbody>
+      <tr><td><code>名前: 式</code></td><td>変数を定義します。結果は表示されません。<br>名前には日本語など任意の文字を使えます：<code>単価: 80</code>。<br>もう一度定義すると値が置き換わります。</td></tr>
+      <tr><td><code>式 =</code></td><td>計算して行末に結果を表示します。結果はノートには書き込まれず、コピーにも含まれません。</td></tr>
+      <tr><td><code>ans</code></td><td>直前の <code>=</code> 行の結果。</td></tr>
+      <tr><td><code>// …</code></td><td>コメント。計算されません。</td></tr>
+      <tr><td>それ以外の行</td><td>普通のテキストとしてそのまま残ります。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>式が間違っているか書きかけのとき：結果もエラーも表示されず、直すと結果が出ます。</li>
+    <li>定義に換算も書けます：<code>予算: 1000 USD to JPY</code>。<code>予算 / 2 =</code> は通貨コードなしの数値になります。</li>
+  </ul>
+  <h3>数値と演算子</h3>
+  <table>
+    <thead><tr><th>書き方</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>加算、減算、乗算、除算。<code>×</code> と <code>÷</code> も使えます。</td></tr>
+      <tr><td><code>^</code></td><td>べき乗。<code>2^10</code> は 1,024。指数は絶対値 100 以下の数値に限ります。</td></tr>
+      <tr><td><code>( )</code></td><td>括弧。数値の直後の括弧は掛け算です：<code>2(3+4)</code> は 14。</td></tr>
+      <tr><td><code>%</code></td><td>パーセント：<code>200 - 10%</code> は 180、<code>price + 25%</code> は <code>price</code> にその 25% を足します。<code>%</code> は剰余ではありません。</td></tr>
+      <tr><td><code>of</code></td><td>掛け算。パーセントと一緒に使います：<code>50% of 200</code> は 100。</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>単位や通貨を換算します（後述）。</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>定数 π、e、τ、φ。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>数値：</b>整数、小数、指数表記（<code>1.5e3</code>）。桁区切りのカンマは使えません。</li>
+    <li><b>結果：</b>有効数字 10 桁まで、<code>1,234.5</code> の形式で表示します。</li>
+  </ul>
+  <h3>関数</h3>
+  <table>
+    <thead><tr><th>関数</th><th>働き</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>平方根</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>絶対値</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>四捨五入。<code>n</code> は残す小数の桁数</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>切り捨て</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>切り上げ</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>正弦。既定はラジアン、<code>deg</code> を付けると度</td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>余弦</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>正接</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>自然対数。<code>b</code> で底を指定</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>常用対数</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e のべき乗</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>最小値</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>最大値</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>単位</h3>
+  <p>数値の後ろに単位を書き、<code>to</code> で換算します。</p>
+  <table>
+    <thead><tr><th>式</th><th>結果</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td><code>to</code> で換算</td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td><code>to</code> なし：最初の単位</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>単位の掛け算</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>単位の割り算と換算</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>温度</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>種類</th><th>主な単位</th></tr></thead>
+    <tbody>
+      <tr><td>長さ</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>体積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>エネルギー</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>仕事率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>圧力</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>電磁気</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>データ</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>周波数</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>その他</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>メートル法の単位には <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code> などの接頭辞を付けられます：<code>mg</code>、<code>kN</code>、<code>GHz</code>。</li>
+    <li>表にない mathjs の組み込み単位も使えます。正式名や複数形も可：<code>meters</code>、<code>inches</code>。</li>
+    <li>単位は大文字と小文字を区別します：<code>t</code> はトン、<code>T</code> はテスラ。<code>b</code> はビット、<code>B</code> はバイト。<code>MB</code> は 1000² バイト、<code>MiB</code> は 1024² バイトです。</li>
+    <li><code>min</code> だけなら分、<code>min(…)</code> なら関数です。<code>in</code> は数値の直後ならインチ（<code>5 in to cm</code>）、それ以外では換算です（<code>10 km in mi</code>）。</li>
+    <li>変数と単位が同じ名前なら変数が優先されます。</li>
+  </ul>
+  <h3>通貨</h3>
+  <ul>
+    <li><b>書き方：</b><code>10 USD to JPY =</code>。<code>to</code> の代わりに <code>in</code> も使えます。</li>
+    <li><b>コード：</b>大文字 3 文字。小文字の <code>usd</code> は通貨になりません。</li>
+    <li><b>1 行に 1 つ：</b><code>10 USD + 5 EUR</code> や <code>price USD to JPY</code> は使えません。</li>
+  </ul>
+  <h4>レート</h4>
+  <ul>
+    <li><b>出典：</b>Frankfurter が提供する欧州中央銀行の参照レート。営業日に 1 日 1 回更新されます。</li>
+    <li><b>日付：</b>結果にレートの日付が付きます（例：<code>1,507 JPY · 2026-11-18</code>）。</li>
+    <li><b>取得：</b>計算ブロックを開いているとき、最大 1 時間に 1 回。失敗したら約 100 秒後に再試行します。</li>
+    <li><b>表示：</b>レート取得前は「為替レートを取得中、または利用できません」、表にないコードは「未対応の通貨」。</li>
+  </ul>
+  <p>現在は次の 30 通貨に対応しています（一覧は Frankfurter に準じます）：</p>
+  <table>
+    <thead><tr><th>コード</th><th>通貨</th><th>コード</th><th>通貨</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>オーストラリア ドル</td><td><code>BRL</code></td><td>ブラジル レアル</td></tr>
+      <tr><td><code>CAD</code></td><td>カナダ ドル</td><td><code>CHF</code></td><td>スイス フラン</td></tr>
+      <tr><td><code>CNY</code></td><td>中国人民元</td><td><code>CZK</code></td><td>チェコ コルナ</td></tr>
+      <tr><td><code>DKK</code></td><td>デンマーク クローネ</td><td><code>EUR</code></td><td>ユーロ</td></tr>
+      <tr><td><code>GBP</code></td><td>英国ポンド</td><td><code>HKD</code></td><td>香港ドル</td></tr>
+      <tr><td><code>HUF</code></td><td>ハンガリー フォリント</td><td><code>IDR</code></td><td>インドネシア ルピア</td></tr>
+      <tr><td><code>ILS</code></td><td>イスラエル新シェケル</td><td><code>INR</code></td><td>インド ルピー</td></tr>
+      <tr><td><code>ISK</code></td><td>アイスランド クローナ</td><td><code>JPY</code></td><td>日本円</td></tr>
+      <tr><td><code>KRW</code></td><td>韓国ウォン</td><td><code>MXN</code></td><td>メキシコ ペソ</td></tr>
+      <tr><td><code>MYR</code></td><td>マレーシア リンギット</td><td><code>NOK</code></td><td>ノルウェー クローネ</td></tr>
+      <tr><td><code>NZD</code></td><td>ニュージーランド ドル</td><td><code>PHP</code></td><td>フィリピン ペソ</td></tr>
+      <tr><td><code>PLN</code></td><td>ポーランド ズウォティ</td><td><code>RON</code></td><td>ルーマニア レイ</td></tr>
+      <tr><td><code>SEK</code></td><td>スウェーデン クローナ</td><td><code>SGD</code></td><td>シンガポール ドル</td></tr>
+      <tr><td><code>THB</code></td><td>タイ バーツ</td><td><code>TRY</code></td><td>トルコ リラ</td></tr>
+      <tr><td><code>USD</code></td><td>米ドル</td><td><code>ZAR</code></td><td>南アフリカ ランド</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit が取得するのは公開されている為替レートだけで、ノートは送信しません。レートを取得できないときは推測せず、そのことを表示します。</p>
+  <h3>@ で関数・単位・通貨を挿入する</h3>
+  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 3 つの単語が表示されます。これらは計算ブロックの中でだけ表示されます。</p>
+  <table>
+    <thead><tr><th>単語</th><th>一覧</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>すべての関数と説明。<code>sqrt()</code> を挿入するとカーソルが括弧の中に入ります。引数を書いたら <kbd>Tab</kbd> で括弧の後ろへ移動できます。</td></tr>
+      <tr><td><code>@unit</code></td><td>上の表の単位と、その種類。</td></tr>
+      <tr><td><code>@cur</code></td><td>すべての通貨と名前、表示言語の通貨に対するレート（日本語は JPY、英語は USD、簡体字中国語は CNY、繁体字中国語は HKD）。</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>名前だけでも使えます：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> でその項目が直接見つかります。</li>
+    <li>数値の直後に <code>@</code> を書けます：<code>10@km</code>。</li>
+    <li>既存のスニペットと重なる名前はそちらが優先です：分は <code>@minute</code>（<code>@min</code> は関数）、ミリ秒は <code>@millisecond</code>（<code>@ms</code> はタイムスタンプ）。</li>
+  </ul>
+  <h3>ハイライト</h3>
+  <p>計算ブロックは「設定 → 外観」のコードの配色で色分けされます。ライトとダークのどちらにも対応します：</p>
+  <table>
+    <thead><tr><th>要素</th><th>例</th></tr></thead>
+    <tbody>
+      <tr><td>数値と定数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>関数</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>単位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>通貨コード（太字）</td><td><code>USD</code> <code>JPY</code></td></tr>
+      <tr><td>演算子と換算の単語</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>括弧・カンマ・コロン</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>行末の等号（太字、結果と同じ色）</td><td><code>=</code></td></tr>
+      <tr><td>定義済みの変数（太字）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>コメント</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>制限</h3>
+  <ul>
+    <li>式は最大 256 文字です。</li>
+    <li>剰余、行列、文字列、比較、独自の関数、式の中での <code>=</code> による代入には対応していません。</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -854,7 +1858,7 @@ open 'inkflit://note/get?index=1'</code></pre>
 <section id="shortcuts">
   <h2>キーボードショートカット</h2>
   <p>グローバルショートカットはどのアプリからでも使え、設定で変更できます。そのほかはノートのウインドウがアクティブなときに使えます。</p>
-  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>ウインドウを隠す（Vim では先に挿入モードを終了）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
+  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>ウインドウを隠す（Vim では先に挿入モードを終了）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>最初 / 最後のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -866,7 +1870,11 @@ open 'inkflit://note/get?index=1'</code></pre>
   backups/     以前のバージョン
   trash/       削除したノート</code></pre>
   <h3>保存</h3>
-  <p>入力を止めて 0.5 秒後に保存し、入力中も少なくとも 2 秒ごとに保存します。ノートの切り替え、ウインドウを隠す操作、アプリの終了ではすぐに保存します。保存に失敗するとフッターに表示され、保存に成功するまでアプリを終了できません。</p>
+  <ul>
+    <li>入力を止めて 0.5 秒後に保存します。入力中も少なくとも 2 秒ごとに保存します。</li>
+    <li>ノートの切り替え、ウインドウを隠す、アプリの終了ではすぐに保存します。</li>
+    <li>保存に失敗するとフッターに表示され、保存に成功するまで終了できません。</li>
+  </ul>
   <h3>バックアップと復元</h3>
   <ul>
     <li>編集中、各ノートの以前のバージョンを最大 5 分に 1 回保存します。保持する数は「設定 → バックアップ」で選べます。</li>
@@ -952,6 +1960,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     palette: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
     writing: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16Z"/><path d="m13.5 6.5 4 4"/>',
     blocks: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><path d="M17.25 14v6.5M14 17.25h6.5"/>',
+    math: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8.5 6.5h7M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/>',
     code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
     vim: '<path d="m4 5 4 14 4-14m1 14h7M13 5h7m-3.5 0v14"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/>',

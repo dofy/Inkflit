@@ -5,7 +5,7 @@ import { filterCommands } from './command-palette.js';
 import { searchNotes, notePreview } from './note-search.js';
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
-import { select, createNote, navigate } from './notes.js';
+import { select, createNote, navigate, selectFirst, selectLast } from './notes.js';
 import { deleteNote, hasDeleteNotices, restoreLastDeleted } from './delete-notices.js';
 
 // Note search (⌘⇧F) and the command palette (⌘⇧P) share one palette component.
@@ -45,6 +45,8 @@ function availableCommands() {
     { label: t('palette.searchNotes'), group: note, shortcut: '⌘⇧F', aliases: ['search find note'], run: () => openSearch() },
     { label: t('note.previous'), group: note, shortcut: '⌘[', aliases: ['previous note'], run: () => navigate(-1) },
     { label: t('note.next'), group: note, shortcut: '⌘]', aliases: ['next note'], run: () => navigate(1) },
+    { label: t('note.first'), group: note, shortcut: '⌘⇧[', aliases: ['first note top start'], run: selectFirst },
+    { label: t('note.last'), group: note, shortcut: '⌘⇧]', aliases: ['last note bottom end'], run: selectLast },
     { label: t('note.delete'), group: note, shortcut: '⌘D', aliases: ['delete note trash'], run: deleteNote },
     { label: t('palette.openSettings'), group: setting, shortcut: '⌘,', aliases: ['settings preferences'], run: () => nativeCommand('settings') },
     { label: t(app.vimEnabled ? 'palette.disableVim' : 'palette.enableVim'), group: setting, aliases: ['vim mode toggle'], run: () => nativeCommand('toggle-vim') }

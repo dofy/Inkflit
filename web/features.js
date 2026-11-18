@@ -4,6 +4,13 @@ import { t } from './i18n.js';
 import { create, all } from 'mathjs';
 
 const math = create(all);
+math.createUnit({mph:'1 mi/h', nmi:'1852 m'});
+// mathjs names take Latin and Greek letters only; allow any letter, so "单价: 80" works.
+const isAlpha = math.parse.isAlpha;
+math.parse.isAlpha = (c, cPrev, cNext) => isAlpha(c, cPrev, cNext) || /\p{L}/u.test(c);
+// The bare symbol "min" resolves to the min() function before the minute unit, so bind it to the unit explicitly.
+const minuteUnit = math.unit('min');
+const bindMinute = (node, scope) => 'min' in scope ? node : node.transform((n, path) => n.type === 'SymbolNode' && n.name === 'min' && path !== 'fn' ? new math.ConstantNode(minuteUnit) : n);
 const allowedFunctions = new Set(['sqrt','abs','round','floor','ceil','sin','cos','tan','log','log10','exp','min','max']);
 const allowedOperators = new Set(['add','subtract','multiply','divide','pow','unaryMinus','unaryPlus','to','percentage']);
 export const modeOf = text => /^(list|math|sum|avg|count)(?:\s*:\s*.*)?\s*$/i.exec(text.split('\n')[0].trim())?.[1].toLowerCase() || '';
@@ -66,7 +73,7 @@ export function evaluateExpression(expression, scope = {}, rates = null) {
       if (n.type === 'FunctionNode' && (n.fn.type !== 'SymbolNode' || !allowedFunctions.has(n.fn.name))) valid = false;
     });
     if (!valid) return null;
-    const value = node.evaluate(new Map(Object.entries(scope)));
+    const value = bindMinute(node, scope).evaluate(new Map(Object.entries(scope)));
     if (typeof value === 'number' && Number.isFinite(value)) return {value, text:formatNumber(value)};
     if (math.isUnit(value) && Number.isFinite(value.value)) return {value, text:math.format(value, {precision:10})};
   } catch (_) { /* Incomplete or unsupported expressions remain editable. */ }
@@ -100,6 +107,53 @@ export function mathVariableRanges(lines) {
   }
   return ranges;
 }
+// Colour classes for a math block, as {line, from, to, kind}. Kinds: variable
+// (from mathVariableRanges), number, function, unit, currency, operator,
+// punctuation, equals (the "=" that asks for a result) and comment.
+const mathToken = /(?<number>(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)|(?<name>[\p{L}_][\p{L}\p{N}_]*)|(?<operator>[-+*/^%×÷])|(?<punctuation>[(),])/giu;
+const mathConstants = new Set(['pi','e','tau','phi']);
+function nameKind(name, after, previous, currencies) {
+  if (/^\s*\(/.test(after)) return allowedFunctions.has(name) ? 'function' : null;
+  if (name === 'to' || name.toLowerCase() === 'of') return 'operator';
+  if (name === 'in') return previous === 'number' ? 'unit' : 'operator';
+  if (name === 'ans') return 'variable';
+  if (mathConstants.has(name)) return 'number';
+  if (/^[A-Z]{3}$/.test(name) && currencies.has(name)) return 'currency';
+  return math.Unit.isValuelessUnit(name) ? 'unit' : null;
+}
+export function mathHighlights(lines, currencies = new Set()) {
+  const ranges = mathVariableRanges(lines).map(range => ({...range, kind:'variable'}));
+  const variables = new Set(ranges.map(range => `${range.line}:${range.from}`));
+  let inFence = false;
+  for (let index=0; index<lines.length; index++) {
+    const line=lines[index], trimmed=line.trim();
+    if (/^(```|~~~)/.test(trimmed)) { inFence=!inFence; continue; }
+    if (!trimmed || inFence) continue;
+    if (trimmed.startsWith('//')) { ranges.push({line:index, from:line.indexOf('//'), to:line.length, kind:'comment'}); continue; }
+    const definition=/^(\s*)([\p{L}_][\p{L}\p{N}_]*)\s*:\s*(.+)$/u.exec(line);
+    let start, end;
+    if (definition) {
+      const colon=line.indexOf(':', definition[1].length+definition[2].length);
+      ranges.push({line:index, from:colon, to:colon+1, kind:'punctuation'});
+      start=colon+1; end=line.length;
+    } else if (trimmed.endsWith('=')) {
+      start=0; end=line.lastIndexOf('=');
+      ranges.push({line:index, from:end, to:end+1, kind:'equals'});
+    } else continue;
+    let previous=null;
+    for (const match of line.slice(start,end).matchAll(mathToken)) {
+      const from=start+match.index, to=from+match[0].length;
+      let kind=match.groups.number ? 'number' : match.groups.operator ? 'operator' : match.groups.punctuation ? 'punctuation' : null;
+      if (match.groups.name) {
+        if (variables.has(`${index}:${from}`)) { previous='variable'; continue; }
+        kind=nameKind(match[0], line.slice(to,end), previous, currencies);
+      }
+      previous=kind;
+      if (kind) ranges.push({line:index, from, to, kind});
+    }
+  }
+  return ranges;
+}
 export function analyze(text, rates = null) {
   const mode = modeOf(text), lines = text.split('\n'), results = [], values = [], scope = {};
   let inFence = false;
@@ -129,10 +183,17 @@ export function analyze(text, rates = null) {
   const summary=mode==='sum' ? t('block.sumSummary') : mode==='avg' ? t('block.averageSummary') : '';
   return {mode,results,summary:summary.replace('{total}',mode==='avg' ? (values.length ? formatNumber(total/values.length) : '—') : formatNumber(total)).replace('{count}',values.length)};
 }
+// Lines (1-based) that belong to blocks inside a whole-note mode, markers
+// included. The note's own mode leaves them to their block.
+export function nestedLines(scopes) {
+  const nested=new Set();
+  for(const scope of scopes) if(!scope.global) for(let n=scope.start;n<=scope.end;n++) nested.add(n);
+  return nested;
+}
 export function analyzeScopes(text,rates=null) {
-  const lines=text.split('\n');
-  return featureScopes(text).map(scope=>{
-    if(scope.global) return {...scope,...analyze(text,rates)};
+  const lines=text.split('\n'), scopes=featureScopes(text), nested=nestedLines(scopes);
+  return scopes.map(scope=>{
+    if(scope.global) return {...scope,...analyze(lines.map((line,i)=>nested.has(i+1) ? '' : line).join('\n'),rates)};
     if(scope.mode==='code') return {...scope,results:[],summary:''};
     const body=lines.slice(scope.start,Math.min(scope.end-1,lines.length));
     const info=analyze([scope.mode,...body].join('\n'),rates);

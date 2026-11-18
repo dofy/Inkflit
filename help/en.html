@@ -12,7 +12,10 @@
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it.</p>
   <h3>Guide notes</h3>
-  <p>The first launch creates seven guide notes in your language. Edit or delete them freely. <b>Restore Guide Notes</b> at the bottom of Settings brings back a fresh set at the front and opens the welcome note.</p>
+  <ul>
+    <li>The first launch creates seven guide notes in your language. Edit or delete them freely.</li>
+    <li><b>Restore Guide Notes</b> at the bottom of Settings adds a fresh set at the front and opens the welcome note.</li>
+  </ul>
 </section>
 
 <section id="notes">
@@ -20,7 +23,7 @@
   <p>Notes are kept in order like the pages of a notebook: the first note is the oldest, and a new note is added at the end. The toolbar shows where you are, for example <code>2 / 5</code>.</p>
   <ul>
     <li><b>New note:</b> <kbd>⌘N</kbd> or the <b>+</b> button.</li>
-    <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar.</li>
+    <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar. <kbd>⌘⇧[</kbd> and <kbd>⌘⇧]</kbd> jump to the first and the last note.</li>
     <li><b>Jump to a page:</b> <kbd>⌘1</kbd> to <kbd>⌘9</kbd> open notes 1 to 9.</li>
   </ul>
   <p>The footer shows when the current note was created, in your local time. Notes created before this was recorded show no date.</p>
@@ -33,7 +36,11 @@
   <h2>Search and commands</h2>
   <p>Two panels share the same keys: type to filter, <kbd>↑</kbd> <kbd>↓</kbd> to choose, <kbd>Return</kbd> to open, <kbd>Esc</kbd> to close.</p>
   <h3>Search notes <kbd>⌘⇧F</kbd></h3>
-  <p>Searches the text of all current notes and lists one match per note. With an empty field it lists every note, so it also works as a table of contents. Backups and the Trash are not searched.</p>
+  <ul>
+    <li>Searches the text of all current notes, one match per note.</li>
+    <li>With an empty field it lists every note, so it works as a table of contents.</li>
+    <li>Backups and the Trash are not searched.</li>
+  </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
   <p>Runs note actions and changes settings without opening the Settings window.</p>
   <ul>
@@ -55,7 +62,14 @@
   </ul>
   <p>While you move through a long note, three lines stay visible above and below the cursor.</p>
   <h3>Snippets</h3>
-  <p>Type <code>@</code> and a word to insert a value. A word can have several formats: <code>@date</code> lists every date format, and <kbd>Return</kbd> inserts the first, or choose another with <kbd>↑</kbd> <kbd>↓</kbd>. Each matching word lists all of its formats, also when you type only part of it or letters in order (<code>@wk</code> finds <code>@week</code>); <code>@</code> alone lists one row per word. Previews show exactly what will be inserted, and clock values stay up to date; <kbd>Esc</kbd> closes the list.</p>
+  <p>Type <code>@</code> and a word to insert a value.</p>
+  <ul>
+    <li><kbd>Return</kbd> inserts the first format, <kbd>↑</kbd> <kbd>↓</kbd> pick another, <kbd>Esc</kbd> closes the list.</li>
+    <li>A word with several formats lists them all: <code>@date</code> lists every date format.</li>
+    <li>Part of a word, or letters in order, also work: <code>@wk</code> finds <code>@week</code>.</li>
+    <li><code>@</code> alone lists one row per word.</li>
+    <li>The preview is exactly what will be inserted; clock values stay up to date.</li>
+  </ul>
   <table>
     <thead><tr><th>Word</th><th>Formats</th></tr></thead>
     <tbody>
@@ -69,11 +83,56 @@
       <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
       <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
       <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
+      <tr><td><code>@fn @unit @cur</code></td><td>Only in math blocks: functions, units and currencies. See <a href="#math">Math</a></td></tr>
     </tbody>
   </table>
-  <p>Words in parentheses insert that one format directly. The public address comes from ipify when the list shows it or you insert it; nothing else is sent. Snippets do not appear inside code or directly after a letter, so e-mail addresses are left alone.</p>
+  <ul>
+    <li>Words in parentheses insert that one format directly, such as <code>@timesec</code>.</li>
+    <li>The public IP comes from ipify when the list shows it or you insert it; nothing else is sent.</li>
+    <li>Snippets do not appear inside code or right after a letter, so e-mail addresses are left alone.</li>
+  </ul>
   <h4>Your own snippets</h4>
-  <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. Like macOS text replacements, several rows can share a trigger, such as a few addresses under <code>addr</code>; typing <code>@addr</code> lists them all and inserts the first by default. Content can span lines and use placeholders: <code>{date}</code> inserts the default date, <code>{date#2}</code> the second date format and <code>{ipv4}</code> a format by its alias; <b>Insert placeholder</b> lists them all with examples. A row of your own leads a built-in group of the same name, so your own <code>date</code> becomes the default. Snippets are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. They are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <ul>
+    <li><b>One trigger, several rows:</b> like macOS text replacements. Put a few addresses under <code>addr</code>; <code>@addr</code> lists them all and inserts the first by default.</li>
+    <li><b>Same name as a built-in word:</b> your row comes first, so your own <code>date</code> becomes the default.</li>
+    <li><b>Content can span lines.</b></li>
+  </ul>
+  <h4>Placeholders</h4>
+  <table>
+    <thead><tr><th>Write</th><th>Inserts</th></tr></thead>
+    <tbody>
+      <tr><td><code>{date}</code></td><td>The word’s default format</td></tr>
+      <tr><td><code>{date#2}</code></td><td>Its second format</td></tr>
+      <tr><td><code>{ipv4}</code></td><td>The format with that alias</td></tr>
+      <tr><td><code>{cursor}</code></td><td>A caret stop; see below</td></tr>
+      <tr><td><code>{cursor:name}</code></td><td>A caret stop that starts with “name” selected</td></tr>
+      <tr><td><code>{{</code></td><td>A literal <code>{</code></td></tr>
+    </tbody>
+  </table>
+  <p><b>Insert placeholder</b> lists them all with examples.</p>
+  <h4>Caret stops</h4>
+  <pre><code>Dear {cursor:name},
+{cursor}
+{date}</code></pre>
+  <ol>
+    <li>After inserting, “name” is selected; type to replace it.</li>
+    <li>Press <kbd>Tab</kbd> to go to the empty line.</li>
+    <li>Press <kbd>⇧Tab</kbd> to go back to the name; what you typed is selected again.</li>
+  </ol>
+  <ul>
+    <li><b>Marked:</b> the stop you are filling has a strong tint and a solid underline; the others a light tint and a dotted underline, and an empty one is a thin bar. Changed or not, until the stops end.</li>
+    <li><b>Tab is for stops:</b> while they are active, <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> only move between stops, also in a checklist.</li>
+    <li><b>Ending:</b> reach the last stop, move the caret out of them, or press <kbd>Esc</kbd>. Then <kbd>Tab</kbd> indents again.</li>
+    <li><b>That <kbd>Esc</kbd></b> does not hide the window; in Vim mode it also returns to Normal mode.</li>
+    <li><b>Last stop not at the end:</b> one more <kbd>Tab</kbd> lands at the end of the snippet.</li>
+  </ul>
+  <h4>Good to know</h4>
+  <ul>
+    <li>Later lines of a multi-line snippet follow the indentation of the line it goes on.</li>
+    <li>A snippet with stops inserted inside another one’s stop ends the outer stops.</li>
+    <li>A snippet whose value takes a moment (an IP address): if you move the caret meanwhile, it is not pulled back.</li>
+  </ul>
 </section>
 
 <section id="blocks">
@@ -85,20 +144,209 @@
     <li>Pick a block with the arrow keys and <kbd>Return</kbd>, or click it.</li>
     <li>To leave a block, press <kbd>Return</kbd> on its last empty line.</li>
   </ol>
-  <p>Use the block header or <kbd>⌘K</kbd> to change the type, turn it back into plain text, or delete it. <kbd>⌘⇧D</kbd> deletes the current block. All of these can be undone. <kbd>⌘O</kbd> and <kbd>⌘⇧O</kbd> add an empty line below or above the current line or block.</p>
+  <ul>
+    <li>Block header or <kbd>⌘K</kbd>: change the type, turn it back into plain text, or delete it.</li>
+    <li><kbd>⌘⇧D</kbd>: delete the current block.</li>
+    <li><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd>: add an empty line below / above the current line or block.</li>
+  </ul>
+  <p>All of these can be undone.</p>
   <h3>Block types</h3>
   <table>
     <thead><tr><th>Block</th><th>What it does</th></tr></thead>
     <tbody>
       <tr><td>Checklist</td><td>A checkbox on every line. Click it or end a line with <code>/x</code>. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
-      <tr><td>Math</td><td>End a line with <code>=</code> to calculate. Supports percentages, functions, units and variables such as <code>price: 80</code>. Currency uses uppercase codes: <code>10 USD to CNY =</code>.</td></tr>
+      <tr><td>Math</td><td>End a line with <code>=</code> to calculate, with variables, functions, units and currencies. See <a href="#math">Math</a>.</td></tr>
       <tr><td>Sum / Average</td><td>Adds up or averages the numbers in the block, without evaluating expressions.</td></tr>
       <tr><td>Count</td><td>Counts items, words and characters.</td></tr>
       <tr><td>Code</td><td>Highlights code by language. See <a href="#code">Code</a>.</td></tr>
     </tbody>
   </table>
   <p>Lines starting with <code>//</code> are left out of totals and counts.</p>
-  <p class="tip">Exchange rates come from Frankfurter. Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the block says so instead of guessing.</p>
+</section>
+
+<section id="math">
+  <h2>Math</h2>
+  <p class="lead">A math block is scratch paper that calculates: one expression per line, end it with <code>=</code>, and the result appears after it. Define variables, call functions, and convert units and currencies.</p>
+  <h3>Start a math block</h3>
+  <ul>
+    <li><b>Block:</b> on an empty line type <code>/</code> and choose <b>Math</b>. The block starts with <code>:::inkflit math</code> and ends with <code>:::end</code>.</li>
+    <li><b>Whole note:</b> make the first line just <code>math</code>, optionally with a title such as <code>math: Trip budget</code>.
+      <ul>
+        <li>Everything to the end of the note is calculated; there is no end marker.</li>
+        <li>Other blocks and code fences in the note are left out.</li>
+        <li>To calculate only part of a note, use a block or <code>```math</code>.</li>
+      </ul>
+    </li>
+    <li><b>Markdown fence:</b> start with <code>```math</code> and end with <code>```</code>.</li>
+  </ul>
+  <pre><code>math: Trip budget
+flights: 2400
+hotel: 380 * 4
+flights + hotel =
+ans / 2 =
+// split between two</code></pre>
+  <h3>Writing lines</h3>
+  <table>
+    <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>name: expression</code></td><td>Defines a variable without a result.<br>Names may use any script: <code>単価: 80</code>.<br>Defining it again replaces the value.</td></tr>
+      <tr><td><code>expression =</code></td><td>Calculates and shows the result at the end of the line. The result is not written into the note and is not copied with it.</td></tr>
+      <tr><td><code>ans</code></td><td>The result of the previous <code>=</code> line.</td></tr>
+      <tr><td><code>// …</code></td><td>A comment; not calculated.</td></tr>
+      <tr><td>Anything else</td><td>Plain text, kept as written.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>A wrong or unfinished expression shows no result and no error; the result appears once it is fixed.</li>
+    <li>A definition can hold a conversion: <code>budget: 1000 USD to EUR</code>. Then <code>budget / 2 =</code> gives a plain number without the code.</li>
+  </ul>
+  <h3>Numbers and operators</h3>
+  <table>
+    <thead><tr><th>Write</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>+ - * /</code></td><td>Add, subtract, multiply, divide. <code>×</code> and <code>÷</code> work too.</td></tr>
+      <tr><td><code>^</code></td><td>Power, such as <code>2^10</code> = 1,024. The exponent must be a number between -100 and 100.</td></tr>
+      <tr><td><code>( )</code></td><td>Brackets. A number right before a bracket multiplies: <code>2(3+4)</code> = 14.</td></tr>
+      <tr><td><code>%</code></td><td>Percent: <code>200 - 10%</code> = 180, and <code>price + 25%</code> adds 25% of <code>price</code>. <code>%</code> is not modulo.</td></tr>
+      <tr><td><code>of</code></td><td>Multiplies, for percentages: <code>50% of 200</code> = 100.</td></tr>
+      <tr><td><code>to</code> / <code>in</code></td><td>Converts units or currencies; see below.</td></tr>
+      <tr><td><code>pi e tau phi</code></td><td>The constants π, e, τ and φ.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><b>Numbers:</b> whole, decimal or scientific (<code>1.5e3</code>); no thousands separators.</li>
+    <li><b>Results:</b> up to 10 significant digits, shown like <code>1,234.5</code>.</li>
+  </ul>
+  <h3>Functions</h3>
+  <table>
+    <thead><tr><th>Function</th><th>What it does</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>sqrt(x)</code></td><td>Square root</td><td><code>sqrt(16) = 4</code></td></tr>
+      <tr><td><code>abs(x)</code></td><td>Absolute value</td><td><code>abs(-3) = 3</code></td></tr>
+      <tr><td><code>round(x)<br><code>round(x, n)</code></code></td><td>Round; <code>n</code> keeps that many decimals</td><td><code>round(2.567, 2) = 2.57</code></td></tr>
+      <tr><td><code>floor(x)</code></td><td>Round down</td><td><code>floor(2.7) = 2</code></td></tr>
+      <tr><td><code>ceil(x)</code></td><td>Round up</td><td><code>ceil(2.1) = 3</code></td></tr>
+      <tr><td><code>sin(x)</code></td><td>Sine. Radians unless you add <code>deg</code></td><td><code>sin(30 deg) = 0.5</code></td></tr>
+      <tr><td><code>cos(x)</code></td><td>Cosine</td><td><code>cos(0) = 1</code></td></tr>
+      <tr><td><code>tan(x)</code></td><td>Tangent</td><td><code>tan(45 deg) = 1</code></td></tr>
+      <tr><td><code>log(x)<br><code>log(x, b)</code></code></td><td>Natural logarithm; <code>b</code> sets the base</td><td><code>log(100, 10) = 2</code></td></tr>
+      <tr><td><code>log10(x)</code></td><td>Base-10 logarithm</td><td><code>log10(1000) = 3</code></td></tr>
+      <tr><td><code>exp(x)</code></td><td>e to the power</td><td><code>exp(1) = 2.718281828</code></td></tr>
+      <tr><td><code>min(a, b, …)</code></td><td>Smallest</td><td><code>min(3, 1, 2) = 1</code></td></tr>
+      <tr><td><code>max(a, b, …)</code></td><td>Largest</td><td><code>max(3, 1, 2) = 3</code></td></tr>
+    </tbody>
+  </table>
+  <h3>Units</h3>
+  <p>Put a unit after a number and convert with <code>to</code>.</p>
+  <table>
+    <thead><tr><th>Expression</th><th>Result</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>10 km to mi =</code></td><td><code>6.213711922 mi</code></td><td>Convert with <code>to</code></td></tr>
+      <tr><td><code>2 h + 15 min =</code></td><td><code>2.25 h</code></td><td>Without <code>to</code>: the first unit</td></tr>
+      <tr><td><code>2 m * 3 m =</code></td><td><code>6 m^2</code></td><td>Units multiply</td></tr>
+      <tr><td><code>50 km / 2 h to km/h =</code></td><td><code>25 km / h</code></td><td>Units divide, then convert</td></tr>
+      <tr><td><code>0 degC to degF =</code></td><td><code>32 degF</code></td><td>Temperature</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Kind</th><th>Common units</th></tr></thead>
+    <tbody>
+      <tr><td>Length</td><td><code>m</code> <code>km</code> <code>cm</code> <code>mm</code> <code>um</code> <code>nm</code> <code>in</code> <code>ft</code> <code>yd</code> <code>mi</code> <code>nmi</code> <code>mil</code> <code>angstrom</code></td></tr>
+      <tr><td>Area</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
+      <tr><td>Volume</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
+      <tr><td>Mass</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
+      <tr><td>Time</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td>Speed</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
+      <tr><td>Temperature</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
+      <tr><td>Angle</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td>Force</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
+      <tr><td>Energy</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
+      <tr><td>Power</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
+      <tr><td>Pressure</td><td><code>Pa</code> <code>kPa</code> <code>MPa</code> <code>bar</code> <code>atm</code> <code>psi</code> <code>mmHg</code></td></tr>
+      <tr><td>Electric</td><td><code>A</code> <code>mA</code> <code>V</code> <code>kV</code> <code>ohm</code> <code>C</code> <code>Ah</code> <code>mAh</code> <code>F</code> <code>H</code> <code>S</code> <code>Wb</code> <code>T</code></td></tr>
+      <tr><td>Data</td><td><code>b</code> <code>B</code> <code>kB</code> <code>MB</code> <code>GB</code> <code>TB</code> <code>KiB</code> <code>MiB</code> <code>GiB</code> <code>TiB</code></td></tr>
+      <tr><td>Frequency</td><td><code>Hz</code> <code>kHz</code> <code>MHz</code> <code>GHz</code></td></tr>
+      <tr><td>Other</td><td><code>mol</code> <code>cd</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Metric units take prefixes such as <code>k</code> <code>M</code> <code>G</code> <code>m</code> <code>u</code>: <code>mg</code>, <code>kN</code>, <code>GHz</code>.</li>
+    <li>Every other built-in mathjs unit works too, with full names and plurals: <code>meters</code>, <code>inches</code>.</li>
+    <li>Units are case-sensitive: <code>t</code> is a tonne and <code>T</code> a tesla; <code>b</code> is a bit and <code>B</code> a byte. <code>MB</code> is 1000² bytes, <code>MiB</code> is 1024² bytes.</li>
+    <li><code>min</code> on its own is minutes; <code>min(…)</code> is the function. <code>in</code> right after a number is inches (<code>5 in to cm</code>); elsewhere it converts (<code>10 km in mi</code>).</li>
+    <li>A variable wins over a unit with the same name.</li>
+  </ul>
+  <h3>Currency</h3>
+  <ul>
+    <li><b>Write:</b> <code>10 USD to EUR =</code>. <code>in</code> works in place of <code>to</code>.</li>
+    <li><b>Codes:</b> three uppercase letters. Lowercase <code>usd</code> is not a currency.</li>
+    <li><b>One amount per line:</b> <code>10 USD + 5 EUR</code> and <code>price USD to EUR</code> do not work.</li>
+  </ul>
+  <h4>Rates</h4>
+  <ul>
+    <li><b>Source:</b> European Central Bank reference rates from Frankfurter, updated once each working day.</li>
+    <li><b>Date:</b> results carry the rate date, such as <code>8.62 EUR · 2026-11-18</code>.</li>
+    <li><b>Download:</b> while a math block is open, at most once an hour; about 100 seconds after a failure.</li>
+    <li><b>Messages:</b> before rates arrive the line shows “Exchange rates loading or unavailable”; a code missing from the table shows “Unsupported currency”.</li>
+  </ul>
+  <p>These 30 currencies are supported today; Frankfurter decides the list:</p>
+  <table>
+    <thead><tr><th>Code</th><th>Currency</th><th>Code</th><th>Currency</th></tr></thead>
+    <tbody>
+      <tr><td><code>AUD</code></td><td>Australian Dollar</td><td><code>BRL</code></td><td>Brazilian Real</td></tr>
+      <tr><td><code>CAD</code></td><td>Canadian Dollar</td><td><code>CHF</code></td><td>Swiss Franc</td></tr>
+      <tr><td><code>CNY</code></td><td>Chinese Yuan</td><td><code>CZK</code></td><td>Czech Koruna</td></tr>
+      <tr><td><code>DKK</code></td><td>Danish Krone</td><td><code>EUR</code></td><td>Euro</td></tr>
+      <tr><td><code>GBP</code></td><td>British Pound</td><td><code>HKD</code></td><td>Hong Kong Dollar</td></tr>
+      <tr><td><code>HUF</code></td><td>Hungarian Forint</td><td><code>IDR</code></td><td>Indonesian Rupiah</td></tr>
+      <tr><td><code>ILS</code></td><td>Israeli New Shekel</td><td><code>INR</code></td><td>Indian Rupee</td></tr>
+      <tr><td><code>ISK</code></td><td>Icelandic Króna</td><td><code>JPY</code></td><td>Japanese Yen</td></tr>
+      <tr><td><code>KRW</code></td><td>South Korean Won</td><td><code>MXN</code></td><td>Mexican Peso</td></tr>
+      <tr><td><code>MYR</code></td><td>Malaysian Ringgit</td><td><code>NOK</code></td><td>Norwegian Krone</td></tr>
+      <tr><td><code>NZD</code></td><td>New Zealand Dollar</td><td><code>PHP</code></td><td>Philippine Peso</td></tr>
+      <tr><td><code>PLN</code></td><td>Polish Zloty</td><td><code>RON</code></td><td>Romanian Leu</td></tr>
+      <tr><td><code>SEK</code></td><td>Swedish Krona</td><td><code>SGD</code></td><td>Singapore Dollar</td></tr>
+      <tr><td><code>THB</code></td><td>Thai Baht</td><td><code>TRY</code></td><td>Turkish Lira</td></tr>
+      <tr><td><code>USD</code></td><td>US Dollar</td><td><code>ZAR</code></td><td>South African Rand</td></tr>
+    </tbody>
+  </table>
+  <p class="tip">Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the line says so instead of guessing.</p>
+  <h3>Insert functions, units and currencies with @</h3>
+  <p>In a math block, <code>@</code> offers three more words besides the usual snippets. They appear only in math blocks.</p>
+  <table>
+    <thead><tr><th>Word</th><th>Lists</th></tr></thead>
+    <tbody>
+      <tr><td><code>@fn</code></td><td>Every function with a description. After inserting <code>sqrt()</code> the caret is inside the brackets; press <kbd>Tab</kbd> after the argument to jump past them.</td></tr>
+      <tr><td><code>@unit</code></td><td>The units in the table above, with their kind.</td></tr>
+      <tr><td><code>@cur</code></td><td>Every currency with its name and its rate against your language’s currency: USD for English, CNY for Simplified Chinese, HKD for Traditional Chinese, JPY for Japanese.</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Each name works on its own: <code>@sqrt</code>, <code>@km</code>, <code>@kilometer</code> and <code>@usd</code> find that row directly.</li>
+    <li>A number may come right before <code>@</code>: <code>10@km</code>.</li>
+    <li>Names other snippets already use stay with them: use <code>@minute</code> for minutes (<code>@min</code> is the function) and <code>@millisecond</code> for milliseconds (<code>@ms</code> is the timestamp).</li>
+  </ul>
+  <h3>Highlighting</h3>
+  <p>Math blocks are coloured with the code colors from <b>Settings → Appearance</b>, in both light and dark appearance:</p>
+  <table>
+    <thead><tr><th>Part</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Numbers and constants</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
+      <tr><td>Functions</td><td><code>sqrt</code> <code>round</code></td></tr>
+      <tr><td>Units</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
+      <tr><td>Currency codes (bold)</td><td><code>USD</code> <code>EUR</code></td></tr>
+      <tr><td>Operators and conversion words</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
+      <tr><td>Brackets, commas, colons</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
+      <tr><td>The closing equals sign (bold, like the result)</td><td><code>=</code></td></tr>
+      <tr><td>Defined variables (bold)</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>Comments</td><td><code>// …</code></td></tr>
+    </tbody>
+  </table>
+  <h3>Limits</h3>
+  <ul>
+    <li>An expression is at most 256 characters.</li>
+    <li>No modulo, matrices, strings, comparisons, custom functions, or assignment with <code>=</code> inside an expression.</li>
+  </ul>
 </section>
 
 <section id="code">
@@ -154,7 +402,11 @@
   backups/     previous versions
   trash/       deleted notes</code></pre>
   <h3>Saving</h3>
-  <p>Changes are saved half a second after you stop typing, and at least every two seconds while you type. Switching notes, hiding the window or quitting saves at once. If a save fails, the footer says so and Inkflit will not quit until it succeeds.</p>
+  <ul>
+    <li>Saves half a second after you stop typing, and at least every two seconds while you type.</li>
+    <li>Switching notes, hiding the window or quitting saves at once.</li>
+    <li>If a save fails, the footer says so, and Inkflit will not quit until a save succeeds.</li>
+  </ul>
   <h3>Backups and recovery</h3>
   <ul>
     <li>While you edit, the previous version of a note is kept at most once every five minutes. Choose how many to keep in <b>Settings → Backups</b>.</li>

@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analyze, evaluateExpression, modeOf} from '../web/features.js';
+import {analyze, analyzeScopes, evaluateExpression, modeOf, mathHighlights} from '../web/features.js';
+test('math treats bare min as minutes and knows mph and nmi',()=>{
+ assert.equal(evaluateExpression('90 min to h').text,'1.5 h');
+ assert.equal(evaluateExpression('2 h to min').text,'120 min');
+ assert.equal(evaluateExpression('min(3, 7)').text,'3');
+ assert.equal(evaluateExpression('min * 2',{min:5}).text,'10');
+ assert.equal(evaluateExpression('60 mph to km/h').text,'96.56064 km / h');
+ assert.equal(evaluateExpression('1 nmi to m').text,'1852 m');
+});
 test('keywords are restricted to the first line and may have titles',()=>{ assert.equal(modeOf('list: Groceries\nmilk'),'list'); assert.equal(modeOf('my list\nsum'),''); });
 test('math evaluates variables, percentages, units and currency without executing arbitrary code',()=>{
  const result=analyze('math\nprice: 80\nprice + 25% =\n50% of 200 =\n10 cm to in =\n// 100 =');
@@ -294,3 +302,25 @@ test('task cursor skips checkbox marker while preserving code and plain text',as
 import { setLanguage } from '../web/i18n.js';
 setLanguage('zh-Hans');
 
+test('math blocks colour numbers, functions, units, currencies, operators, variables and "="',()=>{
+ const lines=['price: 80','sqrt(price) * 2 =','5 in to cm =','10 km in mi =','10 USD to CNY =','// note','plain words'];
+ const kinds=line=>mathHighlights(lines,new Set(['USD','CNY'])).filter(r=>r.line===line).sort((a,b)=>a.from-b.from).map(r=>`${lines[line].slice(r.from,r.to)}:${r.kind}`);
+ assert.deepEqual(kinds(0),['price:variable','::punctuation','80:number']);
+ assert.deepEqual(kinds(1),['sqrt:function','(:punctuation','price:variable'
+,'):punctuation','*:operator','2:number','=:equals']);
+ assert.deepEqual(kinds(2),['5:number','in:unit','to:operator','cm:unit','=:equals'],'"in" after a number is inches');
+ assert.deepEqual(kinds(3),['10:number','km:unit','in:operator','mi:unit','=:equals'],'otherwise it converts');
+ assert.deepEqual(kinds(4),['10:number','USD:currency','to:operator','CNY:currency','=:equals']);
+ assert.deepEqual(kinds(5),['// note:comment']);
+ assert.deepEqual(kinds(6),[],'lines without ":" or "=" are notes');
+});
+test('variable names may use any script',()=>{
+ assert.deepEqual(analyze('math\n单价: 80\n数量: 3\n单价 * 数量 =\n合計: 单价 * 数量\n合計 + 10 =').results.map(r=>r.text),['240','250']);
+});
+test('a whole-note math mode leaves blocks inside it alone',()=>{
+ const text='math: Trip\nprice: 80\nprice * 2 =\n:::inkflit list\n2 * 3 =\n:::end\n```js\n1 + 1 =\n```\nprice + 1 =';
+ const global=analyzeScopes(text).find(scope=>scope.global);
+ assert.deepEqual(global.results.map(r=>[r.line,r.text]),[[3,'160'],[10,'81']]);
+ const count=analyzeScopes('count\none two\n:::inkflit list\nthree four five\n:::end').find(scope=>scope.global);
+ assert.match(count.summary,/2/,'words inside the list are not counted');
+});

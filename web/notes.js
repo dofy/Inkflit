@@ -12,3 +12,6 @@ export function navigate(direction) {
 }
 // ⌘1–⌘9: the note at a 1-based position, if there is one.
 export function selectAt(position) { const note = app.state?.notes[position - 1]; if (note) select(note.id); }
+// ⌘⇧[ and ⌘⇧]: the first and the last note.
+export function selectFirst() { selectAt(1); }
+export function selectLast() { const notes = app.state?.notes; if (notes?.length) select(notes[notes.length - 1].id); }
