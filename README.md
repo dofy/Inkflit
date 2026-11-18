@@ -39,7 +39,7 @@ Run `npm test` for editor tests and `npm run test:native` for isolated native-wi
 
 Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. Appearance follows macOS light/dark mode. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
-When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
+When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
 
 ## Keyboard shortcuts
 
@@ -47,6 +47,7 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | --- | --- |
 | `⌘N` | New note |
 | `⌘[` / `⌘]` | Previous / next note |
+| `⌘⇧[` / `⌘⇧]` | First / last note |
 | `⌘1`–`⌘9` | Jump to note 1–9 |
 | `⌘D` | Delete the current note; restore the latest deletion with `⌘U` within 12 seconds or use Trash in Settings |
 | `⌘⇧D` | Delete the current feature block; this can be undone |
@@ -70,11 +71,27 @@ In Vim insert mode, or with Vim turned off, type `/` on an empty line to choose 
 
 - **list:** Check items by clicking or typing `/x` at the end of a line; checked items are saved as Markdown `[x]`. Use `Tab` / `Shift-Tab` to indent / outdent by two spaces. The first item stays at the root, an item can be at most one level deeper than its predecessor, and children move with their parent.
 - **math:** End an expression with `=` to calculate. Supports arithmetic, percentages, functions, units and per-block variables such as `price: 80`. Variable definitions and subsequent references in expressions are highlighted. Currency conversions use uppercase codes, e.g. `10 USD to CNY =`.
+  - Each part of an expression is colored with the code theme.
+  - Variable names may use any script, such as `単価: 80`.
+  - `min` alone means minutes; `mph` and `nmi` are available.
+  - Type `@fn`, `@unit` or `@cur` to insert a function, unit or currency code.
 - **sum / avg / count:** Extract and sum or average numbers without evaluating expressions or converting units (for example, `2+3=` counts two numbers); count nonempty items, words and characters. Lines beginning `//` are excluded.
 - **code:** Select a language for highlighting. Settings provide three color themes with a preview and 2-space, 4-space or tab indentation. Brackets and quotes are paired, Return auto-indents, Tab indents and Shift-Tab outdents. `⌘C` copies the block content when nothing is selected.
 
-Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
+Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the note, rather than code fences. Legacy blocks remain readable. A note whose first line is a block keyword such as `math` applies it to the whole note and skips the blocks inside it. Exchange rates come from [Frankfurter](https://frankfurter.dev/); requests fetch public rates and do not upload notes. Unavailable rates are not invented.
 
+
+## Snippets
+
+Type `@` and a word to insert a value. Return inserts the first format; ↑ / ↓ pick another.
+
+- **Built-in words:** `@date`, `@time`, `@now`, `@year`, `@month`, `@day`, `@week`, `@timestamp`, `@uuid`, `@ip`, `@mac`, `@host`.
+- **In math blocks:** `@fn` (functions), `@unit` (units) and `@cur` (currency codes with today's rate).
+- **Your own:** add them in Settings → Snippets. Rows sharing a trigger form a group. They are saved in `snippets.json` in the notes folder.
+- **Placeholders:** `{date}`, `{date#2}`, an alias such as `{ipv4}`, and `{{` for a literal brace.
+- **Caret stops:** `{cursor}` and `{cursor:name}`. Tab / Shift-Tab move between stops and Esc ends them; the stop being filled is highlighted.
+
+Snippets do not appear inside code or right after a letter. The public IP is fetched from ipify only when it is shown or inserted.
 
 ## Notes and storage
 
