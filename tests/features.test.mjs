@@ -349,3 +349,10 @@ test('sum and avg take standalone numbers only',()=>{
  for(const [text,n] of Object.entries(expected)) assert.match(count(text),new RegExp(`\\b${n}\\b`),text);
  assert.equal(analyze('sum\n-5 refund\n1,234.5 rent\ncost 12.\n20%\n$12').summary, analyze('sum\n-5\n1234.5\n12\n20\n12').summary,'ordinary amounts still count');
 });
+test('sum and avg skip numbering markers at the start of a line',()=>{
+ const summary=text=>analyze('sum\n'+text).summary;
+ for(const marker of ['1.','12.','1.2.','1)']) assert.equal(summary(`${marker} 买菜`),summary('买菜'),marker);
+ assert.equal(summary('12. 0.2'),summary('0.2'),'the amount after a marker still counts');
+ assert.equal(summary('cost 1.2.'),summary('1.2'),'a number ending a sentence still counts');
+ assert.equal(summary('1.5 kg'),summary('1.5'),'a decimal at the line start is an amount');
+});
