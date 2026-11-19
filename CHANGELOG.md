@@ -14,6 +14,11 @@
 
 - Apply the selected interface palette and appearance throughout offline help.
 - Find the minute unit with `@min` alongside the `min()` function in math snippets.
+- Keep Return on the last line of a feature block inside the block.
+- Keep the feature block menu next to its trigger when filtering near a window edge.
+- Show a no-match message when punctuation in a `/` search has no match. Backspace can return to the previous matches.
+- Temporarily use an ASCII keyboard while searching feature block and snippet suggestions, then restore the previous input source.
+- Show a no-match message for `@` searches and keep the English input source active until the search ends.
 
 ## [0.2.2] - 2026-11-19
 

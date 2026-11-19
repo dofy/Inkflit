@@ -19,7 +19,7 @@ import { scopeAt, calculationModes, markdownBlockMarkers } from './features.js';
 import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
 import { snippets } from './snippet-completion.js';
-import { completionStatus } from '@codemirror/autocomplete';
+import { closeCompletion, completionStatus } from '@codemirror/autocomplete';
 
 // Markdown tokens that defaultHighlightStyle colors for light mode only
 // (#219 dark blue): give them theme colors. Scoped to Markdown, so code
@@ -62,7 +62,10 @@ export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vi
 
 export function prepareToHide() {
   const editor = app.editor;
-  if (!app.vimEnabled || !editor) return;
+  if (!editor) return;
+  closeBlockMenu();
+  closeCompletion(editor);
+  if (!app.vimEnabled) return;
   const cm = getCM(editor);
   if (cm?.state?.vim?.insertMode) Vim.handleKey(cm, '<Esc>', 'user');
   // WebKit can retain the DOM focus when AppKit orders the window out.
@@ -102,7 +105,7 @@ function makeState(content) {
 // Show note `id`, keeping the outgoing note's editor state for its undo history.
 export function changeEditor(id) {
   closeBlockMenu(); closeLanguageMenu();
-  if (app.editor) { app.editorStates.set(app.state.selected, app.editor.state); app.editor.destroy(); }
+  if (app.editor) { closeCompletion(app.editor); app.editorStates.set(app.state.selected, app.editor.state); app.editor.destroy(); }
   app.state.selected = id;
   app.editor = new EditorView({ parent: $('editor'), state: app.editorStates.get(id) || makeState(current().content) });
   bindVimMode();
@@ -135,7 +138,7 @@ export function setVimEnabled(value) {
   app.vimEnabled = enabled; app.mergeFirstInsert = false;
   closeBlockMenu(); closeLanguageMenu();
   for (const [id, cached] of app.editorStates) app.editorStates.set(id, cached.update({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }).state);
-  if (app.editor) { app.editor.dispatch({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }); bindVimMode(); }
+  if (app.editor) { closeCompletion(app.editor); app.editor.dispatch({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }); bindVimMode(); }
 }
 
 // The summary line for feature blocks, shown under the editor.

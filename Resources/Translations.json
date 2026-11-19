@@ -1313,6 +1313,12 @@
     "zh-Hant": "使用者",
     "ja": "ユーザー"
   },
+  "snippet.noMatches": {
+    "en": "No matching snippets",
+    "zh-Hans": "没有匹配的片段",
+    "zh-Hant": "沒有符合的片段",
+    "ja": "一致するスニペットがありません"
+  },
   "snippet.failed": {
     "en": "Could not get {name}",
     "zh-Hans": "无法获取 {name}",

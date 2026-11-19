@@ -18,6 +18,20 @@ export const newNote = () => { const now = new Date().toISOString(); return { id
 export const nativeHandler = () => window.webkit?.messageHandlers?.inkflit;
 export function nativeCommand(action, value) { nativeHandler()?.postMessage({ type: 'command', action, ...(value === undefined ? {} : { value }) }); }
 
+const completionMenus = new Set();
+let completionInputRequested = false;
+export function setCompletionInput(menu, open) {
+  if (completionMenus.has(menu) === open) return;
+  if (open) completionMenus.add(menu); else completionMenus.delete(menu);
+  // Wait until CodeMirror has finished updating before asking macOS to change input sources.
+  queueMicrotask(() => {
+    const active = completionMenus.size > 0;
+    if (active === completionInputRequested) return;
+    completionInputRequested = active;
+    if (nativeHandler()) window.prompt('inkflit-completion-input', active ? 'open' : 'closed');
+  });
+}
+
 // Ask the native app for a value. It answers with window.resolveNativeRequest.
 const nativeRequests = new Map();
 let nextRequest = 0;

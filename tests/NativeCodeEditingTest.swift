@@ -1329,9 +1329,12 @@ final class NativeCodeEditingTest {
                         let expected = ":::inkflit sum\n12\n\n:::end"
                         expect(text, expected, "Return after nonempty final block line")
                         key(36, "\r"); later { [self] in content { [self] value in
-                            expect(value, expected + "\n", "Return on final blank line exits block")
-                            print("PASS block boundary navigation and Return")
-                            testEmptyBlockAndLiteralTask()
+                            expect(value, ":::inkflit sum\n12\n\n\n:::end", "Return on final blank line extends the block")
+                            key(18, "1"); later { [self] in content { [self] nextValue in
+                                expect(nextValue, ":::inkflit sum\n12\n\n1\n:::end", "Return leaves the cursor on the new line inside the block")
+                                print("PASS block boundary navigation and Return")
+                                testEmptyBlockAndLiteralTask()
+                            } }
                         } }
                     }
                 }

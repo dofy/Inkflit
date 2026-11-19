@@ -110,6 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         #endif
     }
     var insertMode = false
+    private var completionNeedsASCII = false
     var savedInputSource: TISInputSource?
     var forcedInputSourceID: String?
     var hotKeyCode: UInt32 = 49
@@ -613,8 +614,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
         return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
     }
-    func useVimInputSource() {
-        guard window.isKeyWindow, !insertMode, savedInputSource == nil else { return }
+    func updateInputSource() {
+        guard window.isKeyWindow, !insertMode || completionNeedsASCII else { restoreInputSource(); return }
+        guard savedInputSource == nil else { return }
         let previous = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
         let ascii = TISCopyCurrentASCIICapableKeyboardInputSource().takeRetainedValue()
         guard let previousID = inputSourceID(previous), let asciiID = inputSourceID(ascii), previousID != asciiID else { return }
@@ -629,8 +631,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func applicationDidResignActive(_ notification: Notification) {
         if !isolatedTest && window?.isVisible == true { hideWindow() }
     }
-    func windowDidBecomeKey(_ notification: Notification) { useVimInputSource() }
-    func windowDidResignKey(_ notification: Notification) { restoreInputSource() }
+    func windowDidBecomeKey(_ notification: Notification) { updateInputSource() }
+    func windowDidResignKey(_ notification: Notification) {
+        completionNeedsASCII = false
+        restoreInputSource()
+    }
     private func savedWindowAnchor(source: NSRect, size: NSSize) -> WindowPlacement.Anchor? {
         guard let value = UserDefaults.standard.dictionary(forKey: "windowAnchor") else { return nil }
         let version = value["version"] as? Int ?? 1
@@ -979,10 +984,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func setEditorMode(_ mode: String) {
         insertMode = mode == "insert" || mode == "replace"
-        if insertMode { restoreInputSource() } else { useVimInputSource() }
+        updateInputSource()
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         if prompt == "inkflit-input-mode", let mode = defaultText { setEditorMode(mode); completionHandler(""); return }
+        if prompt == "inkflit-completion-input", let state = defaultText, state == "open" || state == "closed" {
+            completionNeedsASCII = state == "open" && window.isKeyWindow
+            updateInputSource()
+            completionHandler("")
+            return
+        }
         completionHandler(nil)
     }
     private func queueSave(_ data: Data, revision: Int, force: Bool) {

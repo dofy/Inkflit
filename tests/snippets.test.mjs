@@ -154,6 +154,20 @@ test('the list appears after @ only outside code and words', () => {
   assert.equal(labels('@xyz|'), null);
 });
 
+test('an unmatched editor query shows a status row without creating a snippet', () => {
+  const options = doc => {
+    const state = EditorState.create({ doc, extensions: [markdown()] });
+    return snippetCompletions(new CompletionContext(state, state.doc.length, false), true)?.options;
+  };
+  const [empty] = options('@aadsf');
+  assert.equal(empty.label, 'No matching snippets');
+  assert.equal(empty.noMatch, true);
+  empty.apply();
+  assert.ok(options('@da').some(({ label }) => label === '@date'));
+  assert.equal(options('@aadsf '), undefined);
+  assert.equal(options('me@aadsf'), undefined);
+});
+
 test('a loading snippet keeps following its text through edits', async () => {
   const { pending, track } = await import('../web/snippet-completion.js');
   const id = {};

@@ -4,7 +4,7 @@ import { indentMore, indentLess } from '@codemirror/commands';
 import { app, $ } from './app.js';
 import { t } from './i18n.js';
 import { isEditing } from './editor-view.js';
-import { acceptBestSnippet, backSnippetMenu } from './snippet-completion.js';
+import { acceptBestSnippet, backSnippetMenu, snippetMenuIsEmpty } from './snippet-completion.js';
 import { commandPalette, searchPalette } from './palettes.js';
 import { commandShortcut, runCommand, runShortcut } from './commands.js';
 import { blockMenuOpen, trySlash, handleBlockMenuKey } from './block-menu.js';
@@ -78,18 +78,6 @@ function toggleTaskKey(event) {
   return true;
 }
 
-// Return on the last empty line of a non-code block leaves the block.
-function leaveBlockKey(event) {
-  const editor = app.editor, selection = editor.state.selection.main;
-  const line = editor.state.doc.lineAt(selection.head), scope = scopeAt(editor.state.doc, line.number);
-  if (!selection.empty || scope?.kind !== 'block' || !scope.closed || scope.mode === 'code' || line.number !== scope.last || line.text.trim()) return false;
-  const end = editor.state.doc.line(scope.end);
-  consume(event);
-  if (end.to === editor.state.doc.length) editor.dispatch({ changes: { from: end.to, insert: '\n' }, selection: { anchor: end.to + 1 }, userEvent: 'input.block.exit' });
-  else editor.dispatch({ selection: { anchor: end.to + 1 }, scrollIntoView: true });
-  return true;
-}
-
 // Vim handles Escape first when it has a mode or command to cancel.
 function escapeKey(event) {
   const endedStops = !!app.editor && clearSnippet(app.editor);
@@ -118,6 +106,7 @@ function completionKey(event) {
   // 'pending': the list is still updating for the last keystroke.
   if (status === 'pending' && run === acceptCompletion) { if (!acceptBestSnippet(editor)) return false; consume(event); return true; }
   if (status !== 'active' && !(status === 'pending' && event.key === 'Escape')) return false;
+  if (event.key !== 'Escape' && snippetMenuIsEmpty(editor.state)) { closeCompletion(editor); return false; }
   consume(event); run(editor);
   return true;
 }
@@ -167,7 +156,6 @@ function onKeyDown(event) {
   }
   if (!blockMenuOpen() && isEditing() && trySlash(event, editor)) { consume(event); return; }
   if (event.key.toLowerCase() === 'x' && plain(event) && isEditing() && toggleTaskKey(event)) return;
-  if (event.key === 'Enter' && !event.repeat && plain(event) && isEditing() && leaveBlockKey(event)) return;
   if (runShortcut(event, 'main')) { consume(event); return; }
   if (escape && !event.repeat) escapeKey(event);
 }

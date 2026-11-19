@@ -71,7 +71,7 @@ The command palette accepts command names and keywords. Use ↑ / ↓ to select,
 
 ## Feature blocks
 
-In Vim insert mode, or with Vim turned off, type `/` on an empty line to choose a block. Use arrow keys and Return or click an item. A note may contain multiple independent blocks; use the block header or `⌘K` to change its type, convert it to plain text or delete it. These actions can be undone. On the last blank line of a non-code block, press Return again to leave the block.
+In Vim insert mode, or with Vim turned off, type `/` on an empty line to choose a block. Use arrow keys and Return or click an item. A note may contain multiple independent blocks; use the block header or `⌘K` to change its type, convert it to plain text or delete it. These actions can be undone. Return on the last line adds a line inside the block. Press `⌘O` to add a line below the block.
 
 - **list:** Check items by clicking or typing `/x` at the end of a line; checked items are saved as Markdown `[x]`. Use `Tab` / `Shift-Tab` to indent / outdent by two spaces. The first item stays at the root, an item can be at most one level deeper than its predecessor, and children move with their parent.
 - **math:** End an expression with `=` to calculate. Supports arithmetic, percentages, functions, units and per-block variables such as `price: 80`. Variable definitions and subsequent references in expressions are highlighted. Currency conversions use uppercase codes, e.g. `10 USD to CNY =`.

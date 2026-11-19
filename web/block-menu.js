@@ -1,5 +1,6 @@
 import { t } from './i18n.js';
 import { scopeAt, markerPrefix, scopesOf } from './features.js';
+import { setCompletionInput } from './app.js';
 const items = [
   ['list','block.checklist','block.checklistDetail'],['math','block.math','block.mathDetail'],
   ['sum','block.sum','block.sumDetail'],['avg','block.average','block.averageDetail'],
@@ -7,16 +8,21 @@ const items = [
   ['text','block.convertToText','block.convertToTextDetail'],['delete','block.delete','block.deleteDetail']
 ];
 let menu, view, deleteShortcut, active=null;
+let positioningScheduled=false;
 export function initBlockMenu(element, getView, shortcut) {
   menu=element; view=getView; deleteShortcut=shortcut;
   document.addEventListener('mousedown', event=>{if(active && !menu.contains(event.target) && !event.target.closest?.('.block-type')) closeBlockMenu();});
+  document.addEventListener('scroll', event=>{if(active && view()?.dom.contains(event.target)) schedulePosition();}, true);
+  window.addEventListener('resize', schedulePosition);
+  window.addEventListener('blur', closeBlockMenu);
 }
 export function blockMenuOpen() { return !!active; }
-export function closeBlockMenu() { active=null; if(menu) menu.hidden=true; }
+export function closeBlockMenu() { active=null; if(menu) menu.hidden=true; setCompletionInput('block',false); }
 export function blockMenuChoices(scope, query='') {
   return items.map(([id,name,detail])=>[id,t(name),t(detail)]).filter(x=>(!['text','delete'].includes(x[0])||scope) && (x[0].includes(query.toLowerCase())||x[1].toLowerCase().includes(query.toLowerCase())));
 }
 function render(query='') {
+  schedulePosition();
   const previousScrollTop=menu.scrollTop;
   const choices=blockMenuChoices(active.scope,query);
   active.choices=choices; active.index=Math.min(active.index,Math.max(0,choices.length-1));
@@ -32,6 +38,8 @@ function render(query='') {
   // Rebuilding the options can reset scrollTop. Keep the menu in place, then
   // scroll only this menu enough to expose the keyboard-selected option.
   menu.scrollTop=previousScrollTop;
+}
+function revealSelection() {
   const selected=menu.querySelector('[aria-selected="true"]');
   if(selected) {
     const bounds=menu.getBoundingClientRect(), item=selected.getBoundingClientRect();
@@ -40,16 +48,39 @@ function render(query='') {
     else if(item.bottom>bottom)menu.scrollTop+=item.bottom-bottom;
   }
 }
-function position(pos) {
-  const editor=view(), coords=editor.coordsAtPos(pos), parent=menu.offsetParent.getBoundingClientRect();
-  if(!coords) return;
-  const left=Math.max(8,Math.min(coords.left-parent.left,parent.width-menu.offsetWidth-8));
-  const top=Math.max(8,Math.min(coords.bottom-parent.top+4,parent.height-240));
+function schedulePosition() {
+  if(!active || positioningScheduled) return;
+  positioningScheduled=true;
+  queueMicrotask(()=>{
+    positioningScheduled=false;
+    if(active) position();
+  });
+}
+function position() {
+  const editor=view(), coords=editor.coordsAtPos(active.anchor);
+  const parent=menu.offsetParent.getBoundingClientRect();
+  if(!coords || coords.bottom<=parent.top || coords.top>=parent.bottom) { closeBlockMenu(); return; }
+  const margin=8, gap=4;
+  const below=Math.max(0,parent.bottom-margin-coords.bottom-gap);
+  const above=Math.max(0,coords.top-gap-parent.top-margin);
+  const scrollTop=menu.scrollTop;
+  menu.style.maxHeight='';
+  const height=menu.offsetHeight;
+  const placeBelow=height<=below || (height>above && below>=above);
+  const available=placeBelow ? below : above;
+  if(height>available) menu.style.maxHeight=`${available}px`;
+  const left=Math.max(margin,Math.min(coords.left-parent.left,parent.width-menu.offsetWidth-margin));
+  const top=placeBelow ? coords.bottom-parent.top+gap : coords.top-parent.top-gap-menu.offsetHeight;
   menu.style.left=`${left}px`;menu.style.top=`${top}px`;
+  menu.style.visibility='';
+  menu.scrollTop=scrollTop;
+  revealSelection();
 }
 export function openBlockMenu({from, scope=null, trigger=false, preserveSelection=false, prefix='', anchor=from}) {
   const editor=view(); if(!editor)return;
-  active={from,scope,trigger,preserveSelection,prefix,index:0,choices:[]};menu.hidden=false;render();position(anchor);
+  active={from,anchor,scope,trigger,preserveSelection,prefix,index:0,choices:[]};
+  menu.style.visibility='hidden'; menu.hidden=false; render();
+  setCompletionInput('block',trigger);
 }
 function blockInsertionPoint(state) {
   const { doc, selection } = state, line = doc.lineAt(selection.main.head);
@@ -109,8 +140,9 @@ export function updateBlockMenu() {
   const editor=view(), pos=editor.state.selection.main.head;
   if(pos<active.from+1 || editor.state.doc.lineAt(pos).number!==editor.state.doc.lineAt(active.from).number) return closeBlockMenu();
   const query=editor.state.sliceDoc(active.from,pos);
-  if(!/^\/[\p{L}\p{N}_]*$/u.test(query)) return closeBlockMenu();
-  render(query.slice(1));position(active.from);
+  // Keep unmatched punctuation in the query. Whitespace and // end it.
+  if(!/^\/[^\s/]*$/u.test(query)) return closeBlockMenu();
+  render(query.slice(1));
 }
 function choose(mode) {
   const editor=view(), doc=editor.state.doc, current=active;
@@ -170,7 +202,10 @@ export function handleBlockMenuKey(event) {
   if(!active)return false;
   if(event.key==='Escape') { closeBlockMenu();return true; }
   if(event.key==='ArrowDown'||event.key==='ArrowUp') { if(active.choices.length) active.index=(active.index+(event.key==='ArrowDown'?1:-1)+active.choices.length)%active.choices.length; render(active.trigger ? view().state.sliceDoc(active.from+1,view().state.selection.main.head) : '');return true; }
-  if(event.key==='Enter') { if(active.choices.length) choose(active.choices[active.index][0]); return true; }
+  if(event.key==='Enter') {
+    if(!active.choices.length) { closeBlockMenu(); return false; }
+    choose(active.choices[active.index][0]); return true;
+  }
   return false;
 }
 export function trySlash(event, editor) {

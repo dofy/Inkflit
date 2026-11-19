@@ -7,7 +7,7 @@ import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { t, lang } from './i18n.js';
-import { app, nativeRequest } from './app.js';
+import { app, nativeRequest, setCompletionInput } from './app.js';
 import { isCodeAt } from './comments.js';
 import { matchSnippets, fuzzySnippetName, snippetContext, addSnippetSource, templateSnippet, allSnippets, hasFields, fieldTemplate, plainText, builtinSnippets, placeholderCatalog } from './snippets.js';
 import { functionSnippets, unitSnippets, unitCategories, currencySnippets, constantSnippets, constantCategories } from './math-snippets.js';
@@ -172,9 +172,20 @@ function snippetOption({ row, alias }) {
 const snippetMenu = ViewPlugin.fromClass(class {
   parents = [];
   restore = null;
+  inputRequested = false;
 
   update({ view, state, docChanged, selectionSet, focusChanged }) {
     const status = completionStatus(state);
+    queueMicrotask(() => {
+      if (view.plugin(snippetMenu) !== this) return;
+      const state = view.state, status = completionStatus(state);
+      // Keep ASCII through async updates and when entering or leaving a submenu.
+      const pos = state.selection.main.head;
+      const starting = status === 'pending' && state.sliceDoc(Math.max(0, pos - 1), pos) === '@'
+        && snippetQuery(new CompletionContext(state, pos, false));
+      this.inputRequested = view.hasFocus && (status === 'active' || (status === 'pending' && (this.inputRequested || !!starting)));
+      setCompletionInput('snippet', this.inputRequested);
+    });
     if (docChanged || selectionSet || !status || (focusChanged && !view.hasFocus)) {
       this.parents = [];
       this.restore = null;
@@ -189,7 +200,14 @@ const snippetMenu = ViewPlugin.fromClass(class {
       if (index >= 0) view.dispatch({ effects: setSelectedCompletion(index) });
     });
   }
-});
+
+  destroy() { setCompletionInput('snippet', false); }
+}, { eventObservers: {
+  blur() {
+    this.inputRequested = false;
+    setCompletionInput('snippet', false);
+  }
+} });
 
 function openSnippetMenu(view, from, to, query, parents, restore = null) {
   view.dispatch({ changes: { from, to, insert: query }, selection: { anchor: from + query.length }, userEvent: 'input.complete' });
@@ -282,7 +300,7 @@ function mathOptions(query, matches, rows) {
   return options;
 }
 
-export function snippetCompletions(context) {
+function snippetQuery(context) {
   const word = context.matchBefore(/@[\w-]*/);
   if (!word) return null;
   // Math blocks, ```math fences included, offer the math rows. A number may
@@ -290,6 +308,13 @@ export function snippetCompletions(context) {
   const { state } = context, inMath = scopeAt(state.doc, state.doc.lineAt(word.from).number)?.mode === 'math';
   if ((inMath ? /[A-Za-z_@]/ : /[\w@]/).test(state.sliceDoc(word.from - 1, word.from))) return null;
   if (!inMath && inCode(state, word.from)) return null;
+  return { word, inMath };
+}
+
+export function snippetCompletions(context, showEmpty = false) {
+  const match = snippetQuery(context);
+  if (!match) return null;
+  const { word, inMath } = match;
   // Formats that look the same in this language (English has no 年 or 日, so
   // "2026" and "18" repeat) are listed once.
   const now = currentContext(), shown = new Set();
@@ -303,8 +328,13 @@ export function snippetCompletions(context) {
     shown.add(key); return true;
   });
   const options = inMath ? mathOptions(query, matches, rows) : matches.map(snippetOption);
+  if (!options.length && showEmpty && rows.length) options.push({ label: t('snippet.noMatches'), noMatch: true, apply: () => {} });
   // filter: false because matchSnippets already filtered, including aliases.
   return options.length ? { from: word.from, options, filter: false } : null;
+}
+
+export function snippetMenuIsEmpty(state) {
+  return currentCompletions(state)[0]?.noMatch === true;
 }
 
 // The right-hand column: the value a snippet will insert, or its description
@@ -415,7 +445,8 @@ export const snippets = [
   pending,
   // No typing or interaction delays: the source is cheap, and a quick Tab right
   // after typing a name should accept it rather than be ignored.
-  autocompletion({ override: [snippetCompletions], icons: false, closeOnBlur: true, defaultKeymap: false, activateOnTypingDelay: 0, interactionDelay: 0,
+  autocompletion({ override: [context => snippetCompletions(context, true)], icons: false, closeOnBlur: true, defaultKeymap: false, activateOnTypingDelay: 0, interactionDelay: 0,
+    optionClass: option => option.noMatch ? 'cm-snippet-empty' : '',
     addToOptions: [{ render: renderHint, position: 70 }, { render: renderPreview, position: 80 }] }),
   snippetMenu,
   currentStopMarker,
