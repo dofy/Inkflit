@@ -77,7 +77,7 @@ Vim 由 CodeMirror 和 `@replit/codemirror-vim` 提供，並非 Neovim，也不�
   - 單獨寫 `min` 表示分鐘；支援 `mph` 和 `nmi`。
   - 輸入 `@fn`、`@unit` 或 `@cur` 插入函式、單位或貨幣代碼。
 - **sum / avg / count**：擷取數字加總或平均，不計算算式或換算單位（例如 `2+3=` 包含兩個數字）；也可統計非空項目、詞與字元；忽略 `//` 註解行。
-- **code**：選擇語言突顯程式碼。可在設定的外觀頁預覽 GitHub、Solarized 或 One Light / One Dark，淺色與深色跟隨系統。可選 2 空格、4 空格或 Tab 縮排。括號與引號自動配對，Return 自動縮排，Tab 縮排、Shift-Tab 減少縮排。無選區時 `⌘C` 複製區塊內容。
+- **code**：選擇語言突顯程式碼。可在設定的外觀頁預覽 GitHub、Solarized 或 One Light / One Dark，同一頁的「顯示模式」可選跟隨系統、淺色或深色，程式碼配色會一起切換。可選 2 空格、4 空格或 Tab 縮排。括號與引號自動配對，Return 自動縮排，Tab 縮排、Shift-Tab 減少縮排。無選區時 `⌘C` 複製區塊內容。
 
 區塊以 `:::inkflit math`、`:::end` 等 Inkflit 標記儲存在正文，不是程式碼圍欄；舊格式仍可讀取；第一行寫 `list`、`math`、`sum`、`avg`、`count` 或 `code`（可帶語言，例如 `code js`）時，整篇筆記依該類型處理，筆記中的其他區塊不參與；整篇程式碼筆記中的一切都當作程式碼。匯率由 [Frankfurter](https://frankfurter.dev/) 提供，只取得公開匯率，不上傳筆記；服務無法使用時不會虛構匯率。
 

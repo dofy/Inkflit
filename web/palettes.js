@@ -73,6 +73,7 @@ function availableCommands() {
   ], { typed: query => { const count = Number(query.trim()); return Number.isInteger(count) && count >= 1 && count <= 1_000_000 ? { label: versions(count), run: () => nativeCommand('backup', String(count)) } : null; } });
 
   commands.push(
+    { label: t('settings.colorScheme'), group: setting, aliases: ['appearance color scheme dark light system'], children: choices('color-scheme', [['system', 'settings.appearanceSystem'], ['light', 'settings.appearanceLight'], ['dark', 'settings.appearanceDark']]) },
     { label: t('settings.accentColor'), group: setting, aliases: ['appearance accent theme color'], children: choices('ui-theme', [['orange', 'settings.themeWarmOrange'], ['blue', 'settings.themeOceanBlue'], ['green', 'settings.themeSage']]) },
     { label: t('settings.codeColors'), group: setting, aliases: ['code syntax theme'], children: choices('code-theme', codeThemes.map(({ id, title }) => [id, title])) },
     { label: t('settings.codeIndentation'), group: setting, aliases: ['code indentation indent'], children: choices('indent', [['spaces2', 'settings.indentTwoSpaces'], ['spaces4', 'settings.indentFourSpaces'], ['tabs', 'Tab']]) },

@@ -155,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             UserDefaults.standard.set(value, forKey: "language")
         }
         #endif
+        applyAppColorScheme(windowAppearance().colorScheme)
         configureStorage()
         // Accessory apps still need the standard edit responder actions for WKWebView.
         let mainMenu = NSMenu()
@@ -413,14 +414,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let defaults = UserDefaults.standard
         let opacity = defaults.object(forKey: "windowOpacity") == nil ? 100 : defaults.integer(forKey: "windowOpacity")
         let blur = defaults.object(forKey: "windowBlur") == nil ? 0 : defaults.integer(forKey: "windowBlur")
-        return WindowAppearance(theme: UIThemes.validID(defaults.string(forKey: "uiTheme")), opacity: max(50, min(100, opacity)), blur: max(0, min(100, blur)))
+        let scheme = defaults.string(forKey: "windowColorScheme").flatMap(WindowColorScheme.init(rawValue:)) ?? .system
+        return WindowAppearance(theme: UIThemes.validID(defaults.string(forKey: "uiTheme")), opacity: max(50, min(100, opacity)), blur: max(0, min(100, blur)), colorScheme: scheme)
     }
     func updateWindowAppearance(_ appearance: WindowAppearance) {
         let defaults = UserDefaults.standard
         defaults.set(UIThemes.validID(appearance.theme), forKey: "uiTheme")
         defaults.set(max(50, min(100, appearance.opacity)), forKey: "windowOpacity")
         defaults.set(max(0, min(100, appearance.blur)), forKey: "windowBlur")
+        defaults.set(appearance.colorScheme.rawValue, forKey: "windowColorScheme")
+        applyAppColorScheme(appearance.colorScheme)
         applyWindowAppearance()
+    }
+    private func applyAppColorScheme(_ scheme: WindowColorScheme) {
+        var name = scheme.appearanceName
+        #if INKFLIT_NATIVE_TEST
+        if isolatedTest && scheme == .system,
+           let value = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"],
+           let system = WindowColorScheme(rawValue: value) {
+            name = system.appearanceName
+        }
+        #endif
+        if NSApp.appearance?.name != name {
+            NSApp.appearance = name.flatMap { NSAppearance(named: $0) }
+        }
     }
     func applyWindowAppearance() {
         let appearance = windowAppearance()
@@ -431,7 +448,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             // Fallback: a faded effect view only mixes blurred and sharp content.
             backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
         }
-        guard let json = javaScriptJSON([appearance.theme, appearance.opacity]) else { return }
+        guard let json = javaScriptJSON([appearance.theme, appearance.opacity, appearance.colorScheme.rawValue]) else { return }
         web?.evaluateJavaScript("window.setUIAppearance?.(...\(json))", completionHandler: nil)
     }
     func syncLanguage() {
@@ -994,6 +1011,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             case "ui-theme":
                 guard UIThemes.all.contains(where: { $0.id == value }) else { return }
                 var appearance = windowAppearance(); appearance.theme = value; updateWindowAppearance(appearance); settingsController?.refresh()
+            case "color-scheme":
+                guard let scheme = WindowColorScheme(rawValue: value) else { return }
+                var appearance = windowAppearance(); appearance.colorScheme = scheme; updateWindowAppearance(appearance); settingsController?.refresh()
             case "code-theme": updateCodeTheme(value); settingsController?.refresh()
             case "indent": updateCodeIndentation(value); settingsController?.refresh()
             case "language":
@@ -1024,7 +1044,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 let limit = NoteFiles.backupVersionLimit(defaults)
                 let login = loginItemStatus()
                 let state: [String: String] = [
-                    "ui-theme": appearance.theme, "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
+                    "ui-theme": appearance.theme, "color-scheme": appearance.colorScheme.rawValue,
+                    "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
                     "opacity": String(appearance.opacity), "blur": String(appearance.blur),
                     "backup": limit == 0 ? "off" : limit < 0 ? "unlimited" : String(limit),
                     "login": login == .enabled || login == .requiresApproval ? "on" : "off"]

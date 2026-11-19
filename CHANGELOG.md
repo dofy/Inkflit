@@ -9,12 +9,13 @@
 - Math snippets now include 10 mathematical and 50 scientific constants under `@const`. Search for individual constants with names like `@pi` and `@speedoflight`.
 - The snippet editor's **Insert placeholder** menu includes math functions, units, currencies, and constants.
 - A local install script builds and verifies an app at a new path.
+- Choose Follow System, Light, or Dark in Settings or the command palette. The appearance is saved between launches.
 
 ### Changed
 
 - Browse unit suggestions by category. Category names support fuzzy search, and Esc returns from a snippet submenu with the previous query and selection restored.
 - Math expressions use the code theme for highlighting. Variable definitions and references match code variables, currency codes match units, and trailing equals signs use the operator style.
-- Use GitHub, Solarized, and One Light / One Dark for code highlighting and previews. Each theme follows the system appearance. Old theme IDs fall back to GitHub.
+- Use GitHub, Solarized, and One Light / One Dark for code highlighting and previews. Each theme follows Inkflit’s appearance. Old theme IDs fall back to GitHub.
 - In Vim Normal mode, press Esc twice within 0.6 seconds to hide the window. The first press shows a hint. With Vim off, a single press still hides the window.
 - Match the status bar background to the toolbar across themes and window opacities.
 - Offline help now documents time and angle unit names, symbols, and conversions, including the difference between searching for `@sec` and using `s` or `second` in a formula.

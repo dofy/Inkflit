@@ -28,11 +28,17 @@ function applyLanguage(value) {
   if (app.editor) { closeBlockMenu(); closeLanguageMenu(); refreshBlockResults(); }
 }
 
-// Appearance is reapplied when macOS switches between light and dark.
-let codeTheme = codeThemes[0].id, uiTheme = 'orange', opacity = 100;
+let codeTheme = codeThemes[0].id, uiTheme = 'orange', opacity = 100, colorScheme = 'system';
+const systemColorScheme = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+function applyColors() {
+  const root = document.documentElement;
+  const dark = colorScheme === 'dark' || (colorScheme === 'system' && systemColorScheme?.matches === true);
+  applyUIAppearance(uiTheme, opacity, root, dark);
+  applyCodeTheme(codeTheme, root, dark);
+}
 function watchColorScheme() {
-  applyCodeTheme(codeTheme); applyUIAppearance(uiTheme, opacity);
-  globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => { applyUIAppearance(uiTheme, opacity); applyCodeTheme(codeTheme); });
+  applyColors();
+  systemColorScheme?.addEventListener('change', () => { if (colorScheme === 'system') applyColors(); });
 }
 
 // Load the notes, or start with one empty note when there are none yet.
@@ -82,8 +88,10 @@ export function installBridge() {
     setLanguage: applyLanguage,
     setVimEnabled,
     setCodeIndentation: value => { app.codeIndentation = normalizeIndentation(value); },
-    setCodeTheme: value => { codeTheme = value; applyCodeTheme(value); },
-    setUIAppearance: (theme, value) => { uiTheme = theme; opacity = value; applyUIAppearance(theme, value); },
+    setCodeTheme: value => { codeTheme = value; applyColors(); },
+    setUIAppearance: (theme, value, scheme = colorScheme) => {
+      uiTheme = theme; opacity = value; colorScheme = scheme; applyColors();
+    },
   });
   watchColorScheme();
 }

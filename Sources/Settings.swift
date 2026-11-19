@@ -38,7 +38,30 @@ enum UIThemes {
         switch validID(id) { case "blue": return .systemBlue; case "green": return .systemGreen; default: return .systemOrange }
     }
 }
-struct WindowAppearance { var theme: String; var opacity: Int; var blur: Int }
+enum WindowColorScheme: String, CaseIterable {
+    case system, light, dark
+
+    var title: String {
+        switch self {
+        case .system: return L("settings.appearanceSystem")
+        case .light: return L("settings.appearanceLight")
+        case .dark: return L("settings.appearanceDark")
+        }
+    }
+    var appearanceName: NSAppearance.Name? {
+        switch self {
+        case .system: return nil
+        case .light: return .aqua
+        case .dark: return .darkAqua
+        }
+    }
+}
+struct WindowAppearance {
+    var theme: String
+    var opacity: Int
+    var blur: Int
+    var colorScheme: WindowColorScheme = .system
+}
 
 /// A compact switch with an app-colored on state and standard button behavior.
 final class OrangeSwitch: NSButton {
@@ -198,6 +221,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
     private let previewBox = CodeThemePreviewBox()
+    private let colorSchemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
@@ -256,7 +280,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private func label(_ text: String, size: CGFloat, weight: NSFont.Weight = .regular, color: NSColor = .labelColor) -> NSTextField {
         let field = NSTextField(labelWithString: text); field.font = .systemFont(ofSize: size, weight: weight); field.textColor = color; return field
     }
-    private func section(_ title: String, icon: String, detail: String, controls: NSView, message: NSTextField) -> NSView {
+    private func section(_ title: String, icon: String, detail: String, controls: NSView, message: NSTextField? = nil) -> NSView {
         let heading = label(title, size: 14, weight: .semibold)
         // Wraps to a second line instead of being cut off in longer languages.
         let subtitle = NSTextField(wrappingLabelWithString: detail); subtitle.font = .systemFont(ofSize: 12); subtitle.textColor = .secondaryLabelColor
@@ -271,14 +295,21 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let spacer = NSView(); spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let row = NSStackView(views: [symbol, textStack, controls, spacer]); row.orientation = .horizontal; row.alignment = .centerY; row.distribution = .fill; row.spacing = 12
         controls.setContentHuggingPriority(.required, for: .horizontal)
-        message.font = .systemFont(ofSize: 12); message.textColor = .secondaryLabelColor
-        let container = NSView(); row.translatesAutoresizingMaskIntoConstraints = false; message.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(row); container.addSubview(message)
+        let container = NSView(); row.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(row)
         NSLayoutConstraint.activate([
             row.topAnchor.constraint(equalTo: container.topAnchor), row.leadingAnchor.constraint(equalTo: container.leadingAnchor), row.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            message.topAnchor.constraint(equalTo: row.bottomAnchor, constant: 8), message.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 44),
-            message.trailingAnchor.constraint(equalTo: container.trailingAnchor), message.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
+        if let message {
+            message.font = .systemFont(ofSize: 12); message.textColor = .secondaryLabelColor
+            message.translatesAutoresizingMaskIntoConstraints = false; container.addSubview(message)
+            NSLayoutConstraint.activate([
+                message.topAnchor.constraint(equalTo: row.bottomAnchor, constant: 8), message.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 44),
+                message.trailingAnchor.constraint(equalTo: container.trailingAnchor), message.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            ])
+        } else {
+            row.bottomAnchor.constraint(equalTo: container.bottomAnchor).isActive = true
+        }
         return container
     }
     private func page(_ sections: [NSView]) -> NSView {
@@ -359,9 +390,17 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         NSLayoutConstraint.activate([previewBox.leadingAnchor.constraint(equalTo: previewRow.leadingAnchor, constant: 44), previewBox.trailingAnchor.constraint(equalTo: previewRow.trailingAnchor), previewBox.topAnchor.constraint(equalTo: previewRow.topAnchor), previewBox.bottomAnchor.constraint(equalTo: previewRow.bottomAnchor)])
         let themeGroup = NSStackView(views: [themeSection, previewRow]); themeGroup.orientation = .vertical; themeGroup.alignment = .leading; themeGroup.spacing = 8
         themeSection.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true; previewRow.widthAnchor.constraint(equalTo: themeGroup.widthAnchor).isActive = true
+        for scheme in WindowColorScheme.allCases {
+            colorSchemePicker.addItem(withTitle: scheme.title)
+            colorSchemePicker.lastItem?.representedObject = scheme.rawValue
+        }
+        colorSchemePicker.target = self; colorSchemePicker.action = #selector(appearanceChanged(_:))
+        colorSchemePicker.setAccessibilityLabel(L("settings.colorScheme"))
+        colorSchemePicker.widthAnchor.constraint(greaterThanOrEqualToConstant: 128).isActive = true
+        let colorSchemeSection = section(L("settings.colorScheme"), icon: "sun.max", detail: L("settings.colorSchemeDetail"), controls: colorSchemePicker)
         for theme in UIThemes.all { uiThemePicker.addItem(withTitle: L(theme.title)); uiThemePicker.lastItem?.representedObject = theme.id }
         uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged(_:)); uiThemePicker.setAccessibilityLabel(L("settings.accentColor"))
-        let uiThemeSection = section(L("settings.accentColor"), icon: "paintbrush", detail: L("settings.accentColorDetail"), controls: uiThemePicker, message: NSTextField(wrappingLabelWithString: L("settings.changesApplyImmediately")))
+        let uiThemeSection = section(L("settings.accentColor"), icon: "paintbrush", detail: L("settings.accentColorDetail"), controls: uiThemePicker)
         let opacitySection = section(L("settings.windowOpacity"), icon: "circle.lefthalf.filled", detail: L("settings.windowOpacityDetail"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("settings.windowOpacity")), message: NSTextField(wrappingLabelWithString: L("settings.windowOpacityHint")))
         let blurSection = section(L("settings.backgroundBlur"), icon: "drop.halffull", detail: L("settings.backgroundBlurDetail"), controls: sliderControls(blurSlider, value: blurValue, label: L("settings.backgroundBlur")), message: NSTextField(wrappingLabelWithString: L("settings.backgroundBlurHint")))
         tabs.tabViewType = .topTabsBezelBorder
@@ -375,7 +414,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let snippetsSection = section(L("settings.snippets"), icon: "text.badge.plus", detail: L("settings.snippetsDetail"), controls: NSView(), message: NSTextField(wrappingLabelWithString: L("settings.snippetsHint")))
         let pages: [(Tab, String, NSView)] = [
             (.general, L("settings.general"), page([languageSection, loginSection, shortcutSection])),
-            (.appearance, L("settings.appearance"), page([uiThemeSection, opacitySection, blurSection, themeGroup])),
+            (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, opacitySection, blurSection, themeGroup])),
             (.edit, L("app.edit"), page([vimSection, indentSection])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
             (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
@@ -409,6 +448,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == getTheme() }) { themePicker.selectItem(at: index) }
         renderThemePreview(getTheme())
         let appearance = getAppearance()
+        if let index = colorSchemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.colorScheme.rawValue }) { colorSchemePicker.selectItem(at: index) }
         if let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) { uiThemePicker.selectItem(at: index) }
         opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
@@ -461,12 +501,14 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         optionPressed ? Int((Double(value) / 5).rounded()) * 5 : value
     }
     @objc private func appearanceChanged(_ sender: Any?) {
-        guard let theme = uiThemePicker.selectedItem?.representedObject as? String else { return }
+        guard let theme = uiThemePicker.selectedItem?.representedObject as? String,
+              let value = colorSchemePicker.selectedItem?.representedObject as? String,
+              let scheme = WindowColorScheme(rawValue: value) else { return }
         if let slider = sender as? NSSlider, slider === opacitySlider || slider === blurSlider {
             let option = (slider as? AccentSlider)?.optionAtMouseDown == true || (NSApp.currentEvent?.modifierFlags ?? []).contains(.option) || NSEvent.modifierFlags.contains(.option)
             slider.integerValue = Self.sliderValue(slider.integerValue, optionPressed: option)
         }
-        let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue)
+        let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue, colorScheme: scheme)
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         applySettingsAccent(theme)
         setAppearance(appearance)
@@ -518,10 +560,16 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let sample = themePreview.attributedStringValue
         let property = (sample.string as NSString).range(of: "title")
         guard property.location != NSNotFound, let color = sample.attribute(.foregroundColor, at: property.location, effectiveRange: nil) as? NSColor else { return nil }
-        func hex(_ color: NSColor) -> String {
-            String(format: "#%02x%02x%02x", Int((color.redComponent*255).rounded()), Int((color.greenComponent*255).rounded()), Int((color.blueComponent*255).rounded()))
-        }
-        return (hex(color), hex(previewBox.fillColor))
+        return (testColorHex(color), testCodePreviewBackground())
+    }
+    private func testColorHex(_ color: NSColor) -> String {
+        String(format: "#%02x%02x%02x", Int((color.redComponent*255).rounded()), Int((color.greenComponent*255).rounded()), Int((color.blueComponent*255).rounded()))
+    }
+    func testCodePreviewBackground() -> String { testColorHex(previewBox.fillColor) }
+    func testSelectColorScheme(_ scheme: WindowColorScheme) -> Bool {
+        guard let index = colorSchemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == scheme.rawValue }) else { return false }
+        colorSchemePicker.selectItem(at: index)
+        return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: colorSchemePicker)
     }
     func testSetAppearance(_ appearance: WindowAppearance) -> Bool {
         guard let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) else { return false }
@@ -584,7 +632,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             guard let page = tabs.tabViewItem(at: tab.rawValue).view else { return false }
             return views.allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
         }
-        return fits([previewBox], on: .appearance) && fits([vimSwitch, indentation], on: .edit)
+        return fits([colorSchemePicker, previewBox], on: .appearance) && fits([vimSwitch, indentation], on: .edit)
     }
     func testToggleVim() { vimSwitch.performClick(nil) }
     func testSnippetsEditor() -> SnippetsEditor { snippetsEditor }

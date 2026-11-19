@@ -396,6 +396,17 @@ final class NativeCodeEditingTest {
         app.showSettings()
         guard let settings=app.settingsController else { fail("settings unavailable") }
         settings.testSelectSettingsTab(1)
+        guard settings.testEditingControlsVisible() else { fail("appearance picker or preview is clipped") }
+        if let expected = ProcessInfo.processInfo.environment["INKFLIT_TEST_EXPECT_COLOR_SCHEME"],
+           let scheme = WindowColorScheme(rawValue: expected) {
+            verifyColorScheme(scheme, dark: scheme == .dark, settings: settings) { [self] in
+                guard settings.testSelectColorScheme(.system) else { fail("could not restore system appearance") }
+                print("PASS explicit Inkflit appearance survives a restart")
+                app.restoreInputSource(); exit(0)
+            }
+            return
+        }
+        let systemDark = app.window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         for theme in ["orange", "blue", "green"] {
             guard settings.testSetAppearance(WindowAppearance(theme: theme, opacity: 85, blur: 75)),
                   settings.testAppearanceControls(theme) else { fail("accent or ticks not updated: \(theme)") }
@@ -407,10 +418,41 @@ final class NativeCodeEditingTest {
         }
         waitForJavaScript("!!document.querySelector('.cm-code-line .tok-propertyName')") { [self] in
             testCodeThemes(0) { [self] in
-                let capture = ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE"]
-                if let capture, !settings.testSaveSettingsScreenshot(capture) { fail("settings capture failed") }
-                app.restoreInputSource(); exit(0)
+                testColorSchemes([.dark, .light, .system], systemDark: systemDark, settings: settings) { [self] in
+                    let capture = ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE"]
+                    if let capture, !settings.testSaveSettingsScreenshot(capture) { fail("settings capture failed") }
+                    if ProcessInfo.processInfo.environment["INKFLIT_TEST_COLOR_SCHEME_RESTART"] == "1" {
+                        guard settings.testSelectColorScheme(systemDark ? .light : .dark) else { fail("could not set appearance before restart") }
+                    }
+                    app.restoreInputSource(); exit(0)
+                }
             }
+        }
+    }
+    private func testColorSchemes(_ schemes: [WindowColorScheme], systemDark: Bool, settings: SettingsController, completion: @escaping () -> Void) {
+        guard let scheme = schemes.first else { completion(); return }
+        guard settings.testSelectColorScheme(scheme) else { fail("could not select appearance \(scheme.rawValue)") }
+        verifyColorScheme(scheme, dark: scheme == .system ? systemDark : scheme == .dark, settings: settings) { [self] in
+            testColorSchemes(Array(schemes.dropFirst()), systemDark: systemDark, settings: settings, completion: completion)
+        }
+    }
+    private func verifyColorScheme(_ scheme: WindowColorScheme, dark: Bool, settings: SettingsController, completion: @escaping () -> Void) {
+        let resolved = dark ? "dark" : "light"
+        let name: NSAppearance.Name = dark ? .darkAqua : .aqua
+        guard let theme = CodeThemes.all.first(where: { $0.id == app.codeTheme() }),
+              let background = (dark ? theme.darkColors : theme.colors)["background"] else { fail("missing code palette") }
+        let script = """
+        document.documentElement.dataset.colorScheme === '\(resolved)' &&
+        getComputedStyle(document.documentElement).colorScheme === '\(resolved)' &&
+        getComputedStyle(document.documentElement).getPropertyValue('--syntax-background').trim() === '\(background)'
+        """
+        waitForJavaScript(script) { [self] in
+            guard app.windowAppearance().colorScheme == scheme,
+                  app.window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == name,
+                  settings.window?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == name
+            else { fail("native appearance mismatch for \(scheme.rawValue)") }
+            expect(settings.testCodePreviewBackground(), background, "native preview follows \(scheme.rawValue) appearance")
+            completion()
         }
     }
     static func startBlockCalculation(_ app: AppDelegate) {

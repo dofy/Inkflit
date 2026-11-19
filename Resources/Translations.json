@@ -276,10 +276,10 @@
     "ja": "コードの配色"
   },
   "settings.codeColorsHint": {
-    "en": "Applies immediately and follows the system’s light or dark appearance.",
-    "zh-Hans": "选择后立即应用，浅色和深色随系统切换。",
-    "zh-Hant": "選擇後立即套用，淺色與深色跟隨系統切換。",
-    "ja": "すぐに適用され、ライトとダークはシステムの外観に従います。"
+    "en": "Applies immediately and follows Inkflit’s light or dark appearance.",
+    "zh-Hans": "选择后立即应用，浅色和深色随 Inkflit 的显示模式切换。",
+    "zh-Hant": "選擇後立即套用，淺色與深色跟隨 Inkflit 的顯示模式。",
+    "ja": "すぐに適用され、ライトとダークは Inkflit の外観に従います。"
   },
   "settings.codeColorsDetail": {
     "en": "Choose syntax highlighting",
@@ -292,6 +292,36 @@
     "zh-Hans": "代码配色预览",
     "zh-Hant": "程式碼配色預覽",
     "ja": "コード配色のプレビュー"
+  },
+  "settings.colorScheme": {
+    "en": "Appearance",
+    "zh-Hans": "显示模式",
+    "zh-Hant": "顯示模式",
+    "ja": "外観モード"
+  },
+  "settings.colorSchemeDetail": {
+    "en": "Light or dark mode",
+    "zh-Hans": "选择浅色或深色外观",
+    "zh-Hant": "選擇淺色或深色外觀",
+    "ja": "ライトまたはダークを選択"
+  },
+  "settings.appearanceSystem": {
+    "en": "Follow System",
+    "zh-Hans": "跟随系统",
+    "zh-Hant": "跟隨系統",
+    "ja": "システムに従う"
+  },
+  "settings.appearanceLight": {
+    "en": "Light",
+    "zh-Hans": "浅色",
+    "zh-Hant": "淺色",
+    "ja": "ライト"
+  },
+  "settings.appearanceDark": {
+    "en": "Dark",
+    "zh-Hans": "深色",
+    "zh-Hant": "深色",
+    "ja": "ダーク"
   },
   "settings.accentColor": {
     "en": "Accent color",

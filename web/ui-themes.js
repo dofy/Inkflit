@@ -16,6 +16,7 @@ export function applyUIAppearance(id,opacity,root=document.documentElement,dark=
     root.style.setProperty(`--ui-${name}-rgb`,[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)).join(','));
   }
   root.style.setProperty('--ui-opacity',String(normalizeOpacity(opacity)/100));
+  root.style.setProperty('color-scheme',dark?'dark':'light');
   root.dataset.uiTheme=theme.id;
   root.dataset.colorScheme=dark?'dark':'light';
 }
