@@ -7,7 +7,7 @@ import { select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
 import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandState } from './palettes.js';
 import { notesOperation } from './automation.js';
-import { setUserSnippets, settingsSnippetPlaceholders } from './snippet-completion.js';
+import { setUserSnippets, setSnippetPreferences, settingsSnippetControls, settingsSnippetPlaceholders } from './snippet-completion.js';
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
@@ -89,6 +89,8 @@ export function installBridge() {
     openNoteSearch: openSearch,
     setCommandState,
     setUserSnippets,
+    setSnippetPreferences,
+    snippetControls: settingsSnippetControls,
     // Settings → Snippets: built-in rows as placeholders, in the app language.
     snippetPlaceholders: settingsSnippetPlaceholders,
     resolveNativeRequest,

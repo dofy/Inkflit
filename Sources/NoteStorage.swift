@@ -33,6 +33,7 @@ struct NoteSnapshot: Codable, Equatable {
 struct UserSnippet: Codable, Equatable {
     var trigger: String
     var content: String
+    var enabled: Bool? = nil
     /// Starts with a lowercase letter, then lowercase letters, digits or "-".
     static func isValidTrigger(_ trigger: String) -> Bool { trigger.range(of: #"^[a-z][a-z0-9-]*$"#, options: .regularExpression) != nil }
 }

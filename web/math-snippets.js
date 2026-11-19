@@ -47,11 +47,13 @@ export const unitCategories = Object.keys(UNITS).map(keyword => ({ keyword, hint
 const taken = new Set();
 export const functionSnippets = FUNCTIONS.map(([name, args]) => ({
   trigger: 'fn', math: true, aliases: claimAliases([name], taken), hint: `snippet.fn.${name}`,
+  preferenceID: `item:fn:${name}`,
   expand: () => `${name}(${field()})`, preview: () => `${name}(${args})`,
 }));
 export const unitSnippets = Object.entries(UNITS).flatMap(([category, units]) => units.map(names => ({
   trigger: 'unit', math: true, aliases: claimAliases(names, taken), category: unitHint(category),
-  expand: () => names[0], preview: () => names[0],
+  preferenceID: `item:unit:${names[0]}`,
+  unitSymbol: names[0], expand: () => names[0], preview: () => names[0],
 })));
 
 // Use the calculator's symbol spelling. PI, E and coulomb are alternate
@@ -73,6 +75,12 @@ const CONSTANTS = {
     'thomsonCrossSection', 'vacuumImpedance', 'weakMixingAngle', 'wienDisplacement',
   ],
 };
+// Keep the complete list in its original order for existing placeholders.
+const suggestedScience = new Set([
+  'speedOfLight', 'gravity', 'gravitationConstant', 'avogadro', 'planckConstant',
+  'reducedPlanckConstant', 'boltzmann', 'gasConstant', 'elementaryCharge',
+  'atomicMass', 'coulombConstant', 'electronMass', 'faraday', 'neutronMass', 'protonMass',
+]);
 const constantHint = keyword => `snippet.const.${keyword}`;
 export const constantCategories = Object.keys(CONSTANTS).map(keyword => ({ keyword, hint: constantHint(keyword) }));
 export const constantSnippets = Object.entries(CONSTANTS).flatMap(([category, names]) => names.map(name => {
@@ -83,6 +91,8 @@ export const constantSnippets = Object.entries(CONSTANTS).flatMap(([category, na
   const preview = () => value ??= evaluateExpression(name)?.text ?? name;
   return {
     trigger: 'const', math: true, aliases: [alias], category: constantHint(category),
+    preferenceID: `item:const:${name}`,
+    hidden: category === 'science' && !suggestedScience.has(name),
     expand: () => name, preview, placeholderPreview: () => `${name} · ${preview()}`,
   };
 }));
@@ -118,6 +128,7 @@ export function currencySnippets(codes) {
   cachedCodes = codes;
   cachedRows = codes.map(code => ({
     trigger: 'cur', math: true, aliases: claimAliases([code], claimed), description: 'snippet.currency',
+    preferenceID: `item:cur:${code}`,
     expand: () => code, preview: context => currencyPreview(code, context), previewTTL: 10 * MINUTE,
     placeholderPreview: context => currencyLabel(code, context),
   }));

@@ -84,7 +84,7 @@
       <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
       <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>只在計算區塊中：函式、單位和貨幣，見<a href="#math">計算</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>只在計算區塊中：函式、單位、貨幣和常數，見<a href="#math">計算</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -94,6 +94,7 @@
   </ul>
   <h4>自訂片段</h4>
   <p>在「設定 → 片段」或命令面板的「管理片段」中新增。儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <p>在「設定 → 片段 → 片段開關」中可以按分組或單項啟停內建片段。在那裡關閉「自訂片段」可隱藏全部自訂片段，也可以取消勾選表格中某一列的「啟用」。停用後會從補全和預留位置選單隱藏，範本裡已有的預留位置仍可展開。</p>
   <ul>
     <li><b>一個觸發詞可以有幾行：</b>和 macOS 的文字替代一樣。幾個地址都用 <code>addr</code>，<code>@addr</code> 會全部列出，預設插入第一行。</li>
     <li><b>和內建詞同名：</b>你的列排在前面，所以自己寫的 <code>date</code> 會成為預設格式。</li>
@@ -357,20 +358,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit 只下載公開匯率，不會上傳你的筆記。取不到匯率時會直接提示，不會給出猜測的結果。</p>
-  <h3>用 @ 插入函式、單位和貨幣</h3>
-  <p>在計算區塊中輸入 <code>@</code>，除了日期等一般片段，還會多出三個詞。它們只在計算區塊中出現。</p>
+  <h3>用 @ 插入函式、單位、貨幣和常數</h3>
+  <p>在計算區塊中輸入 <code>@</code>，還可以找到四組片段。</p>
   <table>
     <thead><tr><th>詞</th><th>內容</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>全部函式，旁邊附說明。插入 <code>sqrt()</code> 後游標停在括號內，寫完參數按 <kbd>Tab</kbd> 跳到括號後面。</td></tr>
       <tr><td><code>@unit</code></td><td>上表中的單位，旁邊附類別。</td></tr>
       <tr><td><code>@cur</code></td><td>全部貨幣，顯示名稱和對本地貨幣的匯率：簡體中文對 CNY，繁體中文對 HKD，日文對 JPY，英文對 USD。</td></tr>
+      <tr><td><code>@const</code></td><td>數學常數和常用科學常數。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名稱可以單獨使用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一項。</li>
     <li>數字後面可以緊接 <code>@</code>：<code>10@km</code>。</li>
-    <li>和既有片段重名時讓給既有片段：分鐘用 <code>@minute</code>（<code>@min</code> 是函式），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是時間戳）。</li>
+    <li>在計算區塊中，<code>@min</code> 同時顯示最小值函式和分鐘單位 <code>@minute</code>，選取分鐘會插入 <code>min</code>。<code>@ms</code> 同時顯示時間戳和毫秒單位 <code>@millisecond</code>。</li>
   </ul>
   <h3>醒目標示</h3>
   <p>計算區塊依「設定 → 外觀」中的程式碼配色為算式上色，淺色和深色外觀各有一套：</p>

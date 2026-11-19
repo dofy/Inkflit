@@ -158,7 +158,7 @@ import Darwin
         check(!files.fileExists(atPath: NoteFiles.index(custom).path))
         // User snippets live next to the notes and move with them.
         check(try NoteFiles.readSnippets(directory).isEmpty)
-        let snippets = [UserSnippet(trigger: "addr", content: "Home\nStreet 1"), UserSnippet(trigger: "addr", content: "Office"), UserSnippet(trigger: "sig", content: "— {date}")]
+        let snippets = [UserSnippet(trigger: "addr", content: "Home\nStreet 1"), UserSnippet(trigger: "addr", content: "Office", enabled: false), UserSnippet(trigger: "sig", content: "— {date}")]
         try NoteFiles.writeSnippets(snippets, to: directory)
         check(try NoteFiles.readSnippets(directory) == snippets)
         check(UserSnippet.isValidTrigger("addr") && UserSnippet.isValidTrigger("a-1") && !UserSnippet.isValidTrigger("Addr") && !UserSnippet.isValidTrigger("1a") && !UserSnippet.isValidTrigger("a b") && !UserSnippet.isValidTrigger(""))

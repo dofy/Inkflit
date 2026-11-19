@@ -84,7 +84,7 @@
       <tr><td><code>@ip</code></td><td>公网地址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、局域网（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>网卡 MAC 地址</td></tr>
       <tr><td><code>@host</code></td><td>主机名（<code>@hostname</code>）、电脑名称（<code>@computer</code>）、当前用户名（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>只在计算块里：函数、单位和货币，见<a href="#math">计算</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>只在计算块里：函数、单位、货币和常量，见<a href="#math">计算</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -94,6 +94,7 @@
   </ul>
   <h4>自定义片段</h4>
   <p>在“设置 → 片段”或命令面板的“管理片段”中添加。保存在笔记文件夹里的 <code>snippets.json</code>，随笔记一起迁移和备份。</p>
+  <p>在「设置 → 片段 → 片段开关」中可以按分组或单项启停内置片段。在那里关闭「自定义片段」可隐藏全部自定义片段，也可以取消勾选表格中某一行的「启用」。停用后会从补全和占位符菜单隐藏，模板里已有的占位符仍然能展开。</p>
   <ul>
     <li><b>一个触发词可以有几行：</b>像 macOS 的文字替换。几个地址都用 <code>addr</code>，<code>@addr</code> 会全部列出，默认插入第一行。</li>
     <li><b>和内置词同名：</b>你的行排在前面，所以自己写的 <code>date</code> 会成为默认格式。</li>
@@ -357,20 +358,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit 只下载公开汇率，不会上传你的笔记。拿不到汇率时会直接提示，不会给出猜测的结果。</p>
-  <h3>用 @ 插入函数、单位和货币</h3>
-  <p>在计算块里输入 <code>@</code>，除了日期等普通片段，还会多出三个词。它们只在计算块里出现。</p>
+  <h3>用 @ 插入函数、单位、货币和常量</h3>
+  <p>在计算块里输入 <code>@</code>，还可以找到四组片段。</p>
   <table>
     <thead><tr><th>词</th><th>内容</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>全部函数，旁边是说明。插入 <code>sqrt()</code> 后光标停在括号里，写完参数按 <kbd>Tab</kbd> 跳到括号后面。</td></tr>
       <tr><td><code>@unit</code></td><td>上表中的单位，旁边是类别。</td></tr>
       <tr><td><code>@cur</code></td><td>全部货币，显示名称和对本地货币的汇率：简体中文对 CNY，繁体中文对 HKD，日语对 JPY，英语对 USD。</td></tr>
+      <tr><td><code>@const</code></td><td>数学常量和常用科学常量。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名字可以单独用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一项。</li>
     <li>数字后面可以紧接 <code>@</code>：<code>10@km</code>。</li>
-    <li>和已有片段重名时让给已有片段：分钟用 <code>@minute</code>（<code>@min</code> 是函数），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是时间戳）。</li>
+    <li>在计算块里，<code>@min</code> 同时显示最小值函数和分钟单位 <code>@minute</code>，选中分钟会插入 <code>min</code>。<code>@ms</code> 同时显示时间戳和毫秒单位 <code>@millisecond</code>。</li>
   </ul>
   <h3>高亮</h3>
   <p>计算块按“设置 → 外观”里的代码配色给式子上色，浅色和深色外观各有一套：</p>

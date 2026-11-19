@@ -671,6 +671,36 @@
     "zh-Hant": "觸發詞相同的幾行組成一組，預設插入第一行。內容可以多行，也可以用預留位置：{date} 插入預設日期，{date#2} 插入第二種格式，{ipv4} 這樣的別名插入指定格式。用「插入預留位置」選擇即可。",
     "ja": "同じトリガーの行はグループになり、既定では最初の行が挿入されます。内容は複数行にでき、プレースホルダも使えます：{date} は既定の日付、{date#2} は 2 番目の形式、{ipv4} のような別名はその形式を挿入します。「プレースホルダを挿入」から選べます。"
   },
+  "settings.snippetAvailability": {
+    "en": "Snippet availability",
+    "zh-Hans": "片段开关",
+    "zh-Hant": "片段開關",
+    "ja": "スニペットの有効設定"
+  },
+  "settings.snippetEnabled": {
+    "en": "Enabled",
+    "zh-Hans": "启用",
+    "zh-Hant": "啟用",
+    "ja": "有効"
+  },
+  "settings.customSnippets": {
+    "en": "Custom snippets",
+    "zh-Hans": "自定义片段",
+    "zh-Hant": "自訂片段",
+    "ja": "カスタムスニペット"
+  },
+  "settings.snippetDone": {
+    "en": "Done",
+    "zh-Hans": "完成",
+    "zh-Hant": "完成",
+    "ja": "完了"
+  },
+  "settings.snippetAvailabilityHint": {
+    "en": "Choose which snippets appear in suggestions and in the placeholder picker. Turning off a group keeps its individual settings.",
+    "zh-Hans": "选择出现在补全和占位符菜单中的片段。关闭分组时会保留组内每项的设置。",
+    "zh-Hant": "選擇顯示在補全與預留位置選單中的片段。關閉分組時會保留組內每一項的設定。",
+    "ja": "補完とプレースホルダの選択に表示するスニペットを選べます。グループを無効にしても、個別の設定は保持されます。"
+  },
   "settings.snippetTrigger": {
     "en": "Trigger",
     "zh-Hans": "触发词",

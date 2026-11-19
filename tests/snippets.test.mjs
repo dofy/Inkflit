@@ -5,7 +5,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { CompletionContext } from '@codemirror/autocomplete';
 import catalog from '../Resources/Translations.json' with { type: 'json' };
 import { builtinSnippets, matchSnippets, expandTemplate, templateSnippet, addSnippetSource, allSnippets, snippetContext, isoWeek, field, plainText, fieldTemplate } from '../web/snippets.js';
-import { settingsSnippetPlaceholders, snippetCompletions } from '../web/snippet-completion.js';
+import { setSnippetPreferences, setUserSnippets, settingsSnippetControls, settingsSnippetPlaceholders, snippetCompletions } from '../web/snippet-completion.js';
 import { setLanguage } from '../web/i18n.js';
 
 setLanguage('en');
@@ -240,6 +240,11 @@ test('unit categories replace the broad list and narrow completion by keyword', 
   assert.ok(values('unit-time').includes('min'));
   assert.equal(values('time')[0], '09:05', 'the built-in clock keeps @time');
   assert.deepEqual(values('km'), ['km']);
+  assert.deepEqual(options('min').map(option => option.label), ['@min', '@minute']);
+  assert.deepEqual(values('min').map(plainText), ['min()', 'min']);
+  assert.deepEqual(values('minute'), ['min']);
+  assert.deepEqual(options('ms').map(option => option.label), ['@ms', '@millisecond']);
+  assert.deepEqual(options('ms', '').map(option => option.label), ['@ms']);
   assert.deepEqual(options('unit-speed', ''), []);
 });
 
@@ -258,6 +263,7 @@ test('constant shortcuts browse both groups and insert valid calculator symbols'
   assert.ok(science.every(({ snippet }) => snippet.category === 'snippet.const.science'));
   assert.deepEqual(math.map(({ snippet }) => snippet.expand()).slice(0, 4), ['pi', 'e', 'tau', 'phi']);
   assert.equal(science[0].snippet.expand(), 'speedOfLight');
+  assert.equal(science.length, 15);
   for (const { snippet } of [...math, ...science]) assert.ok(evaluateExpression(snippet.expand()), snippet.expand());
   assert.deepEqual(options('pi').map(({ snippet }) => snippet.expand()), ['pi']);
   assert.deepEqual(options('speedOfLight').map(({ snippet }) => snippet.expand()), ['speedOfLight']);
@@ -267,8 +273,53 @@ test('constant shortcuts browse both groups and insert valid calculator symbols'
   const presets = settingsSnippetPlaceholders();
   assert.equal(presets.find(({ token }) => token === 'pi').category, 'snippet.const.math');
   assert.equal(presets.find(({ token }) => token === 'speedoflight').category, 'snippet.const.science');
+  for (const [alias, name] of [['fermicoupling', 'fermiCoupling'], ['firstradiation', 'firstRadiation'], ['inverseconductancequantum', 'inverseConductanceQuantum']]) {
+    assert.deepEqual(options(alias), [], `${name} is not suggested`);
+    assert.ok(!presets.some(({ token }) => token === alias), `${name} is not offered in Settings`);
+    assert.equal(await expandTemplate(`{${alias}}`), name, 'existing placeholders can still expand');
+    assert.ok(evaluateExpression(name), 'existing formulas still work');
+  }
   assert.equal(await expandTemplate('2 * {pi} + {sqrt1_2}'), '2 * pi + SQRT1_2');
   assert.equal(await expandTemplate('{speedoflight} to km/s'), 'speedOfLight to km/s');
+});
+
+test('snippet switches filter menus without changing saved placeholder references', async () => {
+  const suggestions = (query, prefix = 'math\n') => {
+    const state = EditorState.create({ doc: `${prefix}@${query}`, extensions: [markdown()] });
+    return snippetCompletions(new CompletionContext(state, state.doc.length, false))?.options ?? [];
+  };
+  const keys = entries => entries.flatMap(entry => [entry.key, ...keys(entry.children ?? [])]);
+  const controls = keys(settingsSnippetControls());
+  assert.equal(new Set(controls).size, controls.length, 'control IDs are unique');
+  assert.ok(controls.includes('item:unit:B') && controls.includes('item:unit:b'), 'unit IDs distinguish case');
+  const labels = query => suggestions(query).map(option => option.label);
+  setUserSnippets([{ trigger: 'address', content: 'Home', enabled: false }, { trigger: 'address', content: 'Office' }]);
+  try {
+    setSnippetPreferences(['group:unit', 'category:snippet.const.science', 'item:const:pi', 'item:date:1']);
+    assert.deepEqual(labels('unit'), []);
+    assert.deepEqual(labels('const'), ['@const-math']);
+    assert.deepEqual(labels('const-science'), []);
+    assert.ok(!labels('pi').includes('@pi'));
+    assert.deepEqual(await Promise.all(suggestions('address').map(option => option.snippet.expand(snippetContext({ now })))), ['Office']);
+    const tokens = settingsSnippetPlaceholders().map(item => item.token);
+    for (const token of ['minute', 'speedoflight', 'pi', 'date']) assert.ok(!tokens.includes(token), token);
+    assert.ok(tokens.includes('date#2'), 'disabling one format keeps its sibling tokens stable');
+    assert.equal(await expandTemplate('{pi} {speedoflight} {minute} {address}', snippetContext({ now }), allSnippets()), 'pi speedOfLight min Home');
+    assert.deepEqual(keys(settingsSnippetControls()), controls, 'disabled entries remain available to re-enable');
+
+    setSnippetPreferences(['category:snippet.unit.time', 'group:custom']);
+    assert.ok(!labels('unit').includes('@unit-time'));
+    assert.deepEqual(labels('min'), ['@min']);
+    assert.ok(labels('unit').includes('@unit-length'));
+    assert.deepEqual(labels('address'), []);
+    setSnippetPreferences([]);
+    assert.deepEqual(labels('min'), ['@min', '@minute']);
+    assert.deepEqual(labels('pi'), ['@pi']);
+    assert.equal(await suggestions('address')[0].snippet.expand(snippetContext({ now })), 'Office');
+  } finally {
+    setSnippetPreferences([]);
+    setUserSnippets([]);
+  }
 });
 
 test('exchange rates are asked once an hour and shared', async () => {

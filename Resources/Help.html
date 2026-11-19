@@ -196,7 +196,7 @@
       <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
       <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
       <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>Only in math blocks: functions, units and currencies. See <a href="#math">Math</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>Only in math blocks: functions, units, currencies and constants. See <a href="#math">Math</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -206,6 +206,7 @@
   </ul>
   <h4>Your own snippets</h4>
   <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. They are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <p>Use <b>Snippet availability</b> in Settings → Snippets to turn groups or individual built-in snippets on and off. Toggle <b>Custom snippets</b> there to hide all your own snippets, or uncheck <b>Enabled</b> beside a single row. Disabled snippets are hidden from suggestions and the placeholder picker. Placeholders already in a template still expand.</p>
   <ul>
     <li><b>One trigger, several rows:</b> like macOS text replacements. Put a few addresses under <code>addr</code>; <code>@addr</code> lists them all and inserts the first by default.</li>
     <li><b>Same name as a built-in word:</b> your row comes first, so your own <code>date</code> becomes the default.</li>
@@ -469,20 +470,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the line says so instead of guessing.</p>
-  <h3>Insert functions, units and currencies with @</h3>
-  <p>In a math block, <code>@</code> offers three more words besides the usual snippets. They appear only in math blocks.</p>
+  <h3>Insert functions, units, currencies and constants with @</h3>
+  <p>In a math block, <code>@</code> offers four additional groups:</p>
   <table>
     <thead><tr><th>Word</th><th>Lists</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>Every function with a description. After inserting <code>sqrt()</code> the caret is inside the brackets; press <kbd>Tab</kbd> after the argument to jump past them.</td></tr>
       <tr><td><code>@unit</code></td><td>The units in the table above, with their kind.</td></tr>
       <tr><td><code>@cur</code></td><td>Every currency with its name and its rate against your language’s currency: USD for English, CNY for Simplified Chinese, HKD for Traditional Chinese, JPY for Japanese.</td></tr>
+      <tr><td><code>@const</code></td><td>Mathematical and commonly used scientific constants.</td></tr>
     </tbody>
   </table>
   <ul>
     <li>Each name works on its own: <code>@sqrt</code>, <code>@km</code>, <code>@kilometer</code> and <code>@usd</code> find that row directly.</li>
     <li>A number may come right before <code>@</code>: <code>10@km</code>.</li>
-    <li>Names other snippets already use stay with them: use <code>@minute</code> for minutes (<code>@min</code> is the function) and <code>@millisecond</code> for milliseconds (<code>@ms</code> is the timestamp).</li>
+    <li>In a math block, <code>@min</code> lists both the minimum function and <code>@minute</code>, which inserts <code>min</code>. <code>@ms</code> lists the timestamp and <code>@millisecond</code>.</li>
   </ul>
   <h3>Highlighting</h3>
   <p>Math blocks are coloured with the code colors from <b>Settings → Appearance</b>, in both light and dark appearance:</p>
@@ -703,7 +705,7 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>公网地址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、局域网（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>网卡 MAC 地址</td></tr>
       <tr><td><code>@host</code></td><td>主机名（<code>@hostname</code>）、电脑名称（<code>@computer</code>）、当前用户名（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>只在计算块里：函数、单位和货币，见<a href="#math">计算</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>只在计算块里：函数、单位、货币和常量，见<a href="#math">计算</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -713,6 +715,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h4>自定义片段</h4>
   <p>在“设置 → 片段”或命令面板的“管理片段”中添加。保存在笔记文件夹里的 <code>snippets.json</code>，随笔记一起迁移和备份。</p>
+  <p>在「设置 → 片段 → 片段开关」中可以按分组或单项启停内置片段。在那里关闭「自定义片段」可隐藏全部自定义片段，也可以取消勾选表格中某一行的「启用」。停用后会从补全和占位符菜单隐藏，模板里已有的占位符仍然能展开。</p>
   <ul>
     <li><b>一个触发词可以有几行：</b>像 macOS 的文字替换。几个地址都用 <code>addr</code>，<code>@addr</code> 会全部列出，默认插入第一行。</li>
     <li><b>和内置词同名：</b>你的行排在前面，所以自己写的 <code>date</code> 会成为默认格式。</li>
@@ -976,20 +979,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit 只下载公开汇率，不会上传你的笔记。拿不到汇率时会直接提示，不会给出猜测的结果。</p>
-  <h3>用 @ 插入函数、单位和货币</h3>
-  <p>在计算块里输入 <code>@</code>，除了日期等普通片段，还会多出三个词。它们只在计算块里出现。</p>
+  <h3>用 @ 插入函数、单位、货币和常量</h3>
+  <p>在计算块里输入 <code>@</code>，还可以找到四组片段。</p>
   <table>
     <thead><tr><th>词</th><th>内容</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>全部函数，旁边是说明。插入 <code>sqrt()</code> 后光标停在括号里，写完参数按 <kbd>Tab</kbd> 跳到括号后面。</td></tr>
       <tr><td><code>@unit</code></td><td>上表中的单位，旁边是类别。</td></tr>
       <tr><td><code>@cur</code></td><td>全部货币，显示名称和对本地货币的汇率：简体中文对 CNY，繁体中文对 HKD，日语对 JPY，英语对 USD。</td></tr>
+      <tr><td><code>@const</code></td><td>数学常量和常用科学常量。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名字可以单独用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一项。</li>
     <li>数字后面可以紧接 <code>@</code>：<code>10@km</code>。</li>
-    <li>和已有片段重名时让给已有片段：分钟用 <code>@minute</code>（<code>@min</code> 是函数），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是时间戳）。</li>
+    <li>在计算块里，<code>@min</code> 同时显示最小值函数和分钟单位 <code>@minute</code>，选中分钟会插入 <code>min</code>。<code>@ms</code> 同时显示时间戳和毫秒单位 <code>@millisecond</code>。</li>
   </ul>
   <h3>高亮</h3>
   <p>计算块按“设置 → 外观”里的代码配色给式子上色，浅色和深色外观各有一套：</p>
@@ -1210,7 +1214,7 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>公用位址、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、區域網路（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>網路卡 MAC 位址</td></tr>
       <tr><td><code>@host</code></td><td>主機名稱（<code>@hostname</code>）、電腦名稱（<code>@computer</code>）、目前使用者名稱（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>只在計算區塊中：函式、單位和貨幣，見<a href="#math">計算</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>只在計算區塊中：函式、單位、貨幣和常數，見<a href="#math">計算</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -1220,6 +1224,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h4>自訂片段</h4>
   <p>在「設定 → 片段」或命令面板的「管理片段」中新增。儲存在筆記資料夾裡的 <code>snippets.json</code>，隨筆記一起搬移和備份。</p>
+  <p>在「設定 → 片段 → 片段開關」中可以按分組或單項啟停內建片段。在那裡關閉「自訂片段」可隱藏全部自訂片段，也可以取消勾選表格中某一列的「啟用」。停用後會從補全和預留位置選單隱藏，範本裡已有的預留位置仍可展開。</p>
   <ul>
     <li><b>一個觸發詞可以有幾行：</b>和 macOS 的文字替代一樣。幾個地址都用 <code>addr</code>，<code>@addr</code> 會全部列出，預設插入第一行。</li>
     <li><b>和內建詞同名：</b>你的列排在前面，所以自己寫的 <code>date</code> 會成為預設格式。</li>
@@ -1483,20 +1488,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit 只下載公開匯率，不會上傳你的筆記。取不到匯率時會直接提示，不會給出猜測的結果。</p>
-  <h3>用 @ 插入函式、單位和貨幣</h3>
-  <p>在計算區塊中輸入 <code>@</code>，除了日期等一般片段，還會多出三個詞。它們只在計算區塊中出現。</p>
+  <h3>用 @ 插入函式、單位、貨幣和常數</h3>
+  <p>在計算區塊中輸入 <code>@</code>，還可以找到四組片段。</p>
   <table>
     <thead><tr><th>詞</th><th>內容</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>全部函式，旁邊附說明。插入 <code>sqrt()</code> 後游標停在括號內，寫完參數按 <kbd>Tab</kbd> 跳到括號後面。</td></tr>
       <tr><td><code>@unit</code></td><td>上表中的單位，旁邊附類別。</td></tr>
       <tr><td><code>@cur</code></td><td>全部貨幣，顯示名稱和對本地貨幣的匯率：簡體中文對 CNY，繁體中文對 HKD，日文對 JPY，英文對 USD。</td></tr>
+      <tr><td><code>@const</code></td><td>數學常數和常用科學常數。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名稱可以單獨使用：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> 直接找到那一項。</li>
     <li>數字後面可以緊接 <code>@</code>：<code>10@km</code>。</li>
-    <li>和既有片段重名時讓給既有片段：分鐘用 <code>@minute</code>（<code>@min</code> 是函式），毫秒用 <code>@millisecond</code>（<code>@ms</code> 是時間戳）。</li>
+    <li>在計算區塊中，<code>@min</code> 同時顯示最小值函式和分鐘單位 <code>@minute</code>，選取分鐘會插入 <code>min</code>。<code>@ms</code> 同時顯示時間戳和毫秒單位 <code>@millisecond</code>。</li>
   </ul>
   <h3>醒目標示</h3>
   <p>計算區塊依「設定 → 外觀」中的程式碼配色為算式上色，淺色和深色外觀各有一套：</p>
@@ -1717,7 +1723,7 @@ open 'inkflit://note/get?index=1'</code></pre>
       <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
       <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>計算ブロック内のみ：関数、単位、通貨。<a href="#math">計算</a>を参照</td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>計算ブロック内のみ：関数、単位、通貨、定数。<a href="#math">計算</a>を参照</td></tr>
     </tbody>
   </table>
   <ul>
@@ -1727,6 +1733,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h4>自分のスニペット</h4>
   <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。ノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <p>「設定 → スニペット → スニペットの有効設定」で、組み込みスニペットをグループ別または個別に切り替えられます。「カスタムスニペット」で自作分をまとめて切り替えるか、各行の「有効」を外してください。無効にした項目は補完とプレースホルダの選択に表示されません。テンプレートに含まれるプレースホルダは引き続き展開されます。</p>
   <ul>
     <li><b>1 つのトリガーに複数の行：</b>macOS のユーザ辞書と同じです。住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。</li>
     <li><b>組み込みの単語と同じ名前：</b>自分の行が先頭に入るので、自分の <code>date</code> が既定になります。</li>
@@ -1990,20 +1997,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit が取得するのは公開されている為替レートだけで、ノートは送信しません。レートを取得できないときは推測せず、そのことを表示します。</p>
-  <h3>@ で関数・単位・通貨を挿入する</h3>
-  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 3 つの単語が表示されます。これらは計算ブロックの中でだけ表示されます。</p>
+  <h3>@ で関数・単位・通貨・定数を挿入する</h3>
+  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 4 つのグループが表示されます。</p>
   <table>
     <thead><tr><th>単語</th><th>一覧</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>すべての関数と説明。<code>sqrt()</code> を挿入するとカーソルが括弧の中に入ります。引数を書いたら <kbd>Tab</kbd> で括弧の後ろへ移動できます。</td></tr>
       <tr><td><code>@unit</code></td><td>上の表の単位と、その種類。</td></tr>
       <tr><td><code>@cur</code></td><td>すべての通貨と名前、表示言語の通貨に対するレート（日本語は JPY、英語は USD、簡体字中国語は CNY、繁体字中国語は HKD）。</td></tr>
+      <tr><td><code>@const</code></td><td>数学定数とよく使う科学定数。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名前だけでも使えます：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> でその項目が直接見つかります。</li>
     <li>数値の直後に <code>@</code> を書けます：<code>10@km</code>。</li>
-    <li>既存のスニペットと重なる名前はそちらが優先です：分は <code>@minute</code>（<code>@min</code> は関数）、ミリ秒は <code>@millisecond</code>（<code>@ms</code> はタイムスタンプ）。</li>
+    <li>計算ブロックの <code>@min</code> には最小値関数と分の単位 <code>@minute</code> が表示されます。分を選ぶと <code>min</code> が挿入されます。<code>@ms</code> にはタイムスタンプとミリ秒の単位 <code>@millisecond</code> が表示されます。</li>
   </ul>
   <h3>ハイライト</h3>
   <p>計算ブロックは「設定 → 外観」のコードの配色で色分けされます。ライトとダークのどちらにも対応します：</p>

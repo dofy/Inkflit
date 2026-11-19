@@ -84,7 +84,7 @@
       <tr><td><code>@ip</code></td><td>Public address, IPv4 (<code>@ipv4</code>), IPv6 (<code>@ipv6</code>), local network (<code>@localip</code>)</td></tr>
       <tr><td><code>@mac</code></td><td>MAC address of the network interface</td></tr>
       <tr><td><code>@host</code></td><td>Host name (<code>@hostname</code>), computer name (<code>@computer</code>), your account (<code>@whoami</code>)</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>Only in math blocks: functions, units and currencies. See <a href="#math">Math</a></td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>Only in math blocks: functions, units, currencies and constants. See <a href="#math">Math</a></td></tr>
     </tbody>
   </table>
   <ul>
@@ -94,6 +94,7 @@
   </ul>
   <h4>Your own snippets</h4>
   <p>Add your own in <b>Settings → Snippets</b> or with <b>Manage snippets</b> in the command palette. They are saved in <code>snippets.json</code> in the notes folder, so they move and back up with your notes.</p>
+  <p>Use <b>Snippet availability</b> in Settings → Snippets to turn groups or individual built-in snippets on and off. Toggle <b>Custom snippets</b> there to hide all your own snippets, or uncheck <b>Enabled</b> beside a single row. Disabled snippets are hidden from suggestions and the placeholder picker. Placeholders already in a template still expand.</p>
   <ul>
     <li><b>One trigger, several rows:</b> like macOS text replacements. Put a few addresses under <code>addr</code>; <code>@addr</code> lists them all and inserts the first by default.</li>
     <li><b>Same name as a built-in word:</b> your row comes first, so your own <code>date</code> becomes the default.</li>
@@ -357,20 +358,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit only downloads public rates; your notes are never sent. When rates are unavailable, the line says so instead of guessing.</p>
-  <h3>Insert functions, units and currencies with @</h3>
-  <p>In a math block, <code>@</code> offers three more words besides the usual snippets. They appear only in math blocks.</p>
+  <h3>Insert functions, units, currencies and constants with @</h3>
+  <p>In a math block, <code>@</code> offers four additional groups:</p>
   <table>
     <thead><tr><th>Word</th><th>Lists</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>Every function with a description. After inserting <code>sqrt()</code> the caret is inside the brackets; press <kbd>Tab</kbd> after the argument to jump past them.</td></tr>
       <tr><td><code>@unit</code></td><td>The units in the table above, with their kind.</td></tr>
       <tr><td><code>@cur</code></td><td>Every currency with its name and its rate against your language’s currency: USD for English, CNY for Simplified Chinese, HKD for Traditional Chinese, JPY for Japanese.</td></tr>
+      <tr><td><code>@const</code></td><td>Mathematical and commonly used scientific constants.</td></tr>
     </tbody>
   </table>
   <ul>
     <li>Each name works on its own: <code>@sqrt</code>, <code>@km</code>, <code>@kilometer</code> and <code>@usd</code> find that row directly.</li>
     <li>A number may come right before <code>@</code>: <code>10@km</code>.</li>
-    <li>Names other snippets already use stay with them: use <code>@minute</code> for minutes (<code>@min</code> is the function) and <code>@millisecond</code> for milliseconds (<code>@ms</code> is the timestamp).</li>
+    <li>In a math block, <code>@min</code> lists both the minimum function and <code>@minute</code>, which inserts <code>min</code>. <code>@ms</code> lists the timestamp and <code>@millisecond</code>.</li>
   </ul>
   <h3>Highlighting</h3>
   <p>Math blocks are coloured with the code colors from <b>Settings → Appearance</b>, in both light and dark appearance:</p>

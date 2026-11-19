@@ -7,7 +7,7 @@ import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { t, lang } from './i18n.js';
-import { nativeRequest } from './app.js';
+import { app, nativeRequest } from './app.js';
 import { isCodeAt } from './comments.js';
 import { matchSnippets, fuzzySnippetName, snippetContext, addSnippetSource, templateSnippet, allSnippets, hasFields, fieldTemplate, plainText, builtinSnippets, placeholderCatalog } from './snippets.js';
 import { functionSnippets, unitSnippets, unitCategories, currencySnippets, constantSnippets, constantCategories } from './math-snippets.js';
@@ -35,9 +35,51 @@ function mathSnippetRows() {
 }
 addSnippetSource(mathSnippetRows);
 
+const groupID = row => `group:${row.custom ? 'custom' : row.trigger}`;
+const categoryID = row => `category:${row.category}`;
+let disabled = new Set();
+const isSuggested = row => !row.hidden && !row.disabled && !disabled.has(groupID(row))
+  && !disabled.has(row.preferenceID) && (!row.category || !disabled.has(categoryID(row)));
+
+export function setSnippetPreferences(ids) {
+  disabled = new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []);
+  if (app.editor) closeCompletion(app.editor);
+}
+
+function settingsCatalog() {
+  const rows = [...builtinSnippets, ...mathSnippetRows()].filter(row => !row.hidden);
+  return { rows, entries: placeholderCatalog(currentContext(), rows) };
+}
+
 export function settingsSnippetPlaceholders() {
-  return placeholderCatalog(currentContext(), [...builtinSnippets, ...mathSnippetRows()])
+  const { rows, entries } = settingsCatalog();
+  // Keep token numbering based on the original rows even when one is disabled.
+  return entries.filter((_, index) => index === 0 || isSuggested(rows[index - 1]))
     .map(item => ({ ...item, description: item.description ? t(item.description) : null }));
+}
+
+export function settingsSnippetControls() {
+  const { rows, entries } = settingsCatalog();
+  const groups = new Map();
+  const roots = [];
+  const ensureGroup = (key, title, parent = null) => {
+    if (!groups.has(key)) {
+      const group = { key, title, children: [] };
+      groups.set(key, group);
+      (parent?.children ?? roots).push(group);
+    }
+    return groups.get(key);
+  };
+  ensureGroup('group:custom', t('settings.customSnippets'));
+  for (const [index, row] of rows.entries()) {
+    const group = ensureGroup(groupID(row), `@${row.trigger}`);
+    const parent = row.category ? ensureGroup(categoryID(row), t(row.category), group) : group;
+    const item = entries[index + 1];
+    const title = row.unitSymbol ?? (row.aliases?.[0] ? `@${row.aliases[0]}` : `{${item.token}}`);
+    const hint = row.hint ?? item.description;
+    parent.children.push({ key: row.preferenceID, title, detail: item.example ?? (hint ? t(hint) : '') });
+  }
+  return roots;
 }
 // User snippets from snippets.json, sent by the app (Settings → Snippets).
 // Rows sharing a trigger form a group and lead the built-in group of that name.
@@ -46,12 +88,13 @@ addSnippetSource(() => userRows);
 export function setUserSnippets(list) {
   userRows = (Array.isArray(list) ? list : [])
     .filter(item => item && /^[a-z][a-z0-9-]*$/.test(item.trigger) && typeof item.content === 'string' && item.content)
-    .map(({ trigger, content }) => {
-      const row = templateSnippet(trigger, content);
+    .map(({ trigger, content, enabled }) => {
+      const row = templateSnippet(trigger, content, { custom: true, disabled: enabled === false });
       // Templates may hold clock or network placeholders, so the preview is
       // asked again after a second.
       return Object.assign(row, { preview: row.expand, previewTTL: 1000 });
     });
+  if (app.editor) closeCompletion(app.editor);
 }
 
 // "@name" being replaced by a value that is still loading. The range follows
@@ -182,22 +225,26 @@ const mathCategories = Object.entries(mathGroups).flatMap(([trigger, categories]
   categories.map(category => ({ ...category, trigger, name: `${trigger}-${category.keyword}` })));
 const isGroupedMath = row => row.math && row.category;
 
-function mathCategoryQuery(query) {
+function mathCategoryQuery(query, availableCategories) {
   // Prefer matches that include the beginning of both the group and the category.
   for (const group of mathTriggers) {
+    const categories = availableCategories.filter(category => category.trigger === group);
+    if (!categories.length) continue;
     for (let split = Math.min(group.length, query.length); split >= 2; split--) {
       if (!fuzzySnippetName(query.slice(0, split), group)) continue;
       const prefix = query.slice(split).replace(/^-/, '');
-      if (!prefix || mathGroups[group].some(({ keyword }) => fuzzySnippetName(prefix, keyword))) return { group, prefix };
+      if (!prefix || categories.some(({ keyword }) => fuzzySnippetName(prefix, keyword))) return { group, prefix };
     }
   }
   return { group: null, prefix: query };
 }
 
 function mathOptions(query, matches, rows) {
+  const available = new Set(rows.filter(isGroupedMath).map(row => row.category));
+  const availableCategories = mathCategories.filter(({ hint }) => available.has(hint));
   const isExact = row => (!isGroupedMath(row) && row.trigger === query) || row.aliases?.includes(query);
   const hasExact = rows.some(isExact);
-  const category = mathCategories.find(({ name, keyword }) => query === name || (!hasExact && query === keyword));
+  const category = availableCategories.find(({ name, keyword }) => query === name || (!hasExact && query === keyword));
   if (category) {
     const entries = rows.filter(row => row.trigger === category.trigger && row.category === category.hint);
     return [
@@ -209,9 +256,17 @@ function mathOptions(query, matches, rows) {
   // Group matches browse categories. Direct aliases still insert their values.
   const isGroupMatch = ({ row, alias }) => isGroupedMath(row) && !alias;
   const options = matches.filter(match => !isGroupMatch(match)).map(snippetOption);
-  const { group, prefix } = mathCategoryQuery(query);
+  // A function or built-in alias can take a unit's symbol, as with min or ms.
+  if (hasExact) {
+    for (const row of rows) {
+      if (row.unitSymbol?.toLowerCase() === query && row.aliases.length && !matches.some(match => match.row === row)) {
+        options.push(snippetOption({ row, alias: row.aliases[0] }));
+      }
+    }
+  }
+  const { group, prefix } = mathCategoryQuery(query, availableCategories);
   const categories = query && (group || !hasExact)
-    ? mathCategories.filter(({ trigger }) => !group || trigger === group) : [];
+    ? availableCategories.filter(({ trigger }) => !group || trigger === group) : [];
   const matchingCategories = [
     ...categories.filter(({ keyword }) => keyword.startsWith(prefix)),
     ...categories.filter(({ keyword }) => !keyword.startsWith(prefix) && fuzzySnippetName(prefix, keyword)),
@@ -238,7 +293,7 @@ export function snippetCompletions(context) {
   // Formats that look the same in this language (English has no 年 or 日, so
   // "2026" and "18" repeat) are listed once.
   const now = currentContext(), shown = new Set();
-  const rows = allSnippets().filter(row => inMath || !row.math);
+  const rows = allSnippets().filter(row => isSuggested(row) && (inMath || !row.math));
   const query = word.text.slice(1).toLowerCase();
   const matches = matchSnippets(query, rows).filter(({ row }) => {
     if (!row.live) return true;

@@ -80,6 +80,7 @@ const lookup = url => async ({ fetch }) => {
   return text;
 };
 
+const builtinPositions = new Map();
 export const builtinSnippets = [
   clock('date', ({ now }) => formatDate(now)),
   clock('date', ({ now }) => formatDate(now).replaceAll('-', '/')),
@@ -126,7 +127,11 @@ export const builtinSnippets = [
   lookedUp('host', 'snippet.hostname', 'snippet.hintHost', native('hostname'), MINUTE, { aliases: ['hostname'] }),
   lookedUp('host', 'snippet.computerName', 'snippet.hintComputer', native('computer-name'), MINUTE, { aliases: ['computer', 'computername'] }),
   lookedUp('host', 'snippet.whoami', 'snippet.hintUser', native('whoami'), MINUTE, { aliases: ['whoami', 'user', 'username'] }),
-];
+].map(row => {
+  const position = (builtinPositions.get(row.trigger) ?? 0) + 1;
+  builtinPositions.set(row.trigger, position);
+  return { ...row, preferenceID: `item:${row.trigger}:${row.aliases?.[0] ?? row.description ?? position}` };
+});
 
 const sources = [];
 export function addSnippetSource(source) {

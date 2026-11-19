@@ -270,6 +270,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard let list = snippets ?? (try? userSnippets()), let data = try? JSONEncoder().encode(list), let text = String(data: data, encoding: .utf8) else { return }
         web.evaluateJavaScript("window.setUserSnippets?.(\(text))", completionHandler: nil)
     }
+    private func syncSnippetPreferences() {
+        guard let json = javaScriptJSON(SnippetPreferences.disabled.sorted()) else { return }
+        web.evaluateJavaScript("window.setSnippetPreferences?.(\(json))", completionHandler: nil)
+        settingsController?.refreshSnippetPlaceholders()
+    }
     func changeStorageDirectory(_ directory: URL, completion: @escaping (String?) -> Void) {
         let directory = directory.standardizedFileURL
         let destination = NoteFiles.index(directory)
@@ -548,6 +553,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             settingsController?.loadPlaceholders = { [weak self] completion in
                 self?.web.evaluateJavaScript("window.snippetPlaceholders?.()") { value, _ in completion(value as? [[String: Any]] ?? []) }
             }
+            settingsController?.loadSnippetControls = { [weak self] completion in
+                guard let self else { completion([]); return }
+                self.web.evaluateJavaScript("JSON.stringify(window.snippetControls?.())") { value, _ in
+                    let controls = (value as? String).flatMap { try? JSONDecoder().decode([SnippetControl].self, from: Data($0.utf8)) }
+                    completion(controls ?? [])
+                }
+            }
+            settingsController?.snippetPreferencesChanged = { [weak self] in self?.syncSnippetPreferences() }
             settingsController?.restoreNote = { [weak self] data in
                 guard let self else { return }
                 self.web.evaluateJavaScript("window.restoreNoteBase64('\(data.base64EncodedString())')") { [weak self] _, error in
@@ -703,6 +716,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func windowShouldClose(_ sender: NSWindow) -> Bool { hideWindow(); return false }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         syncUserSnippets()
+        syncSnippetPreferences()
         syncLanguage()
         syncCodeIndentation()
         syncVimEnabled()

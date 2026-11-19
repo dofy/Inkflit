@@ -2,9 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Toggle snippet groups and individual built-in or custom snippets in Settings without deleting them.
+
+### Changed
+
+- Keep the scientific constant suggestions and placeholder picker focused on frequently used constants.
+
 ### Fixed
 
 - Apply the selected interface palette and appearance throughout offline help.
+- Find the minute unit with `@min` alongside the `min()` function in math snippets.
 
 ## [0.2.2] - 2026-11-19
 

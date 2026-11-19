@@ -209,6 +209,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     var loadPlaceholders: ((@escaping ([[String: Any]]) -> Void) -> Void)? {
         didSet { snippetsEditor.loadPlaceholders = loadPlaceholders }
     }
+    var loadSnippetControls: ((@escaping ([SnippetControl]) -> Void) -> Void)? {
+        didSet { snippetsEditor.loadControls = loadSnippetControls }
+    }
+    var snippetPreferencesChanged: (() -> Void)? {
+        didSet { snippetsEditor.preferencesChanged = snippetPreferencesChanged }
+    }
+    func refreshSnippetPlaceholders() { snippetsEditor.refreshPlaceholders() }
     private let snippetsEditor = SnippetsEditor()
     private var snippetsLoaded = false
     /// Tabs in order; the raw value is the tab index.
@@ -821,6 +828,97 @@ final class HelpLinks: NSObject, WKNavigationDelegate {
     }
 }
 
+enum SnippetPreferences {
+    private static let key = "disabledSnippetIDs"
+    static var disabled: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: key) ?? []) }
+        set { UserDefaults.standard.set(newValue.sorted(), forKey: key) }
+    }
+}
+
+final class SnippetControl: NSObject, Decodable {
+    let key: String
+    let title: String
+    let detail: String?
+    let children: [SnippetControl]?
+}
+
+private final class SnippetAvailabilityView: NSView, NSOutlineViewDataSource, NSOutlineViewDelegate {
+    private let controls: [SnippetControl]
+    private let changed: () -> Void
+    private let outline = NSOutlineView()
+    private var disabled = SnippetPreferences.disabled
+
+    init(controls: [SnippetControl], changed: @escaping () -> Void) {
+        self.controls = controls; self.changed = changed
+        super.init(frame: NSRect(x: 0, y: 0, width: 500, height: 330))
+        let name = NSTableColumn(identifier: .init("name")); name.title = L("settings.snippets"); name.width = 405
+        let enabled = NSTableColumn(identifier: .init("enabled")); enabled.title = L("settings.snippetEnabled"); enabled.width = 72
+        outline.addTableColumn(name); outline.addTableColumn(enabled); outline.outlineTableColumn = name
+        outline.columnAutoresizingStyle = .firstColumnOnlyAutoresizingStyle
+        outline.rowHeight = 23; outline.usesAlternatingRowBackgroundColors = true
+        outline.dataSource = self; outline.delegate = self
+        outline.setAccessibilityLabel(L("settings.snippetAvailability"))
+        let scroll = NSScrollView(frame: bounds)
+        scroll.autoresizingMask = [.width, .height]; scroll.hasVerticalScroller = true
+        scroll.borderType = .bezelBorder; scroll.documentView = outline
+        addSubview(scroll)
+        outline.reloadData()
+    }
+    required init?(coder: NSCoder) { nil }
+
+    private func children(of item: Any?) -> [SnippetControl] {
+        guard let item = item as? SnippetControl else { return controls }
+        return item.children ?? []
+    }
+    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int { children(of: item).count }
+    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool { !children(of: item).isEmpty }
+    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any { children(of: item)[index] }
+
+    func outlineView(_ outlineView: NSOutlineView, viewFor column: NSTableColumn?, item: Any) -> NSView? {
+        guard let control = item as? SnippetControl else { return nil }
+        var ancestor = outline.parent(forItem: control) as? SnippetControl
+        var groupEnabled = true
+        while let group = ancestor {
+            if disabled.contains(group.key) { groupEnabled = false; break }
+            ancestor = outline.parent(forItem: group) as? SnippetControl
+        }
+        if column?.identifier.rawValue == "enabled" {
+            let check = NSButton(checkboxWithTitle: "", target: self, action: #selector(toggle(_:)))
+            check.identifier = .init(control.key)
+            check.state = disabled.contains(control.key) ? .off : .on
+            check.isEnabled = groupEnabled
+            check.setAccessibilityLabel(L("settings.snippetEnabled") + " " + control.title)
+            return check
+        }
+        let field = NSTextField(labelWithString: "")
+        field.lineBreakMode = .byTruncatingTail
+        let title = NSMutableAttributedString(string: control.title, attributes: [
+            .font: NSFont.systemFont(ofSize: 12, weight: control.children == nil ? .regular : .semibold),
+            .foregroundColor: groupEnabled ? NSColor.labelColor : NSColor.disabledControlTextColor,
+        ])
+        if let detail = control.detail, !detail.isEmpty {
+            title.append(NSAttributedString(string: "   " + detail, attributes: [
+                .font: NSFont.systemFont(ofSize: 11),
+                .foregroundColor: groupEnabled ? NSColor.secondaryLabelColor : NSColor.disabledControlTextColor,
+            ]))
+            field.toolTip = detail
+        }
+        field.attributedStringValue = title
+        return field
+    }
+
+    @objc private func toggle(_ sender: NSButton) {
+        guard let id = sender.identifier?.rawValue else { return }
+        if sender.state == .on { disabled.remove(id) }
+        else { disabled.insert(id) }
+        SnippetPreferences.disabled = disabled
+        changed()
+        outline.reloadData(forRowIndexes: IndexSet(integersIn: 0..<outline.numberOfRows),
+                           columnIndexes: IndexSet(integersIn: 0..<outline.numberOfColumns))
+    }
+}
+
 /// Settings → Snippets: a table of trigger and content, like macOS text
 /// replacements, with the selected row's full content edited below. Rows
 /// that share a trigger form a group; the first is the default.
@@ -829,8 +927,11 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     /// Built-in rows from the page: trigger, token ({token} names the row),
     /// example value and description, in the app language.
     var loadPlaceholders: ((@escaping ([[String: Any]]) -> Void) -> Void)?
+    var loadControls: ((@escaping ([SnippetControl]) -> Void) -> Void)?
+    var preferencesChanged: (() -> Void)?
     private var placeholders: [[String: Any]] = []
     private let insertPlaceholder = NSPopUpButton(frame: .zero, pullsDown: true)
+    private let availability = NSButton(title: L("settings.snippetAvailability"), target: nil, action: nil)
     private var rows: [UserSnippet] = []
     private var editable = true
     private let table = NSTableView()
@@ -843,8 +944,9 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     init() {
         super.init(frame: .zero)
         let trigger = NSTableColumn(identifier: .init("trigger")); trigger.title = L("settings.snippetTrigger"); trigger.width = 120; trigger.minWidth = 80
+        let enabled = NSTableColumn(identifier: .init("enabled")); enabled.title = L("settings.snippetEnabled"); enabled.width = 66; enabled.minWidth = 60; enabled.maxWidth = 80
         let value = NSTableColumn(identifier: .init("content")); value.title = L("settings.snippetContent")
-        table.addTableColumn(trigger); table.addTableColumn(value)
+        table.addTableColumn(trigger); table.addTableColumn(enabled); table.addTableColumn(value)
         table.dataSource = self; table.delegate = self; table.usesAlternatingRowBackgroundColors = true; table.rowHeight = 22
         table.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle; table.setAccessibilityLabel(L("settings.snippets"))
         let tableScroll = NSScrollView(); tableScroll.documentView = table; tableScroll.hasVerticalScroller = true; tableScroll.borderType = .bezelBorder
@@ -861,12 +963,14 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         insertPlaceholder.bezelStyle = .rounded; insertPlaceholder.controlSize = .small
         insertPlaceholder.menu?.delegate = self; insertPlaceholder.addItem(withTitle: L("settings.insertPlaceholder"))
         insertPlaceholder.setAccessibilityLabel(L("settings.insertPlaceholder"))
-        for view in [tableScroll, buttons, insertPlaceholder, contentScroll, status, empty] { view.translatesAutoresizingMaskIntoConstraints = false; addSubview(view) }
+        availability.target = self; availability.action = #selector(showAvailability); availability.bezelStyle = .rounded; availability.controlSize = .small
+        for view in [tableScroll, buttons, availability, insertPlaceholder, contentScroll, status, empty] { view.translatesAutoresizingMaskIntoConstraints = false; addSubview(view) }
         NSLayoutConstraint.activate([
             tableScroll.topAnchor.constraint(equalTo: topAnchor), tableScroll.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 44), tableScroll.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableScroll.heightAnchor.constraint(equalToConstant: 150),
             empty.centerXAnchor.constraint(equalTo: tableScroll.centerXAnchor), empty.centerYAnchor.constraint(equalTo: tableScroll.centerYAnchor, constant: 10),
             buttons.topAnchor.constraint(equalTo: tableScroll.bottomAnchor, constant: 6), buttons.leadingAnchor.constraint(equalTo: tableScroll.leadingAnchor),
+            availability.centerXAnchor.constraint(equalTo: tableScroll.centerXAnchor), availability.centerYAnchor.constraint(equalTo: buttons.centerYAnchor),
             insertPlaceholder.centerYAnchor.constraint(equalTo: buttons.centerYAnchor), insertPlaceholder.trailingAnchor.constraint(equalTo: trailingAnchor),
             contentScroll.topAnchor.constraint(equalTo: buttons.bottomAnchor, constant: 10), contentScroll.leadingAnchor.constraint(equalTo: tableScroll.leadingAnchor), contentScroll.trailingAnchor.constraint(equalTo: trailingAnchor),
             contentScroll.heightAnchor.constraint(equalToConstant: 80),
@@ -883,7 +987,25 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     }
 
     // MARK: Placeholders
-    private func refreshPlaceholders() { loadPlaceholders? { [weak self] list in self?.placeholders = list } }
+    func refreshPlaceholders() { loadPlaceholders? { [weak self] list in self?.placeholders = list } }
+    @objc private func showAvailability() {
+        guard let window, window.attachedSheet == nil else { return }
+        loadControls? { [weak self, weak window] controls in
+            guard let window, window.isVisible, window.attachedSheet == nil, let self else { return }
+            let alert = NSAlert()
+            alert.messageText = L("settings.snippetAvailability")
+            if controls.isEmpty {
+                alert.informativeText = L("error.settingsUnavailable")
+            } else {
+                alert.informativeText = L("settings.snippetAvailabilityHint")
+                alert.accessoryView = SnippetAvailabilityView(controls: controls) { [weak self] in
+                    self?.preferencesChanged?()
+                }
+            }
+            alert.addButton(withTitle: L("settings.snippetDone"))
+            alert.beginSheetModal(for: window)
+        }
+    }
     private func placeholderSubmenu(_ title: String, in menu: NSMenu) -> NSMenu {
         if let submenu = menu.item(withTitle: title)?.submenu { return submenu }
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
@@ -932,6 +1054,12 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     // MARK: Table
     func numberOfRows(in tableView: NSTableView) -> Int { rows.count }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        if tableColumn?.identifier.rawValue == "enabled" {
+            let check = NSButton(checkboxWithTitle: "", target: self, action: #selector(snippetEnabledChanged(_:)))
+            check.tag = row; check.state = rows[row].enabled == false ? .off : .on; check.isEnabled = editable
+            check.setAccessibilityLabel(L("settings.snippetEnabled") + " @" + rows[row].trigger)
+            return check
+        }
         let isTrigger = tableColumn?.identifier.rawValue == "trigger"
         let field = NSTextField(labelWithString: "")
         field.lineBreakMode = .byTruncatingTail; field.font = isTrigger ? .monospacedSystemFont(ofSize: 12, weight: .medium) : .systemFont(ofSize: 12)
@@ -950,8 +1078,17 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     func controlTextDidEndEditing(_ notification: Notification) {
         guard let field = notification.object as? NSTextField, rows.indices.contains(field.tag) else { return }
         rows[field.tag].trigger = field.stringValue.trimmingCharacters(in: .whitespaces).lowercased()
-        table.reloadData(forRowIndexes: [field.tag], columnIndexes: [0, 1])
+        table.reloadData(forRowIndexes: [field.tag], columnIndexes: IndexSet(integersIn: 0..<table.numberOfColumns))
         scheduleSave()
+    }
+    @objc private func snippetEnabledChanged(_ sender: NSButton) {
+        guard editable, rows.indices.contains(sender.tag) else { return }
+        let row = sender.tag, previous = rows[row].enabled
+        rows[row].enabled = sender.state == .off ? false : nil
+        if !saveNow() {
+            rows[row].enabled = previous
+            sender.state = previous == false ? .off : .on
+        }
     }
 
     // MARK: Content
@@ -959,7 +1096,7 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         let row = table.selectedRow
         guard rows.indices.contains(row) else { return }
         rows[row].content = content.string
-        table.reloadData(forRowIndexes: [row], columnIndexes: [1])
+        table.reloadData(forRowIndexes: [row], columnIndexes: [table.column(withIdentifier: .init("content"))])
         scheduleSave()
     }
 
@@ -1041,13 +1178,14 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         let work = DispatchWorkItem { [weak self] in self?.saveNow() }
         pendingSave = work; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
-    func saveNow() {
-        guard editable, let save else { return }
+    @discardableResult func saveNow() -> Bool {
+        guard editable, let save else { return false }
         pendingSave?.cancel(); pendingSave = nil
         let valid = rows.filter { UserSnippet.isValidTrigger($0.trigger) && !$0.content.isEmpty }
-        if let error = save(valid) { status.stringValue = error; status.textColor = .systemRed; return }
+        if let error = save(valid) { status.stringValue = error; status.textColor = .systemRed; return false }
         let invalid = rows.contains { !$0.trigger.isEmpty && !UserSnippet.isValidTrigger($0.trigger) }
         status.stringValue = invalid ? L("settings.snippetInvalidTrigger") : ""; status.textColor = invalid ? .systemRed : .secondaryLabelColor
+        return true
     }
 
     #if INKFLIT_NATIVE_TEST

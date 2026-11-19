@@ -84,7 +84,7 @@
       <tr><td><code>@ip</code></td><td>グローバルアドレス、IPv4（<code>@ipv4</code>）、IPv6（<code>@ipv6</code>）、ローカルネットワーク（<code>@localip</code>）</td></tr>
       <tr><td><code>@mac</code></td><td>ネットワークインターフェースの MAC アドレス</td></tr>
       <tr><td><code>@host</code></td><td>ホスト名（<code>@hostname</code>）、コンピュータ名（<code>@computer</code>）、ユーザー名（<code>@whoami</code>）</td></tr>
-      <tr><td><code>@fn @unit @cur</code></td><td>計算ブロック内のみ：関数、単位、通貨。<a href="#math">計算</a>を参照</td></tr>
+      <tr><td><code>@fn @unit @cur @const</code></td><td>計算ブロック内のみ：関数、単位、通貨、定数。<a href="#math">計算</a>を参照</td></tr>
     </tbody>
   </table>
   <ul>
@@ -94,6 +94,7 @@
   </ul>
   <h4>自分のスニペット</h4>
   <p>「設定 → スニペット」またはコマンドパレットの「スニペットを管理」で追加します。ノートのフォルダの <code>snippets.json</code> に保存され、ノートと一緒に移動・バックアップされます。</p>
+  <p>「設定 → スニペット → スニペットの有効設定」で、組み込みスニペットをグループ別または個別に切り替えられます。「カスタムスニペット」で自作分をまとめて切り替えるか、各行の「有効」を外してください。無効にした項目は補完とプレースホルダの選択に表示されません。テンプレートに含まれるプレースホルダは引き続き展開されます。</p>
   <ul>
     <li><b>1 つのトリガーに複数の行：</b>macOS のユーザ辞書と同じです。住所をいくつか <code>addr</code> に登録すると、<code>@addr</code> ですべて一覧され、既定では最初の行が挿入されます。</li>
     <li><b>組み込みの単語と同じ名前：</b>自分の行が先頭に入るので、自分の <code>date</code> が既定になります。</li>
@@ -357,20 +358,21 @@ ans / 2 =
     </tbody>
   </table>
   <p class="tip">Inkflit が取得するのは公開されている為替レートだけで、ノートは送信しません。レートを取得できないときは推測せず、そのことを表示します。</p>
-  <h3>@ で関数・単位・通貨を挿入する</h3>
-  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 3 つの単語が表示されます。これらは計算ブロックの中でだけ表示されます。</p>
+  <h3>@ で関数・単位・通貨・定数を挿入する</h3>
+  <p>計算ブロックで <code>@</code> を入力すると、通常のスニペットに加えて 4 つのグループが表示されます。</p>
   <table>
     <thead><tr><th>単語</th><th>一覧</th></tr></thead>
     <tbody>
       <tr><td><code>@fn</code></td><td>すべての関数と説明。<code>sqrt()</code> を挿入するとカーソルが括弧の中に入ります。引数を書いたら <kbd>Tab</kbd> で括弧の後ろへ移動できます。</td></tr>
       <tr><td><code>@unit</code></td><td>上の表の単位と、その種類。</td></tr>
       <tr><td><code>@cur</code></td><td>すべての通貨と名前、表示言語の通貨に対するレート（日本語は JPY、英語は USD、簡体字中国語は CNY、繁体字中国語は HKD）。</td></tr>
+      <tr><td><code>@const</code></td><td>数学定数とよく使う科学定数。</td></tr>
     </tbody>
   </table>
   <ul>
     <li>名前だけでも使えます：<code>@sqrt</code>、<code>@km</code>、<code>@kilometer</code>、<code>@usd</code> でその項目が直接見つかります。</li>
     <li>数値の直後に <code>@</code> を書けます：<code>10@km</code>。</li>
-    <li>既存のスニペットと重なる名前はそちらが優先です：分は <code>@minute</code>（<code>@min</code> は関数）、ミリ秒は <code>@millisecond</code>（<code>@ms</code> はタイムスタンプ）。</li>
+    <li>計算ブロックの <code>@min</code> には最小値関数と分の単位 <code>@minute</code> が表示されます。分を選ぶと <code>min</code> が挿入されます。<code>@ms</code> にはタイムスタンプとミリ秒の単位 <code>@millisecond</code> が表示されます。</li>
   </ul>
   <h3>ハイライト</h3>
   <p>計算ブロックは「設定 → 外観」のコードの配色で色分けされます。ライトとダークのどちらにも対応します：</p>
