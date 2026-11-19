@@ -17,6 +17,8 @@ cp Resources/UIThemes.json "$APP/Contents/Resources/UIThemes.json"
 cp Resources/Onboarding.*.json "$APP/Contents/Resources/"
 cp web/index.html web/style.css "$APP/Contents/Resources/web/"
 cp web/dist/editor.js "$APP/Contents/Resources/web/editor.js"
+cp node_modules/prettier/LICENSE "$APP/Contents/Resources/Prettier-LICENSE.txt"
+cp node_modules/prettier/THIRD-PARTY-NOTICES.md "$APP/Contents/Resources/Prettier-THIRD-PARTY-NOTICES.md"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

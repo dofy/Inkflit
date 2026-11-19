@@ -2,8 +2,48 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EditorState } from '@codemirror/state';
 import { history, undo, redo } from '@codemirror/commands';
+import { markdown } from '@codemirror/lang-markdown';
 import { blockProtection } from '../web/block-protection.js';
 import { planListIndent } from '../web/list-editing.js';
+import { planTaskToggle } from '../web/tasks.js';
+
+test('task toggle works at the beginning, middle and end of either kind of item', () => {
+  for (const [doc, item, checked] of [
+    [':::inkflit list\nroot task\n:::end', 'root task', '[x] root task'],
+    ['list\nroot\n  [X] child task', '  [X] child task', '  [ ] child task'],
+    ['- [ ] Markdown task', '- [ ] Markdown task', '- [x] Markdown task'],
+    ['1. [x] Markdown task', '1. [x] Markdown task', '1. [ ] Markdown task'],
+  ]) {
+    for (const offset of [0, Math.floor(item.length / 2), item.length]) {
+      const state = EditorState.create({ doc, selection: { anchor: doc.indexOf(item) + offset }, extensions: [markdown(), history(), blockProtection] });
+      const plan = planTaskToggle(state);
+      assert.ok(plan, item);
+      let next = state.update(plan).state;
+      assert.equal(next.doc.toString(), doc.replace(item, checked));
+      assert.equal(undo({ state: next, dispatch: transaction => { next = transaction.state; } }), true);
+      assert.equal(next.doc.toString(), doc);
+    }
+  }
+});
+
+test('a Markdown continuation toggles its closest task and ignores non-task children', () => {
+  const doc = '- [ ] parent\n  parent detail\n  - [ ] child\n    child detail\n  - ordinary item\n    ordinary detail';
+  for (const [text, item] of [['parent detail', 'parent'], ['child detail', 'child']]) {
+    const state = EditorState.create({ doc, selection: { anchor: doc.indexOf(text) + 3 }, extensions: [markdown()] });
+    const next = state.update(planTaskToggle(state)).state;
+    assert.equal(next.doc.toString(), doc.replace(`[ ] ${item}`, `[x] ${item}`));
+    assert.equal(next.selection.main.head, state.selection.main.head);
+  }
+  const state = EditorState.create({ doc, selection: { anchor: doc.indexOf('ordinary detail') }, extensions: [markdown()] });
+  assert.equal(planTaskToggle(state), null);
+});
+
+test('task toggle ignores code, headings, comments and ordinary prose', () => {
+  for (const doc of ['```text\n- [ ] fake\n```', '    [ ] fake', ':::inkflit code\n[ ] fake\n:::end', ':::inkflit list\n// fake\n:::end', ':::inkflit list\n## fake\n:::end', '- fake']) {
+    const state = EditorState.create({ doc, selection: { anchor: doc.indexOf('fake') }, extensions: [markdown()] });
+    assert.equal(planTaskToggle(state), null, doc);
+  }
+});
 
 function make(doc, pos) { return EditorState.create({doc,selection:{anchor:doc.indexOf(pos)},extensions:[history(),blockProtection]}); }
 function apply(state,key) { const spec=planListIndent(state,key); assert.ok(spec); return state.update(spec).state; }

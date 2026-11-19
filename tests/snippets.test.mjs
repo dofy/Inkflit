@@ -5,7 +5,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { CompletionContext } from '@codemirror/autocomplete';
 import catalog from '../Resources/Translations.json' with { type: 'json' };
 import { builtinSnippets, matchSnippets, expandTemplate, templateSnippet, addSnippetSource, allSnippets, snippetContext, isoWeek, field, plainText, fieldTemplate } from '../web/snippets.js';
-import { snippetCompletions } from '../web/snippet-completion.js';
+import { settingsSnippetPlaceholders, snippetCompletions } from '../web/snippet-completion.js';
 import { setLanguage } from '../web/i18n.js';
 
 setLanguage('en');
@@ -58,6 +58,8 @@ test('typing shows every format of each matching trigger', () => {
   assert.deepEqual(rowsOf('time'), ['time', 'time', 'time', 'timestamp', 'timestamp']);
   assert.deepEqual(rowsOf('ti'), ['time', 'time', 'time', 'timestamp', 'timestamp']);
   assert.deepEqual(rowsOf('wk'), ['week', 'week', 'week', 'week'], 'letters in order also fit');
+  assert.deepEqual(rowsOf('wek'), rowsOf('wk'), 'different subsequences match the same trigger');
+  assert.deepEqual(rowsOf('wke'), [], 'the letters must stay in order');
   assert.deepEqual(rowsOf('tsp'), ['timestamp', 'timestamp']);
   assert.deepEqual(rowsOf('ip'), ['ip', 'ip', 'ip', 'ip']);
   assert.deepEqual(rowsOf('timesec'), ['timesec→time'], 'a whole alias is that row');
@@ -121,6 +123,20 @@ test('the placeholder catalog names every built-in row', async () => {
   assert.equal(new Set(catalog.map(item => item.token)).size, catalog.length, 'tokens are unique');
 });
 
+test('math presets in Settings insert the displayed function, unit and currency', async () => {
+  const settingsRows = settingsSnippetPlaceholders();
+  for (const [trigger, token, example, expanded] of [
+    ['fn', 'sqrt', /^sqrt\(x\)$/, `sqrt(${field()})`],
+    ['unit', 'km', /^km$/, 'km'],
+    ['cur', 'usd', /^USD · US Dollar$/, 'USD'],
+  ]) {
+    const item = settingsRows.find(item => item.trigger === trigger && item.token === token);
+    assert.ok(item, token);
+    assert.match(item.example, example);
+    assert.equal(await expandTemplate(`{${token}}`), expanded);
+  }
+});
+
 test('the list appears after @ only outside code and words', () => {
   const labels = doc => {
     const pos = doc.indexOf('|'), text = doc.replace('|', '');
@@ -174,7 +190,8 @@ test('math blocks offer functions, units and currencies; elsewhere they stay hid
   };
   for (const name of unitNames) assert.ok(evaluateExpression(`1 ${name}`), `${name} parses`);
   for (const row of [...functionSnippets, ...unitSnippets, ...currencySnippets(fallbackCurrencies)]) {
-    assert.ok(catalog[row.hint ?? row.description], `${row.trigger}: ${row.hint ?? row.description}`);
+    const label = row.hint ?? row.category ?? row.description;
+    assert.ok(catalog[label], `${row.trigger}: ${label}`);
     for (const alias of row.aliases) assert.match(alias, /^[a-z0-9]{2,}$/);
   }
   const aliases = [...functionSnippets, ...unitSnippets, ...currencySnippets(fallbackCurrencies)].flatMap(row => row.aliases);
@@ -197,6 +214,61 @@ test('math blocks offer functions, units and currencies; elsewhere they stay hid
   assert.equal(await currencyPreview('USD', { locale: 'zh-Hans', rates }), 'USD · 美元 · 1 = 7.103 CNY');
   assert.equal(await currencyPreview('USD', { locale: 'en', rates }), 'USD · US Dollar · 1 = 0.8621 EUR', 'the home currency compares with EUR');
   assert.equal(await currencyPreview('JPY', { locale: 'en', rates: () => Promise.reject(new Error('offline')) }), 'JPY · Japanese Yen', 'offline still names it');
+});
+
+test('unit categories replace the broad list and narrow completion by keyword', () => {
+  const options = (query, prefix = 'math\n') => {
+    const state = EditorState.create({ doc: `${prefix}@${query}`, extensions: [markdown()] });
+    return snippetCompletions(new CompletionContext(state, state.doc.length, false))?.options ?? [];
+  };
+  const categories = options('uni').filter(option => !option.snippet);
+  assert.equal(categories.length, 16);
+  assert.equal(options('uni')[0].label, '@unit-length');
+  assert.equal(categories[0].detail, 'Length ›');
+  assert.ok(options('uni').every(option => option.snippet?.trigger !== 'unit'), 'individual units stay out of the broad list');
+  assert.deepEqual(options('unit-p').map(option => option.label), ['@unit-power', '@unit-pressure']);
+  assert.deepEqual(options('len').map(option => option.label), ['@unit-length']);
+  assert.deepEqual(options('unia').map(option => option.label), ['@unit-area', '@unit-angle']);
+  for (const query of ['uniang', 'unitangle', 'ut-agl', 'agl', 'uagl', 'unitngl', 'u-angle']) {
+    assert.deepEqual(options(query).map(option => option.label), ['@unit-angle'], query);
+  }
+  assert.deepEqual(options('unitime').map(option => option.label), ['@unit-time']);
+  assert.deepEqual(options('unix').map(option => option.label), ['@unix'], 'the timestamp alias keeps priority');
+  const values = query => options(query).map(option => option.snippet.expand(snippetContext({ now })));
+  assert.deepEqual(values('speed'), ['m/s', 'km/h', 'mph']);
+  assert.deepEqual(values('unit-speed'), values('speed'));
+  assert.ok(values('unit-time').includes('min'));
+  assert.equal(values('time')[0], '09:05', 'the built-in clock keeps @time');
+  assert.deepEqual(values('km'), ['km']);
+  assert.deepEqual(options('unit-speed', ''), []);
+});
+
+test('constant shortcuts browse both groups and insert valid calculator symbols', async () => {
+  const { evaluateExpression } = await import('../web/features.js');
+  const options = (query, prefix = 'math\n') => {
+    const state = EditorState.create({ doc: `${prefix}@${query}`, extensions: [markdown()] });
+    return snippetCompletions(new CompletionContext(state, state.doc.length, false))?.options ?? [];
+  };
+  const groups = options('const').map(({ label }) => label);
+  assert.deepEqual(groups, ['@const-math', '@const-science']);
+  assert.deepEqual(options('const-scn').map(({ label }) => label), ['@const-science']);
+  assert.ok(options('csci').some(({ label }) => label === '@const-science'));
+  const [math, science] = groups.map(label => options(label.slice(1)));
+  assert.ok(math.every(({ snippet }) => snippet.category === 'snippet.const.math'));
+  assert.ok(science.every(({ snippet }) => snippet.category === 'snippet.const.science'));
+  assert.deepEqual(math.map(({ snippet }) => snippet.expand()).slice(0, 4), ['pi', 'e', 'tau', 'phi']);
+  assert.equal(science[0].snippet.expand(), 'speedOfLight');
+  for (const { snippet } of [...math, ...science]) assert.ok(evaluateExpression(snippet.expand()), snippet.expand());
+  assert.deepEqual(options('pi').map(({ snippet }) => snippet.expand()), ['pi']);
+  assert.deepEqual(options('speedOfLight').map(({ snippet }) => snippet.expand()), ['speedOfLight']);
+  assert.deepEqual(options('sqrt1_2').map(({ snippet }) => snippet.expand()), ['SQRT1_2']);
+  assert.deepEqual(options('coulomb').map(({ snippet }) => snippet.expand()), ['C'], 'the existing unit alias is preserved');
+  assert.deepEqual(options('const', ''), []);
+  const presets = settingsSnippetPlaceholders();
+  assert.equal(presets.find(({ token }) => token === 'pi').category, 'snippet.const.math');
+  assert.equal(presets.find(({ token }) => token === 'speedoflight').category, 'snippet.const.science');
+  assert.equal(await expandTemplate('2 * {pi} + {sqrt1_2}'), '2 * pi + SQRT1_2');
+  assert.equal(await expandTemplate('{speedoflight} to km/s'), 'speedOfLight to km/s');
 });
 
 test('exchange rates are asked once an hour and shared', async () => {

@@ -797,6 +797,12 @@
     "zh-Hant": "輸入關鍵字搜尋筆記",
     "ja": "キーワードを入力"
   },
+  "palette.formatNote": {
+    "en": "Format Note",
+    "zh-Hans": "格式化笔记",
+    "zh-Hant": "格式化筆記",
+    "ja": "ノートを整形"
+  },
   "palette.commandPalette": {
     "en": "Command Palette",
     "zh-Hans": "命令面板",
@@ -1240,6 +1246,18 @@
     "zh-Hans": "最大值",
     "zh-Hant": "最大值",
     "ja": "最大値"
+  },
+  "snippet.const.math": {
+    "en": "Mathematical constants",
+    "zh-Hans": "数学常量",
+    "zh-Hant": "數學常數",
+    "ja": "数学定数"
+  },
+  "snippet.const.science": {
+    "en": "Scientific constants",
+    "zh-Hans": "科学常量",
+    "zh-Hant": "科學常數",
+    "ja": "科学定数"
   },
   "snippet.unit.length": {
     "en": "Length",

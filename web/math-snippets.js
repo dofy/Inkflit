@@ -1,8 +1,7 @@
-// Snippets for math blocks: @fn (functions), @unit (units) and @cur
-// (currencies). Every row has `math: true`, so the list offers it only
-// inside a math block. Each name is also an alias, so "@km" or "@usd" finds
-// its row directly.
+// Snippets for math blocks: @fn, @unit, @cur and @const. Each name is also an
+// alias, so "@km", "@usd" and "@pi" find their rows directly.
 import { builtinSnippets, field } from './snippets.js';
+import { evaluateExpression } from './features.js';
 
 const MINUTE = 60_000;
 // Aliases the built-in rows already use ("ms" is a timestamp format), so a
@@ -42,6 +41,8 @@ const UNITS = {
   other: [['mol','mole'],['cd','candela']],
 };
 export const unitNames = Object.values(UNITS).flat().map(([name]) => name);
+const unitHint = keyword => `snippet.unit.${keyword}`;
+export const unitCategories = Object.keys(UNITS).map(keyword => ({ keyword, hint: unitHint(keyword) }));
 
 const taken = new Set();
 export const functionSnippets = FUNCTIONS.map(([name, args]) => ({
@@ -49,26 +50,65 @@ export const functionSnippets = FUNCTIONS.map(([name, args]) => ({
   expand: () => `${name}(${field()})`, preview: () => `${name}(${args})`,
 }));
 export const unitSnippets = Object.entries(UNITS).flatMap(([category, units]) => units.map(names => ({
-  trigger: 'unit', math: true, aliases: claimAliases(names, taken), hint: `snippet.unit.${category}`,
+  trigger: 'unit', math: true, aliases: claimAliases(names, taken), category: unitHint(category),
   expand: () => names[0], preview: () => names[0],
 })));
+
+// Use the calculator's symbol spelling. PI, E and coulomb are alternate
+// spellings of pi, e and coulombConstant, so each value appears only once.
+const CONSTANTS = {
+  math: ['pi', 'e', 'tau', 'phi', 'LN2', 'LN10', 'LOG2E', 'LOG10E', 'SQRT2', 'SQRT1_2'],
+  science: [
+    'speedOfLight', 'gravity', 'gravitationConstant', 'avogadro', 'planckConstant',
+    'reducedPlanckConstant', 'boltzmann', 'gasConstant', 'elementaryCharge',
+    'atomicMass', 'bohrMagneton', 'bohrRadius', 'classicalElectronRadius',
+    'conductanceQuantum', 'coulombConstant', 'deuteronMass', 'efimovFactor',
+    'electricConstant', 'electronMass', 'faraday', 'fermiCoupling', 'fineStructure',
+    'firstRadiation', 'hartreeEnergy', 'inverseConductanceQuantum', 'klitzing',
+    'loschmidt', 'magneticConstant', 'magneticFluxQuantum', 'molarMass',
+    'molarMassC12', 'molarPlanckConstant', 'molarVolume', 'neutronMass',
+    'nuclearMagneton', 'planckCharge', 'planckLength', 'planckMass',
+    'planckTemperature', 'planckTime', 'protonMass', 'quantumOfCirculation',
+    'rydberg', 'sackurTetrode', 'secondRadiation', 'stefanBoltzmann',
+    'thomsonCrossSection', 'vacuumImpedance', 'weakMixingAngle', 'wienDisplacement',
+  ],
+};
+const constantHint = keyword => `snippet.const.${keyword}`;
+export const constantCategories = Object.keys(CONSTANTS).map(keyword => ({ keyword, hint: constantHint(keyword) }));
+export const constantSnippets = Object.entries(CONSTANTS).flatMap(([category, names]) => names.map(name => {
+  const keyword = name.toLowerCase();
+  const alias = reserved.has(keyword) || taken.has(keyword) ? `const-${keyword}` : keyword;
+  taken.add(alias);
+  let value;
+  const preview = () => value ??= evaluateExpression(name)?.text ?? name;
+  return {
+    trigger: 'const', math: true, aliases: [alias], category: constantHint(category),
+    expand: () => name, preview, placeholderPreview: () => `${name} · ${preview()}`,
+  };
+}));
+
 const currencyTaken = new Set(taken);
 
 // The rate shown beside each currency is against the app language's own
 // currency; zh-Hant uses HKD because Frankfurter has no TWD.
 const HOME = { en: 'USD', 'zh-Hans': 'CNY', 'zh-Hant': 'HKD', ja: 'JPY' };
 const formatRate = n => Number(n.toPrecision(4)).toLocaleString('en-US', { maximumFractionDigits: 8 });
-export async function currencyPreview(code, { locale, rates }) {
+function currencyLabel(code, { locale }) {
   let name = code;
   try { name = new Intl.DisplayNames([locale], { type: 'currency' }).of(code) || code; } catch {}
+  return name === code ? code : `${code} · ${name}`;
+}
+
+export async function currencyPreview(code, context) {
+  const label = currencyLabel(code, context);
   try {
-    const { values } = await rates();
-    let home = HOME[locale] || 'USD';
+    const { values } = await context.rates();
+    let home = HOME[context.locale] || 'USD';
     if (home === code) home = code === 'USD' ? 'EUR' : 'USD';
-    if (values[code] && values[home]) return `${code} · ${name} · 1 = ${formatRate(values[home] / values[code])} ${home}`;
+    if (values[code] && values[home]) return `${label} · 1 = ${formatRate(values[home] / values[code])} ${home}`;
   } catch {}
   // Without rates the name is still worth showing.
-  return `${code} · ${name}`;
+  return label;
 }
 // Rows for the given codes; the same array for the same codes.
 let cachedCodes = null, cachedRows = [];
@@ -79,6 +119,7 @@ export function currencySnippets(codes) {
   cachedRows = codes.map(code => ({
     trigger: 'cur', math: true, aliases: claimAliases([code], claimed), description: 'snippet.currency',
     expand: () => code, preview: context => currencyPreview(code, context), previewTTL: 10 * MINUTE,
+    placeholderPreview: context => currencyLabel(code, context),
   }));
   return cachedRows;
 }

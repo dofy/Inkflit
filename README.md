@@ -90,7 +90,7 @@ Blocks use Inkflit text markers such as `:::inkflit math` and `:::end` in the no
 Type `@` and a word to insert a value. Return inserts the first format; ↑ / ↓ pick another.
 
 - **Built-in words:** `@date`, `@time`, `@now`, `@year`, `@month`, `@day`, `@week`, `@timestamp`, `@uuid`, `@ip`, `@mac`, `@host`.
-- **In math blocks:** `@fn` (functions), `@unit` (units) and `@cur` (currency codes with today's rate).
+- **In math blocks:** `@fn` (functions), `@unit` (units), `@cur` (currency codes with today's rate) and `@const` (mathematical and scientific constants). Use `@pi` or `@speedoflight` to find a constant directly.
 - **Your own:** add them in Settings → Snippets. Rows sharing a trigger form a group. They are saved in `snippets.json` in the notes folder.
 - **Placeholders:** `{date}`, `{date#2}`, an alias such as `{ipv4}`, and `{{` for a literal brace.
 - **Caret stops:** `{cursor}` and `{cursor:name}`. Tab / Shift-Tab move between stops and Esc ends them; the stop being filled is highlighted.

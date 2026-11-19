@@ -42,6 +42,7 @@
     <li>バックアップとゴミ箱は検索しません。</li>
   </ul>
   <h3>コマンドパレット <kbd>⌘⇧P</kbd></h3>
+  <p><code>format</code> で検索して「ノートを整形」を選ぶと、現在のノートの数式の空白と、JavaScript、TypeScript、JSON、HTML、CSS、Markdown、YAML のコードブロックを整形できます。コードにはインデント設定が適用され、操作全体を一度で取り消せます。</p>
   <p>設定ウインドウを開かずに、ノートの操作や設定の変更ができます。</p>
   <ul>
     <li><b>›</b> の付いたコマンドは、アクセントカラーや言語などの 2 段目の一覧を開きます。現在の値には <b>✓</b> が付きます。</li>
@@ -154,7 +155,7 @@
   <table>
     <thead><tr><th>ブロック</th><th>機能</th></tr></thead>
     <tbody>
-      <tr><td>チェックリスト</td><td>各行にチェックボックスが付きます。クリックするか、行末に <code>/x</code> と入力します。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
+      <tr><td>チェックリスト</td><td>チェックボックスをクリックするか、項目の末尾で <code>/x</code> と入力するか、項目内のどこかで <kbd>⌘↩</kbd> を押すと完了状態を切り替えられます。<kbd>⌘↩</kbd> は通常の Markdown タスクでも使えます。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
       <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。変数、関数、単位、通貨に対応します。<a href="#math">計算</a>を参照。</td></tr>
       <tr><td>合計 / 平均</td><td>ブロック内の数値を合計または平均します。式は計算しません。<br>独立した数値だけが対象です：<code>1.2.3.4</code>、IP アドレス、日付 <code>2026-11-19</code>、時刻 <code>14:05</code>、行頭の番号 <code>1.</code>・<code>1.2.</code> は数えません。</td></tr>
       <tr><td>カウント</td><td>項目数、単語数、文字数を数えます。</td></tr>
@@ -272,10 +273,10 @@ ans / 2 =
       <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>体積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">時間</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">角度</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>エネルギー</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>仕事率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -293,6 +294,34 @@ ans / 2 =
     <li><code>min</code> だけなら分、<code>min(…)</code> なら関数です。<code>in</code> は数値の直後ならインチ（<code>5 in to cm</code>）、それ以外では換算です（<code>10 km in mi</code>）。</li>
     <li>変数と単位が同じ名前なら変数が優先されます。</li>
   </ul>
+  <h4 id="time-units">時間の単位</h4>
+  <table>
+    <thead><tr><th>単位名（記号）</th><th>数式での入力</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>ミリ秒（ms）</td><td><code>ms</code> / <code>millisecond</code></td><td>1 ミリ秒 = 0.001 秒</td></tr>
+      <tr><td>秒（s）</td><td><code>s</code> / <code>second</code></td><td>1 秒 = 1000 ミリ秒</td></tr>
+      <tr><td>分（min）</td><td><code>min</code> / <code>minute</code></td><td>1 分 = 60 秒</td></tr>
+      <tr><td>時（h）</td><td><code>h</code> / <code>hour</code></td><td>1 時間 = 60 分</td></tr>
+      <tr><td>日（d）</td><td><code>day</code></td><td>1 日 = 24 時間</td></tr>
+      <tr><td>週</td><td><code>week</code></td><td>1 週 = 7 日</td></tr>
+      <tr><td>月</td><td><code>month</code></td><td>1 か月 = 30.4375 日</td></tr>
+      <tr><td>年</td><td><code>year</code></td><td>1 年 = 365.25 日 = 12 か月</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit の単位換算では、月と年を固定の長さとして扱います。日付の間の実際の日数は暦に従います。</p>
+  <p>数式では単位名の <code>minute</code> や <code>second</code> もそのまま使えます。<code>1 minute to s =</code> は <code>60 s</code>、<code>1 second to ms =</code> は <code>1000 ms</code> になります。スニペットで <code>@sec</code> と入力し、<code>@second</code> を選ぶと <code>s</code> が挿入されます。数式で秒を表すには <code>s</code> か <code>second</code> を使ってください。Inkflit は <code>sec</code> を時間の単位として認識しません。</p>
+  <h4 id="angle-units">角度の単位</h4>
+  <table>
+    <thead><tr><th>単位名（記号）</th><th>数式での入力</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>度（°）</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>ラジアン（rad）</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>グラジアン（gon）</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>角分（′）</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>角秒（″）</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>一周は 360°、つまり 2π rad です。数式では π を <code>pi</code> と書きます。たとえば <code>pi rad to deg =</code> は <code>180 deg</code> になります。三角関数は単位を省略するとラジアンで計算します。30° の正弦を求めるには <code>sin(30 deg) =</code> と書きます。結果は <code>0.5</code> です。</p>
   <h3>通貨</h3>
   <ul>
     <li><b>書き方：</b><code>10 USD to JPY =</code>。<code>to</code> の代わりに <code>in</code> も使えます。</li>
@@ -351,11 +380,11 @@ ans / 2 =
       <tr><td>数値と定数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>関数</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>単位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>通貨コード（太字）</td><td><code>USD</code> <code>JPY</code></td></tr>
+      <tr><td>通貨コード（単位と同じ色）</td><td><code>USD</code> <code>JPY</code></td></tr>
       <tr><td>演算子と換算の単語</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>括弧・カンマ・コロン</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>行末の等号（太字、結果と同じ色）</td><td><code>=</code></td></tr>
-      <tr><td>定義済みの変数（太字）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>行末の等号（演算子と同じ色）</td><td><code>=</code></td></tr>
+      <tr><td>変数の定義と参照</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>コメント</td><td><code>// …</code></td></tr>
     </tbody>
   </table>

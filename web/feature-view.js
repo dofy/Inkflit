@@ -6,6 +6,7 @@ import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
 import { openLanguageMenu } from './language-menu.js';
 import { currentRates, currencyCodes, refreshRates } from './rates.js';
+import { isChecklistItem, checklistToggleChange, taskMarker } from './tasks.js';
 export { setRateListener } from './rates.js';
 class Result extends WidgetType {
   constructor(text) { super(); this.text=text; }
@@ -18,7 +19,7 @@ class ListBox extends WidgetType {
   toDOM(view) {
     const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label',t('editor.markComplete'));
     b.addEventListener('mousedown', e=>{e.preventDefault();e.stopPropagation();});
-    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();view.dispatch({changes:{from:this.pos,insert:'[x] '},userEvent:'input.task.toggle'});view.focus();});
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const line=view.state.doc.lineAt(this.pos);view.dispatch({changes:checklistToggleChange(view.state,line),userEvent:'input.task.toggle'});view.focus();});
     return b;
   }
   ignoreEvent() { return false; }
@@ -44,6 +45,19 @@ class BlockHeader extends WidgetType {
 }
 class BlockEnd extends WidgetType { toDOM(){const el=document.createElement('span');el.className='block-end';el.textContent='';return el;} }
 const codeLine=Decoration.line({class:'cm-code-line'}), calcLine=Decoration.line({class:'cm-calc-line'});
+const mathLine=Decoration.line({class:'cm-calc-line cm-code-line'});
+// Math has its own tokenizer, but uses the same styles as code languages.
+const mathTokenClasses = {
+  variable: 'tok-variableName',
+  number: 'tok-number',
+  function: 'tok-function',
+  unit: 'tok-keyword',
+  currency: 'tok-keyword',
+  operator: 'tok-operator',
+  equals: 'tok-operator',
+  punctuation: 'tok-punctuation',
+  comment: 'tok-comment',
+};
 function decorateCode(view,scope,decorations) {
   if(!scope.language || scope.start>=view.state.doc.lines)return;
   const description=codeLanguage(scope.language); if(!description)return;
@@ -81,7 +95,8 @@ function decorate(view) {
     if(calculationModes.has(scope.mode)) {
       const last=Math.min(doc.lines,scope.last);
       // Lines of blocks nested in a whole-note mode belong to those blocks.
-      for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(doc,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(calcLine.range(doc.line(n).from)); }
+      const lineStyle = scope.mode === 'math' ? mathLine : calcLine;
+      for(let n=scope.start+1;n<=last;n++) { const at=scopeAt(doc,n); if(at && at.start===scope.start && at.end===scope.end) decorations.push(lineStyle.range(doc.line(n).from)); }
     }
     // Code lines keep Markdown's own styling ("# x" as a heading) out of the code.
     if(scope.mode==='code') {
@@ -93,7 +108,7 @@ function decorate(view) {
       for(let n=first;n<=last;n++) lines.push(nested.has(n) ? '' : doc.line(n).text);
       for(const range of mathHighlights(lines,currencies)) {
         const line=doc.line(first+range.line);
-        decorations.push(Decoration.mark({class:'cm-math-'+range.kind}).range(line.from+range.from,line.from+range.to));
+        decorations.push(Decoration.mark({class:mathTokenClasses[range.kind]}).range(line.from+range.from,line.from+range.to));
       }
     }
     for (const result of scope.results) { const line=doc.line(result.line); decorations.push(Decoration.widget({widget:new Result(result.text + (result.rateDate ? ` · ${result.rateDate}` : '')),side:1}).range(line.to)); }
@@ -101,8 +116,8 @@ function decorate(view) {
   }
   for(let n=2;n<=doc.lines;n++) {
     const scope=scopeAt(doc,n); if(scope?.mode!=='list') continue;
-    const line=doc.line(n), trimmed=line.text.trim();
-    if (!trimmed || /^(\/\/|#{1,6}(?:\s|$))/.test(trimmed) || /^(?:[-+*]\s+|\d+[.)]\s+)?\[[ xX]\](?:\s|$)/.test(trimmed)) continue;
+    const line=doc.line(n);
+    if (!isChecklistItem(line) || taskMarker(line)) continue;
     const indent=/^\s*/.exec(line.text)[0].length;
     decorations.push(Decoration.widget({widget:new ListBox(line.from+indent),side:-1}).range(line.from+indent));
   }

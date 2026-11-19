@@ -140,6 +140,7 @@
   </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
   <p>Runs note actions and changes settings without opening the Settings window.</p>
+  <p>Search for <code>format</code> and select <b>Format Note</b> to tidy expression spacing in math blocks and format JavaScript, TypeScript, JSON, HTML, CSS, Markdown, and YAML code blocks in the current note. Code uses your Code indentation setting. The whole operation can be undone in one step.</p>
   <ul>
     <li>Commands marked <b>›</b> open a second list, such as accent colors or languages. The current value has a <b>✓</b>.</li>
     <li>For opacity, blur and backups you can also type a number, for example <code>75</code>.</li>
@@ -251,7 +252,7 @@
   <table>
     <thead><tr><th>Block</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td>Checklist</td><td>A checkbox on every line. Click it or end a line with <code>/x</code>. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
+      <tr><td>Checklist</td><td>Click a checkbox, type <code>/x</code> at the end of an item, or press <kbd>⌘↩</kbd> anywhere in the item. <kbd>⌘↩</kbd> also works on Markdown tasks. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
       <tr><td>Math</td><td>End a line with <code>=</code> to calculate, with variables, functions, units and currencies. See <a href="#math">Math</a>.</td></tr>
       <tr><td>Sum / Average</td><td>Adds up or averages the numbers in the block, without evaluating expressions.<br>Only standalone numbers count: <code>1.2.3.4</code>, IP addresses, dates such as <code>2026-11-19</code>, times such as <code>14:05</code>, and numbering at the start of a line such as <code>1.</code> or <code>1.2.</code> do not.</td></tr>
       <tr><td>Count</td><td>Counts items, words and characters.</td></tr>
@@ -369,10 +370,10 @@ ans / 2 =
       <tr><td>Area</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>Volume</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>Mass</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>Time</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">Time</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>Speed</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>Temperature</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>Angle</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">Angle</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>Force</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>Energy</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>Power</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -390,6 +391,34 @@ ans / 2 =
     <li><code>min</code> on its own is minutes; <code>min(…)</code> is the function. <code>in</code> right after a number is inches (<code>5 in to cm</code>); elsewhere it converts (<code>10 km in mi</code>).</li>
     <li>A variable wins over a unit with the same name.</li>
   </ul>
+  <h4 id="time-units">Time units</h4>
+  <table>
+    <thead><tr><th>Unit (symbol)</th><th>Formula input</th><th>Conversion</th></tr></thead>
+    <tbody>
+      <tr><td>Millisecond (ms)</td><td><code>ms</code> / <code>millisecond</code></td><td>1 ms = 0.001 s</td></tr>
+      <tr><td>Second (s)</td><td><code>s</code> / <code>second</code></td><td>1 s = 1000 ms</td></tr>
+      <tr><td>Minute (min)</td><td><code>min</code> / <code>minute</code></td><td>1 min = 60 s</td></tr>
+      <tr><td>Hour (h)</td><td><code>h</code> / <code>hour</code></td><td>1 h = 60 min</td></tr>
+      <tr><td>Day (d)</td><td><code>day</code></td><td>1 day = 24 h</td></tr>
+      <tr><td>Week</td><td><code>week</code></td><td>1 week = 7 day</td></tr>
+      <tr><td>Month</td><td><code>month</code></td><td>1 month = 30.4375 day</td></tr>
+      <tr><td>Year</td><td><code>year</code></td><td>1 year = 365.25 day = 12 month</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit treats months and years as fixed durations when converting units. It does not count calendar days between dates.</p>
+  <p>You can write the full names <code>minute</code> and <code>second</code> in formulas. <code>1 minute to s =</code> gives <code>60 s</code>, and <code>1 second to ms =</code> gives <code>1000 ms</code>. In the snippet picker, type <code>@sec</code> and choose <code>@second</code> to insert <code>s</code>. In a formula, write <code>s</code> or <code>second</code>. Inkflit does not recognize <code>sec</code> as a time unit.</p>
+  <h4 id="angle-units">Angle units</h4>
+  <table>
+    <thead><tr><th>Unit (symbol)</th><th>Formula input</th><th>Conversion</th></tr></thead>
+    <tbody>
+      <tr><td>Degree (°)</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>Radian (rad)</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>Gradian (gon)</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>Arcminute (′)</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>Arcsecond (″)</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>A full turn is 360° or 2π rad. Use <code>pi</code> in a formula, as in <code>pi rad to deg =</code>, which gives <code>180 deg</code>. Trigonometric functions interpret an input with no unit as radians. Write <code>sin(30 deg) =</code> for 30°, which gives <code>0.5</code>.</p>
   <h3>Currency</h3>
   <ul>
     <li><b>Write:</b> <code>10 USD to EUR =</code>. <code>in</code> works in place of <code>to</code>.</li>
@@ -448,11 +477,11 @@ ans / 2 =
       <tr><td>Numbers and constants</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>Functions</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>Units</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>Currency codes (bold)</td><td><code>USD</code> <code>EUR</code></td></tr>
+      <tr><td>Currency codes (use the unit color)</td><td><code>USD</code> <code>EUR</code></td></tr>
       <tr><td>Operators and conversion words</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>Brackets, commas, colons</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>The closing equals sign (bold, like the result)</td><td><code>=</code></td></tr>
-      <tr><td>Defined variables (bold)</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>The closing equals sign (uses the operator color)</td><td><code>=</code></td></tr>
+      <tr><td>Variable definitions and references</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>Comments</td><td><code>// …</code></td></tr>
     </tbody>
   </table>
@@ -505,7 +534,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>Keyboard shortcuts</h2>
   <p>The global shortcut works from any app and can be changed in Settings. The others work while the note window is active.</p>
-  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide the window (in Vim, leave insert mode first)</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>First / last note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
+  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide the window (in Vim, leave insert mode first)</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>First / last note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘↩</kbd></td><td>Toggle the current checklist or Markdown task</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -614,6 +643,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>不搜索备份和回收站。</li>
   </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
+  <p>搜索 <code>format</code> 并选择「格式化笔记」，可整理当前笔记里数学公式的空格，以及 JavaScript、TypeScript、JSON、HTML、CSS、Markdown 和 YAML 代码块。代码沿用「代码缩进」设置，整次操作可以一步撤销。</p>
   <p>不用打开设置窗口，就能执行笔记操作、修改设置。</p>
   <ul>
     <li>带 <b>›</b> 的命令会打开第二级列表，比如界面主色、语言。当前生效的选项带 <b>✓</b>。</li>
@@ -726,7 +756,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <table>
     <thead><tr><th>功能块</th><th>作用</th></tr></thead>
     <tbody>
-      <tr><td>清单</td><td>每行一个复选框。点击勾选，或在行尾输入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 缩进和取消缩进，子项会跟着父项一起移动。</td></tr>
+      <tr><td>清单</td><td>点击复选框、在行尾输入 <code>/x</code>，或在当前项任意位置按 <kbd>⌘↩</kbd>，都能切换完成状态。<kbd>⌘↩</kbd> 也支持普通 Markdown 任务项。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 缩进和取消缩进，子项会跟着父项一起移动。</td></tr>
       <tr><td>计算</td><td>在行尾输入 <code>=</code> 得出结果，支持变量、函数、单位和货币，见<a href="#math">计算</a>。</td></tr>
       <tr><td>求和 / 平均值</td><td>对块里的数字求和或求平均，不计算表达式。<br>只算独立的数字：<code>1.2.3.4</code>、IP、日期 <code>2026-11-19</code>、时间 <code>14:05</code> 不算；行首的编号 <code>1.</code>、<code>1.2.</code> 也不算。</td></tr>
       <tr><td>计数</td><td>统计项目数、词数和字符数。</td></tr>
@@ -844,10 +874,10 @@ ans / 2 =
       <tr><td>面积</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>体积</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>质量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>时间</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">时间</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">角度</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -865,6 +895,34 @@ ans / 2 =
     <li><code>min</code> 单独写是分钟，写成 <code>min(…)</code> 是函数。<code>in</code> 跟在数字后面是英寸（<code>5 in to cm</code>），其他位置是换算（<code>10 km in mi</code>）。</li>
     <li>变量和单位同名时，变量优先。</li>
   </ul>
+  <h4 id="time-units">时间单位</h4>
+  <table>
+    <thead><tr><th>全名（符号）</th><th>公式写法</th><th>换算</th></tr></thead>
+    <tbody>
+      <tr><td>毫秒（ms）</td><td><code>ms</code> / <code>millisecond</code></td><td>1 毫秒 = 0.001 秒</td></tr>
+      <tr><td>秒（s）</td><td><code>s</code> / <code>second</code></td><td>1 秒 = 1000 毫秒</td></tr>
+      <tr><td>分钟（min）</td><td><code>min</code> / <code>minute</code></td><td>1 分钟 = 60 秒</td></tr>
+      <tr><td>小时（h）</td><td><code>h</code> / <code>hour</code></td><td>1 小时 = 60 分钟</td></tr>
+      <tr><td>天（d）</td><td><code>day</code></td><td>1 天 = 24 小时</td></tr>
+      <tr><td>周</td><td><code>week</code></td><td>1 周 = 7 天</td></tr>
+      <tr><td>月</td><td><code>month</code></td><td>1 月 = 30.4375 天</td></tr>
+      <tr><td>年</td><td><code>year</code></td><td>1 年 = 365.25 天 = 12 月</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit 在单位换算中把月和年当作固定时长。两个日期之间的实际天数要按日历计算。</p>
+  <p>公式里可以直接写全名 <code>minute</code> 和 <code>second</code>。<code>1 minute to s =</code> 得到 <code>60 s</code>，<code>1 second to ms =</code> 得到 <code>1000 ms</code>。在片段菜单中输入 <code>@sec</code>，选中 <code>@second</code> 就会插入 <code>s</code>。在公式里，秒要写 <code>s</code> 或 <code>second</code>，Inkflit 不识别 <code>sec</code> 这个时间单位。</p>
+  <h4 id="angle-units">角度单位</h4>
+  <table>
+    <thead><tr><th>全名（符号）</th><th>公式写法</th><th>换算</th></tr></thead>
+    <tbody>
+      <tr><td>度（°）</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>弧度（rad）</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>百分度（gon）</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>角分（′）</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>角秒（″）</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>一整圈是 360°，也就是 2π rad。公式里用 <code>pi</code> 表示 π，例如 <code>pi rad to deg =</code> 得到 <code>180 deg</code>。三角函数省略单位时按弧度计算。要算 30° 的正弦，写 <code>sin(30 deg) =</code>，结果是 <code>0.5</code>。</p>
   <h3>货币</h3>
   <ul>
     <li><b>写法：</b><code>10 USD to CNY =</code>。<code>to</code> 也可以写成 <code>in</code>。</li>
@@ -923,11 +981,11 @@ ans / 2 =
       <tr><td>数字和常数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>函数</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>单位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>货币代码（加粗）</td><td><code>USD</code> <code>CNY</code></td></tr>
+      <tr><td>货币代码（与单位同色）</td><td><code>USD</code> <code>CNY</code></td></tr>
       <tr><td>运算符和换算词</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>括号、逗号、冒号</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>行尾的等号（加粗，和结果同色）</td><td><code>=</code></td></tr>
-      <tr><td>已定义的变量（加粗）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>行尾的等号（使用运算符颜色）</td><td><code>=</code></td></tr>
+      <tr><td>变量定义和引用</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>注释</td><td><code>// …</code></td></tr>
     </tbody>
   </table>
@@ -980,7 +1038,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>快捷键</h2>
   <p>全局快捷键在任何应用里都能用，可以在设置中更改。其他快捷键在笔记窗口激活时可用。</p>
-  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>隐藏窗口（Vim 模式下先退出插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一条 / 最后一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
+  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>隐藏窗口（Vim 模式下先退出插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一条 / 最后一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切换当前清单项或 Markdown 任务的完成状态</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -1089,6 +1147,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>不搜尋備份和垃圾桶。</li>
   </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
+  <p>搜尋 <code>format</code> 並選擇「格式化筆記」，可整理目前筆記中數學公式的空格，以及 JavaScript、TypeScript、JSON、HTML、CSS、Markdown 和 YAML 程式碼區塊。程式碼沿用「程式碼縮排」設定，整次操作可以一步復原。</p>
   <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
   <ul>
     <li>帶 <b>›</b> 的命令會開啟第二層清單，例如介面主色、語言。目前生效的選項帶 <b>✓</b>。</li>
@@ -1201,7 +1260,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <table>
     <thead><tr><th>功能區塊</th><th>作用</th></tr></thead>
     <tbody>
-      <tr><td>清單</td><td>每行一個核取方塊。點擊勾選，或在行尾輸入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
+      <tr><td>清單</td><td>點擊核取方塊、在行尾輸入 <code>/x</code>，或在目前項目的任何位置按 <kbd>⌘↩</kbd>，都能切換完成狀態。<kbd>⌘↩</kbd> 也支援一般 Markdown 待辦項目。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
       <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果，支援變數、函式、單位和貨幣，見<a href="#math">計算</a>。</td></tr>
       <tr><td>加總 / 平均值</td><td>對區塊裡的數字加總或求平均，不計算運算式。<br>只算獨立的數字：<code>1.2.3.4</code>、IP、日期 <code>2026-11-19</code>、時間 <code>14:05</code> 不算；行首的編號 <code>1.</code>、<code>1.2.</code> 也不算。</td></tr>
       <tr><td>計數</td><td>統計項目數、字數和字元數。</td></tr>
@@ -1319,10 +1378,10 @@ ans / 2 =
       <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>體積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">時間</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>溫度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">角度</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -1340,6 +1399,34 @@ ans / 2 =
     <li><code>min</code> 單獨寫是分鐘，寫成 <code>min(…)</code> 是函式。<code>in</code> 接在數字後面是英寸（<code>5 in to cm</code>），其他位置是換算（<code>10 km in mi</code>）。</li>
     <li>變數和單位同名時，以變數為準。</li>
   </ul>
+  <h4 id="time-units">時間單位</h4>
+  <table>
+    <thead><tr><th>全名（符號）</th><th>公式寫法</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>毫秒（ms）</td><td><code>ms</code> / <code>millisecond</code></td><td>1 毫秒 = 0.001 秒</td></tr>
+      <tr><td>秒（s）</td><td><code>s</code> / <code>second</code></td><td>1 秒 = 1000 毫秒</td></tr>
+      <tr><td>分鐘（min）</td><td><code>min</code> / <code>minute</code></td><td>1 分鐘 = 60 秒</td></tr>
+      <tr><td>小時（h）</td><td><code>h</code> / <code>hour</code></td><td>1 小時 = 60 分鐘</td></tr>
+      <tr><td>天（d）</td><td><code>day</code></td><td>1 天 = 24 小時</td></tr>
+      <tr><td>週</td><td><code>week</code></td><td>1 週 = 7 天</td></tr>
+      <tr><td>月</td><td><code>month</code></td><td>1 個月 = 30.4375 天</td></tr>
+      <tr><td>年</td><td><code>year</code></td><td>1 年 = 365.25 天 = 12 個月</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit 在單位換算中把月和年視為固定時長。兩個日期之間的實際天數要按日曆計算。</p>
+  <p>公式裡可以直接寫全名 <code>minute</code> 和 <code>second</code>。<code>1 minute to s =</code> 得到 <code>60 s</code>，<code>1 second to ms =</code> 得到 <code>1000 ms</code>。在片段選單中輸入 <code>@sec</code>，選取 <code>@second</code> 就會插入 <code>s</code>。在公式裡，秒要寫 <code>s</code> 或 <code>second</code>，Inkflit 不會辨識 <code>sec</code> 這個時間單位。</p>
+  <h4 id="angle-units">角度單位</h4>
+  <table>
+    <thead><tr><th>全名（符號）</th><th>公式寫法</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>度（°）</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>弧度（rad）</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>百分度（gon）</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>角分（′）</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>角秒（″）</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>一整圈是 360°，也就是 2π rad。公式裡用 <code>pi</code> 表示 π，例如 <code>pi rad to deg =</code> 得到 <code>180 deg</code>。三角函式省略單位時按弧度計算。要算 30° 的正弦，寫 <code>sin(30 deg) =</code>，結果是 <code>0.5</code>。</p>
   <h3>貨幣</h3>
   <ul>
     <li><b>寫法：</b><code>10 USD to HKD =</code>。<code>to</code> 也可以寫成 <code>in</code>。</li>
@@ -1398,11 +1485,11 @@ ans / 2 =
       <tr><td>數字和常數</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>函式</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>單位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>貨幣代碼（粗體）</td><td><code>USD</code> <code>HKD</code></td></tr>
+      <tr><td>貨幣代碼（與單位同色）</td><td><code>USD</code> <code>HKD</code></td></tr>
       <tr><td>運算子和換算詞</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>括號、逗號、冒號</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>行尾的等號（粗體，與結果同色）</td><td><code>=</code></td></tr>
-      <tr><td>已定義的變數（粗體）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>行尾的等號（使用運算子顏色）</td><td><code>=</code></td></tr>
+      <tr><td>變數定義和參照</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>註解</td><td><code>// …</code></td></tr>
     </tbody>
   </table>
@@ -1455,7 +1542,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>快捷鍵</h2>
   <p>全域快捷鍵在任何應用程式裡都能使用，可以在設定中變更。其他快捷鍵在筆記視窗作用中時可用。</p>
-  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>隱藏視窗（Vim 模式下先離開插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一則 / 最後一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
+  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>隱藏視窗（Vim 模式下先離開插入模式）</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一則 / 最後一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切換目前清單項目或 Markdown 待辦的完成狀態</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -1564,6 +1651,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li>バックアップとゴミ箱は検索しません。</li>
   </ul>
   <h3>コマンドパレット <kbd>⌘⇧P</kbd></h3>
+  <p><code>format</code> で検索して「ノートを整形」を選ぶと、現在のノートの数式の空白と、JavaScript、TypeScript、JSON、HTML、CSS、Markdown、YAML のコードブロックを整形できます。コードにはインデント設定が適用され、操作全体を一度で取り消せます。</p>
   <p>設定ウインドウを開かずに、ノートの操作や設定の変更ができます。</p>
   <ul>
     <li><b>›</b> の付いたコマンドは、アクセントカラーや言語などの 2 段目の一覧を開きます。現在の値には <b>✓</b> が付きます。</li>
@@ -1676,7 +1764,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <table>
     <thead><tr><th>ブロック</th><th>機能</th></tr></thead>
     <tbody>
-      <tr><td>チェックリスト</td><td>各行にチェックボックスが付きます。クリックするか、行末に <code>/x</code> と入力します。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
+      <tr><td>チェックリスト</td><td>チェックボックスをクリックするか、項目の末尾で <code>/x</code> と入力するか、項目内のどこかで <kbd>⌘↩</kbd> を押すと完了状態を切り替えられます。<kbd>⌘↩</kbd> は通常の Markdown タスクでも使えます。<kbd>Tab</kbd> と <kbd>⇧Tab</kbd> でインデントを増減し、子項目は親と一緒に移動します。</td></tr>
       <tr><td>計算</td><td>行末に <code>=</code> を入力すると計算します。変数、関数、単位、通貨に対応します。<a href="#math">計算</a>を参照。</td></tr>
       <tr><td>合計 / 平均</td><td>ブロック内の数値を合計または平均します。式は計算しません。<br>独立した数値だけが対象です：<code>1.2.3.4</code>、IP アドレス、日付 <code>2026-11-19</code>、時刻 <code>14:05</code>、行頭の番号 <code>1.</code>・<code>1.2.</code> は数えません。</td></tr>
       <tr><td>カウント</td><td>項目数、単語数、文字数を数えます。</td></tr>
@@ -1794,10 +1882,10 @@ ans / 2 =
       <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>体積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">時間</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>温度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">角度</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>エネルギー</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>仕事率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -1815,6 +1903,34 @@ ans / 2 =
     <li><code>min</code> だけなら分、<code>min(…)</code> なら関数です。<code>in</code> は数値の直後ならインチ（<code>5 in to cm</code>）、それ以外では換算です（<code>10 km in mi</code>）。</li>
     <li>変数と単位が同じ名前なら変数が優先されます。</li>
   </ul>
+  <h4 id="time-units">時間の単位</h4>
+  <table>
+    <thead><tr><th>単位名（記号）</th><th>数式での入力</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>ミリ秒（ms）</td><td><code>ms</code> / <code>millisecond</code></td><td>1 ミリ秒 = 0.001 秒</td></tr>
+      <tr><td>秒（s）</td><td><code>s</code> / <code>second</code></td><td>1 秒 = 1000 ミリ秒</td></tr>
+      <tr><td>分（min）</td><td><code>min</code> / <code>minute</code></td><td>1 分 = 60 秒</td></tr>
+      <tr><td>時（h）</td><td><code>h</code> / <code>hour</code></td><td>1 時間 = 60 分</td></tr>
+      <tr><td>日（d）</td><td><code>day</code></td><td>1 日 = 24 時間</td></tr>
+      <tr><td>週</td><td><code>week</code></td><td>1 週 = 7 日</td></tr>
+      <tr><td>月</td><td><code>month</code></td><td>1 か月 = 30.4375 日</td></tr>
+      <tr><td>年</td><td><code>year</code></td><td>1 年 = 365.25 日 = 12 か月</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit の単位換算では、月と年を固定の長さとして扱います。日付の間の実際の日数は暦に従います。</p>
+  <p>数式では単位名の <code>minute</code> や <code>second</code> もそのまま使えます。<code>1 minute to s =</code> は <code>60 s</code>、<code>1 second to ms =</code> は <code>1000 ms</code> になります。スニペットで <code>@sec</code> と入力し、<code>@second</code> を選ぶと <code>s</code> が挿入されます。数式で秒を表すには <code>s</code> か <code>second</code> を使ってください。Inkflit は <code>sec</code> を時間の単位として認識しません。</p>
+  <h4 id="angle-units">角度の単位</h4>
+  <table>
+    <thead><tr><th>単位名（記号）</th><th>数式での入力</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>度（°）</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>ラジアン（rad）</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>グラジアン（gon）</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>角分（′）</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>角秒（″）</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>一周は 360°、つまり 2π rad です。数式では π を <code>pi</code> と書きます。たとえば <code>pi rad to deg =</code> は <code>180 deg</code> になります。三角関数は単位を省略するとラジアンで計算します。30° の正弦を求めるには <code>sin(30 deg) =</code> と書きます。結果は <code>0.5</code> です。</p>
   <h3>通貨</h3>
   <ul>
     <li><b>書き方：</b><code>10 USD to JPY =</code>。<code>to</code> の代わりに <code>in</code> も使えます。</li>
@@ -1873,11 +1989,11 @@ ans / 2 =
       <tr><td>数値と定数</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>関数</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>単位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>通貨コード（太字）</td><td><code>USD</code> <code>JPY</code></td></tr>
+      <tr><td>通貨コード（単位と同じ色）</td><td><code>USD</code> <code>JPY</code></td></tr>
       <tr><td>演算子と換算の単語</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>括弧・カンマ・コロン</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>行末の等号（太字、結果と同じ色）</td><td><code>=</code></td></tr>
-      <tr><td>定義済みの変数（太字）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>行末の等号（演算子と同じ色）</td><td><code>=</code></td></tr>
+      <tr><td>変数の定義と参照</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>コメント</td><td><code>// …</code></td></tr>
     </tbody>
   </table>
@@ -1930,7 +2046,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>キーボードショートカット</h2>
   <p>グローバルショートカットはどのアプリからでも使え、設定で変更できます。そのほかはノートのウインドウがアクティブなときに使えます。</p>
-  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>ウインドウを隠す（Vim では先に挿入モードを終了）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>最初 / 最後のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
+  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>ウインドウを隠す（Vim では先に挿入モードを終了）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>最初 / 最後のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘↩</kbd></td><td>現在のチェック項目または Markdown タスクの完了状態を切り替える</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
 </section>
 
 <section id="data">

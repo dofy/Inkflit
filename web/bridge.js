@@ -7,8 +7,7 @@ import { select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
 import { applyPaletteLanguage, openCommands, openSearch, setCommandState } from './palettes.js';
 import { notesOperation } from './automation.js';
-import { setUserSnippets } from './snippet-completion.js';
-import { placeholderCatalog, snippetContext } from './snippets.js';
+import { setUserSnippets, settingsSnippetPlaceholders } from './snippet-completion.js';
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
@@ -76,7 +75,7 @@ export function installBridge() {
     setCommandState,
     setUserSnippets,
     // Settings → Snippets: built-in rows as placeholders, in the app language.
-    snippetPlaceholders: () => placeholderCatalog(snippetContext({ locale: lang() })).map(item => ({ ...item, description: item.description ? t(item.description) : null })),
+    snippetPlaceholders: settingsSnippetPlaceholders,
     resolveNativeRequest,
     setShortcutLabel: label => { $('shortcut').textContent = label; },
     // Settings

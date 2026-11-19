@@ -415,10 +415,10 @@ final class NativeCodeEditingTest {
     }
     private func testVariableHighlightEditing() {
         key(7,"x"); later { [self] in
-            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-calc-line .tok-variableName')].map(x=>x.textContent)") { [self] value,error in
                 guard error == nil, let markers=value as? [String], markers == ["rice"] else { fail("variable highlighting after editing definition: \(String(describing:value))") }
                 key(32,"u"); later { [self] in
-                    app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+                    app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-calc-line .tok-variableName')].map(x=>x.textContent)") { [self] value,error in
                         guard error == nil, let markers=value as? [String], markers == ["price", "price"] else { fail("variable highlighting after undo: \(String(describing:value))") }
                         print("PASS variable highlighting updates after edit and undo")
                         checkCalculation("math")
@@ -431,11 +431,9 @@ final class NativeCodeEditingTest {
         let body="price: 80\nprice * 2 =\n10 km to mi ="
         content { [self] text in
             expect(text,":::inkflit \(mode)\n\(body)\n:::end","\(mode) preserves block body")
-            let styleCheck="""
-            (()=>{ const markers=[...document.querySelectorAll('.cm-math-variable')]; if ('\(mode)'!=='math') return markers.length===0; if(markers.length!==2 || markers.some(x=>x.textContent!=='price')) return false; const p=document.createElement('span'); document.body.append(p); let ok=true; for(const theme of ['orange','blue','green']) { window.setUIAppearance(theme,100); p.style.color=getComputedStyle(document.documentElement).getPropertyValue('--ui-button'); if(markers.some(marker=>getComputedStyle(marker).color!==getComputedStyle(p).color || Number(getComputedStyle(marker).fontWeight)<600)) ok=false; } p.remove(); return ok; })()
-            """
-            app.web.evaluateJavaScript(styleCheck) { [self] value,error in
-                guard error == nil, value as? Bool == true else { fail("variable definition styling for \(mode)") }
+            let markers = mode == "math" ? ["price", "price"] : []
+            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-calc-line .tok-variableName')].map(x=>x.textContent)") { [self] value,error in
+                guard error == nil, value as? [String] == markers else { fail("variable highlighting for \(mode)") }
                 self.checkCalculationResults(mode)
             }
         }
@@ -468,13 +466,51 @@ final class NativeCodeEditingTest {
                         expect(text,":::inkflit math\nprice: 80\nprice * 2 =\n10 km to mi =\n:::end","return to math preserves block body")
                         app.web.evaluateJavaScript("[...document.querySelectorAll('.calculation-result')].map(x=>x.textContent.trim())") { [self] value,error in
                             guard error == nil, let results=value as? [String], results.count==2, results[0]=="160", results[1].contains("6.213711922 mi") else { fail("math results after switching back: \(String(describing:value))") }
-                            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-math-variable')].map(x=>x.textContent)") { [self] value,error in
+                            app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-calc-line .tok-variableName')].map(x=>x.textContent)") { [self] value,error in
                                 guard error == nil, let markers=value as? [String], markers == ["price", "price"] else { fail("variable highlighting not restored after switching back: \(String(describing:value))") }
-                                print("PASS native block type switch refreshes results, highlighting and preserves content"); app.restoreInputSource(); exit(0)
+                                print("PASS native block type switch refreshes results, highlighting and preserves content")
+                                testMathCodeTheme()
                             }
                         }
                     }
                 } else { checkCalculation(mode) }
+            }
+        }
+    }
+    private func testMathCodeTheme() {
+        app.web.evaluateJavaScript("window.inkflitSelectNote('style')") { [self] value, error in
+            guard error == nil, value as? Bool == true else { fail("select math style fixture") }
+            let codeSelector = ".cm-code-line:not(.cm-calc-line)"
+            waitForJavaScript("!!document.querySelector('\(codeSelector) .tok-variableName')") { [self] in
+                let script = """
+                (() => {
+                  const find = (selector, text) => [...document.querySelectorAll(selector)].filter(node => node.textContent === text);
+                  const code = '\(codeSelector)', math = '.cm-calc-line';
+                  const [reference] = find(code + ' .tok-variableName', 'price');
+                  const [keyword] = find(code + ' .tok-keyword', 'const');
+                  const [assignment] = find(code + ' .tok-operator', '=');
+                  const variables = find(math + ' .tok-variableName', 'price');
+                  const [usd] = find(math + ' .tok-keyword', 'USD'), [km] = find(math + ' .tok-keyword', 'km');
+                  const [equals] = find(math + ' .tok-operator', '=');
+                  if (!reference || !keyword || !assignment || variables.length !== 2 || !usd || !km || !equals) return 'missing tokens';
+                  const sameStyle = (left, right) => {
+                    const a = getComputedStyle(left), b = getComputedStyle(right);
+                    return a.color === b.color && a.fontWeight === b.fontWeight;
+                  };
+                  for (const [codeTheme, uiTheme] of [['amber', 'green'], ['ocean', 'orange'], ['contrast', 'blue']]) {
+                    window.setUIAppearance(uiTheme, 100);
+                    window.setCodeTheme(codeTheme);
+                    if (!variables.every(node => sameStyle(node, reference)) || !sameStyle(usd, km) ||
+                        !sameStyle(km, keyword) || !sameStyle(equals, assignment)) return codeTheme;
+                  }
+                  return 'ok';
+                })()
+                """
+                app.web.evaluateJavaScript(script) { [self] value, error in
+                    guard error == nil, value as? String == "ok" else { fail("math and code token styles differ: \(String(describing: value)) \(String(describing: error))") }
+                    print("PASS native math variables, currency, units and equals match code colors and weights")
+                    app.restoreInputSource(); exit(0)
+                }
             }
         }
     }
@@ -527,10 +563,31 @@ final class NativeCodeEditingTest {
         guard editor.testStatus() == L("settings.snippetInvalidTrigger") else { fail("status after saving: \(editor.testStatus())") }
         print("PASS native snippets settings save")
         RunLoop.current.run(until: Date().addingTimeInterval(1))
-        let tokens = editor.testPlaceholderTokens()
-        guard tokens.contains("ipv4"), tokens.contains("date#2"), tokens.contains("timesec") else { fail("placeholder menu: \(tokens)") }
+        func hasPlaceholder(_ token: String, in menu: NSMenu?) -> Bool {
+            menu?.items.contains { ($0.representedObject as? String) == token } == true
+        }
+        guard let menu = editor.testPlaceholderMenu(),
+              hasPlaceholder("ipv4", in: menu.item(withTitle: "@ip")?.submenu),
+              hasPlaceholder("date#2", in: menu.item(withTitle: "@date")?.submenu),
+              hasPlaceholder("timesec", in: menu.item(withTitle: "@time")?.submenu),
+              hasPlaceholder("sqrt", in: menu.item(withTitle: "@fn")?.submenu),
+              hasPlaceholder("usd", in: menu.item(withTitle: "@cur")?.submenu),
+              let units = menu.item(withTitle: "@unit")?.submenu,
+              units.items.allSatisfy({ $0.submenu != nil }),
+              hasPlaceholder("km", in: units.item(withTitle: L("snippet.unit.length"))?.submenu),
+              hasPlaceholder("kg", in: units.item(withTitle: L("snippet.unit.mass"))?.submenu),
+              let constants = menu.item(withTitle: "@const")?.submenu,
+              hasPlaceholder("pi", in: constants.item(withTitle: L("snippet.const.math"))?.submenu),
+              hasPlaceholder("speedoflight", in: constants.item(withTitle: L("snippet.const.science"))?.submenu)
+        else { fail("placeholder menu groups or entries missing") }
         editor.testAdd(trigger: "ip4", content: "IP ")
         guard editor.testInsertPlaceholder("ipv4") == "IP {ipv4}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "ip4", content: "IP {ipv4}") else { fail("insert placeholder") }
+        editor.testAdd(trigger: "fx", content: "10 ")
+        guard editor.testInsertPlaceholder("usd") == "10 {usd}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "fx", content: "10 {usd}") else { fail("insert currency placeholder") }
+        editor.testAdd(trigger: "distance", content: "10 ")
+        guard editor.testInsertPlaceholder("km") == "10 {km}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "distance", content: "10 {km}") else { fail("insert unit placeholder from category submenu") }
+        editor.testAdd(trigger: "circle", content: "2 * ")
+        guard editor.testInsertPlaceholder("pi") == "2 * {pi}", (try? NoteFiles.readSnippets(directory))?.last == UserSnippet(trigger: "circle", content: "2 * {pi}") else { fail("insert constant placeholder from category submenu") }
         print("PASS native placeholder menu")
         settings.window?.orderOut(nil); app.showWindow()
         focusNoteEditor { [self] in
@@ -539,8 +596,74 @@ final class NativeCodeEditingTest {
                     app.web.evaluateJavaScript("[...document.querySelectorAll('.cm-tooltip-autocomplete li')].map(li=>li.querySelector('.cm-completionDetail')?.textContent)") { [self] value,error in
                         guard error == nil, let details = value as? [String], details == ["Home", "Office …"] else { fail("@addr rows: \(String(describing: value))") }
                         print("PASS native user snippets in the editor")
-                        app.restoreInputSource(); exit(0)
+                        testUnitCategoryCompletion()
                     }
+                }
+            }
+        }
+    }
+    private func testUnitCategoryCompletion() {
+        app.web.evaluateJavaScript("window.inkflitSelectNote('math')") { [self] value, error in
+            guard error == nil, value as? Bool == true else { fail("could not select the math test note") }
+            focusNoteEditor { [self] in
+                sequence([
+                    { self.key(5, "G", "g", .shift) }, { self.key(34, "i") },
+                    { self.key(19, "@", "2", .shift) }, { self.key(32, "u") },
+                    { self.key(45, "n") }, { self.key(34, "i") }, { self.key(0, "a") },
+                ]) { [self] in
+                    waitForSnippet("@unit-area") { [self] in
+                        key(125, "\u{f701}")
+                        waitForSnippet("@unit-angle") { [self] in testUnitMenuBack() }
+                    }
+                }
+            }
+        }
+    }
+    private func testUnitMenuBack() {
+        key(48, "\t")
+        waitForSnippet("@deg") { [self] in
+            key(53, "\u{1b}")
+            waitForSnippet("@unit-angle") { [self] in
+                content { [self] text in
+                    expect(text, "math\n@unia", "native Escape restores the parent query and non-default selection")
+                    key(53, "\u{1b}")
+                    waitForJavaScript("!document.querySelector('.cm-tooltip-autocomplete')") { [self] in
+                        sequence([{ self.key(45, "n") }, { self.key(5, "g") }]) { [self] in
+                            waitForSnippet("@unit-angle") { [self] in insertAngleSnippet() }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func insertAngleSnippet() {
+        key(48, "\t")
+        waitForSnippet("@deg") { [self] in
+            key(36, "\r")
+            later { [self] in content { [self] text in
+                expect(text, "math\ndeg", "native unit category completion inserts deg")
+                testConstantCategoryCompletion()
+            } }
+        }
+    }
+    private func waitForSnippet(_ label: String, _ completion: @escaping () -> Void) {
+        let selected = "document.querySelector('.cm-tooltip-autocomplete li[aria-selected=true] .cm-completionLabel')?.textContent"
+        waitForJavaScript("\(selected) === '\(label)'", completion)
+    }
+    private func testConstantCategoryCompletion() {
+        sequence([
+            { self.key(36, "\r") }, { self.key(19, "@", "2", .shift) },
+            { self.key(8, "c") }, { self.key(31, "o") }, { self.key(45, "n") },
+            { self.key(1, "s") }, { self.key(17, "t") },
+        ]) { [self] in
+            waitForSnippet("@const-math") { [self] in
+                key(48, "\t")
+                waitForSnippet("@pi") { [self] in
+                    key(48, "\t")
+                    later { [self] in content { [self] text in
+                        expect(text, "math\ndeg\npi", "native constant category completion inserts pi")
+                        app.restoreInputSource(); exit(0)
+                    } }
                 }
             }
         }
@@ -592,7 +715,37 @@ final class NativeCodeEditingTest {
                 app.web.evaluateJavaScript("[document.getElementById('command-panel').hidden,JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)]") { [self] value,error in
                     guard error == nil,let v=value as? [Any],v[0] as? Bool == true,let notes=v[1] as? [String],notes == ["initial",""] else { fail("palette create note: \(String(describing:value))") }
                     print("PASS command palette search, navigation, settings persistence, Escape and new note")
-                    app.restoreInputSource();exit(0)
+                    testFormatCommand()
+                }
+            }
+        }
+    }
+    private func testFormatCommand() {
+        let original = "```math\nsin( 30 deg )=\n```\n:::inkflit code js\nif(true){f(1)}\n:::end"
+        let expected = "```math\nsin(30 deg) =\n```\n:::inkflit code js\nif (true) {\n  f(1);\n}\n:::end"
+        let script = """
+        const id = JSON.parse(window.exportNotesJSON()).selected;
+        await window.inkflitNotesOperation({ action: 'replace', id, content: original });
+        window.openCommands();
+        const input = document.getElementById('command-input');
+        input.value = 'format';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const command = document.querySelector('#command-results .command-row');
+        if (!command) throw Error('Format Note is missing from the palette');
+        command.click();
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["original": original], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("run Format Note: \(error)") }
+            let selectedContent = "(() => { const state = JSON.parse(window.exportNotesJSON()); return state.notes.find(note => note.id === state.selected).content; })()"
+            waitForJavaScript("\(selectedContent).includes('f(1);')") { [self] in
+                content { [self] text in
+                    expect(text, expected, "Format Note updates math and code in WKWebView")
+                    key(6, "z", "z", .command)
+                    later { [self] in content { [self] restored in
+                        expect(restored, original, "Format Note undo restores the full note")
+                        app.restoreInputSource(); exit(0)
+                    } }
                 }
             }
         }
@@ -1806,7 +1959,7 @@ final class NativeCodeEditingTest {
                                     sequence([{ self.key(48, "\u{19}", "\t", .shift) }]) { [self] in content { [self] text in
                                         expect(text, indented, "insert mode Shift Tab outdents checklist item")
                                         print("PASS native configuration \(app.codeIndentation())")
-                                        app.restoreInputSource(); exit(0)
+                                        testChecklistToggleShortcut()
                                     } }
                                 }
                             } }
@@ -1815,5 +1968,32 @@ final class NativeCodeEditingTest {
                 } }
             } }
         } }
+    }
+    private func testChecklistToggleShortcut() {
+        let original = ":::inkflit list\nalpha beta\n:::end\n\n- [ ] ordinary task\n  continued body"
+        let listChecked = original.replacingOccurrences(of: "alpha beta", with: "[x] alpha beta")
+        let bothChecked = listChecked.replacingOccurrences(of: "- [ ] ordinary task", with: "- [x] ordinary task")
+        let script = """
+        const result = await window.inkflitNotesOperation({ action: 'create', content: original });
+        return window.inkflitSelectNote(result.note.id);
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["original": original], in: nil, in: .page) { [self] result in
+            guard case .success(let value) = result, value as? Bool == true else { fail("select checklist shortcut fixture: \(result)") }
+            focusNoteEditor { [self] in
+                sequence([{ self.key(37, "l") }, { self.key(36, "\r", "\r", .command) }]) { [self] in content { [self] text in
+                    expect(text, listChecked, "Command Return in the middle of a list block item")
+                    sequence([
+                        { self.key(5, "G", "g", .shift) }, { self.key(37, "l") }, { self.key(34, "i") },
+                        { self.key(36, "\r", "\r", .command) },
+                    ]) { [self] in content { [self] text in
+                        expect(text, bothChecked, "Command Return on a Markdown task continuation in insert mode")
+                        sequence([{ self.key(36, "\r", "\r", .command) }]) { [self] in content { [self] text in
+                            expect(text, listChecked, "Command Return toggles the Markdown task back")
+                            app.restoreInputSource(); exit(0)
+                        } }
+                    } }
+                } }
+            }
+        }
     }
 }

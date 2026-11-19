@@ -2,15 +2,15 @@
 // replaces "@name" with the value. Not inside code, and not after a word
 // character, so e-mail addresses and decorators are left alone.
 
-import { autocompletion, CompletionContext, closeCompletion, snippet as fieldSnippet, hasNextSnippetField } from '@codemirror/autocomplete';
+import { autocompletion, CompletionContext, closeCompletion, completionStatus, currentCompletions, setSelectedCompletion, startCompletion, snippet as fieldSnippet, hasNextSnippetField } from '@codemirror/autocomplete';
 import { StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { t, lang } from './i18n.js';
 import { nativeRequest } from './app.js';
 import { isCodeAt } from './comments.js';
-import { matchSnippets, snippetContext, addSnippetSource, templateSnippet, allSnippets, hasFields, fieldTemplate, plainText } from './snippets.js';
-import { functionSnippets, unitSnippets, currencySnippets } from './math-snippets.js';
+import { matchSnippets, fuzzySnippetName, snippetContext, addSnippetSource, templateSnippet, allSnippets, hasFields, fieldTemplate, plainText, builtinSnippets, placeholderCatalog } from './snippets.js';
+import { functionSnippets, unitSnippets, unitCategories, currencySnippets, constantSnippets, constantCategories } from './math-snippets.js';
 import { currencyCodes, loadRates } from './rates.js';
 import { scopeAt } from './features.js';
 
@@ -24,12 +24,21 @@ function inCode(state, pos) {
 
 // Math rows are added first, so user rows still lead any group they share.
 let mathRows = null, mathCurrencies = null;
-addSnippetSource(() => {
+function mathSnippetRows() {
   // The same array while the currency rows are the same, so allSnippets can reuse its list.
   const currencies = currencySnippets(currencyCodes());
-  if (currencies !== mathCurrencies) { mathCurrencies = currencies; mathRows = [...functionSnippets, ...unitSnippets, ...currencies]; }
+  if (currencies !== mathCurrencies) {
+    mathCurrencies = currencies;
+    mathRows = [...functionSnippets, ...unitSnippets, ...currencies, ...constantSnippets];
+  }
   return mathRows;
-});
+}
+addSnippetSource(mathSnippetRows);
+
+export function settingsSnippetPlaceholders() {
+  return placeholderCatalog(currentContext(), [...builtinSnippets, ...mathSnippetRows()])
+    .map(item => ({ ...item, description: item.description ? t(item.description) : null }));
+}
 // User snippets from snippets.json, sent by the app (Settings → Snippets).
 // Rows sharing a trigger form a group and lead the built-in group of that name.
 let userRows = [];
@@ -109,6 +118,115 @@ export function applySnippet(view, snippet, from, to) {
   Promise.resolve(value).then(finish, () => { finish(null); reportFailure(snippet); });
 }
 
+function snippetOption({ row, alias }) {
+  return {
+    label: `@${alias || row.trigger}`, snippet: row,
+    apply: (view, completion, from, to) => applySnippet(view, row, from, to),
+  };
+}
+
+// Menu history belongs to the live editor and expires when its query is edited.
+const snippetMenu = ViewPlugin.fromClass(class {
+  parents = [];
+  restore = null;
+
+  update({ view, state, docChanged, selectionSet, focusChanged }) {
+    const status = completionStatus(state);
+    if (docChanged || selectionSet || !status || (focusChanged && !view.hasFocus)) {
+      this.parents = [];
+      this.restore = null;
+    }
+    const parent = this.restore;
+    if (!parent || status !== 'active') return;
+    // The list updates asynchronously. Select the previous row once it exists.
+    queueMicrotask(() => {
+      if (view.plugin(snippetMenu) !== this || this.restore !== parent) return;
+      this.restore = null;
+      const index = currentCompletions(view.state).findIndex(option => option.browse && option.label === parent.label);
+      if (index >= 0) view.dispatch({ effects: setSelectedCompletion(index) });
+    });
+  }
+});
+
+function openSnippetMenu(view, from, to, query, parents, restore = null) {
+  view.dispatch({ changes: { from, to, insert: query }, selection: { anchor: from + query.length }, userEvent: 'input.complete' });
+  const menu = view.plugin(snippetMenu);
+  menu.parents = parents;
+  menu.restore = restore;
+  startCompletion(view);
+}
+
+export function backSnippetMenu(view) {
+  const parents = view.plugin(snippetMenu)?.parents;
+  const parent = parents?.at(-1);
+  if (!parent) return false;
+  openSnippetMenu(view, parent.from, view.state.selection.main.head, parent.query, parents.slice(0, -1), parent);
+  return true;
+}
+
+function browseMathCategory(keyword, detail) {
+  const label = `@${keyword}`;
+  return {
+    label, detail, browse: true,
+    apply(view, completion, from, to) {
+      const parents = view.plugin(snippetMenu).parents;
+      const parent = { from, query: view.state.sliceDoc(from, to), label };
+      openSnippetMenu(view, from, to, label, [...parents, parent]);
+    },
+  };
+}
+
+const mathGroups = { unit: unitCategories, const: constantCategories };
+const mathTriggers = Object.keys(mathGroups);
+const mathCategories = Object.entries(mathGroups).flatMap(([trigger, categories]) =>
+  categories.map(category => ({ ...category, trigger, name: `${trigger}-${category.keyword}` })));
+const isGroupedMath = row => row.math && row.category;
+
+function mathCategoryQuery(query) {
+  // Prefer matches that include the beginning of both the group and the category.
+  for (const group of mathTriggers) {
+    for (let split = Math.min(group.length, query.length); split >= 2; split--) {
+      if (!fuzzySnippetName(query.slice(0, split), group)) continue;
+      const prefix = query.slice(split).replace(/^-/, '');
+      if (!prefix || mathGroups[group].some(({ keyword }) => fuzzySnippetName(prefix, keyword))) return { group, prefix };
+    }
+  }
+  return { group: null, prefix: query };
+}
+
+function mathOptions(query, matches, rows) {
+  const isExact = row => (!isGroupedMath(row) && row.trigger === query) || row.aliases?.includes(query);
+  const hasExact = rows.some(isExact);
+  const category = mathCategories.find(({ name, keyword }) => query === name || (!hasExact && query === keyword));
+  if (category) {
+    const entries = rows.filter(row => row.trigger === category.trigger && row.category === category.hint);
+    return [
+      ...matches.filter(({ row }) => isExact(row)).map(snippetOption),
+      ...entries.map(row => snippetOption({ row, alias: row.aliases?.[0] })),
+    ];
+  }
+
+  // Group matches browse categories. Direct aliases still insert their values.
+  const isGroupMatch = ({ row, alias }) => isGroupedMath(row) && !alias;
+  const options = matches.filter(match => !isGroupMatch(match)).map(snippetOption);
+  const { group, prefix } = mathCategoryQuery(query);
+  const categories = query && (group || !hasExact)
+    ? mathCategories.filter(({ trigger }) => !group || trigger === group) : [];
+  const matchingCategories = [
+    ...categories.filter(({ keyword }) => keyword.startsWith(prefix)),
+    ...categories.filter(({ keyword }) => !keyword.startsWith(prefix) && fuzzySnippetName(prefix, keyword)),
+  ];
+  // A query can also skip the start of the category when matching the full name.
+  const hits = matchingCategories.length || hasExact
+    ? matchingCategories : categories.filter(({ name }) => fuzzySnippetName(query, name));
+  const shortcuts = hits.map(({ name, hint }) => browseMathCategory(name, `${t(hint)} ›`));
+  if (shortcuts.length) return group && !hasExact ? [...shortcuts, ...options] : [...options, ...shortcuts];
+  for (const trigger of mathTriggers) {
+    if (matches.some(match => match.row.trigger === trigger && isGroupMatch(match))) options.push(browseMathCategory(trigger, '›'));
+  }
+  return options;
+}
+
 export function snippetCompletions(context) {
   const word = context.matchBefore(/@[\w-]*/);
   if (!word) return null;
@@ -121,17 +239,15 @@ export function snippetCompletions(context) {
   // "2026" and "18" repeat) are listed once.
   const now = currentContext(), shown = new Set();
   const rows = allSnippets().filter(row => inMath || !row.math);
-  const matches = matchSnippets(word.text.slice(1), rows).filter(({ row }) => {
+  const query = word.text.slice(1).toLowerCase();
+  const matches = matchSnippets(query, rows).filter(({ row }) => {
     if (!row.live) return true;
     let value; try { value = row.preview(now); } catch { return true; }
     const key = `${row.trigger}:${value}`;
     if (shown.has(key)) return false;
     shown.add(key); return true;
   });
-  const options = matches.map(({ row, alias }) => ({
-    label: `@${alias || row.trigger}`, snippet: row,
-    apply: (view, completion, from, to) => applySnippet(view, row, from, to),
-  }));
+  const options = inMath ? mathOptions(query, matches, rows) : matches.map(snippetOption);
   // filter: false because matchSnippets already filtered, including aliases.
   return options.length ? { from: word.from, options, filter: false } : null;
 }
@@ -141,9 +257,10 @@ export function snippetCompletions(context) {
 // as long as the row is on screen.
 // A short label for rows of a group that would otherwise look alike.
 function renderHint(completion) {
-  if (!completion.snippet.hint) return null;
+  const hint = completion.snippet?.hint ?? completion.snippet?.category;
+  if (!hint) return null;
   const element = document.createElement('span');
-  element.className = 'cm-snippet-hint'; element.textContent = t(completion.snippet.hint);
+  element.className = 'cm-snippet-hint'; element.textContent = t(hint);
   return element;
 }
 
@@ -160,9 +277,10 @@ function cachedPreview(snippet) {
   return value;
 }
 function renderPreview(completion) {
+  const { snippet } = completion;
+  if (!snippet) return null;
   const element = document.createElement('span');
   element.className = 'cm-completionDetail';
-  const { snippet } = completion;
   const describe = () => { element.textContent = snippet.description ? t(snippet.description) : ''; };
   if (snippet.previewTTL) {
     describe();
@@ -193,7 +311,7 @@ export function acceptBestSnippet(view) {
   const result = snippetCompletions(new CompletionContext(view.state, view.state.selection.main.head, true));
   const best = result?.options[0];
   if (!best) return false;
-  closeCompletion(view);
+  if (!best.browse) closeCompletion(view);
   best.apply(view, best, result.from, view.state.selection.main.head);
   return true;
 }
@@ -244,5 +362,6 @@ export const snippets = [
   // after typing a name should accept it rather than be ignored.
   autocompletion({ override: [snippetCompletions], icons: false, closeOnBlur: true, defaultKeymap: false, activateOnTypingDelay: 0, interactionDelay: 0,
     addToOptions: [{ render: renderHint, position: 70 }, { render: renderPreview, position: 80 }] }),
+  snippetMenu,
   currentStopMarker,
 ];

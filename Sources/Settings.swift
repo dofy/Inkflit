@@ -763,25 +763,34 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
 
     // MARK: Placeholders
     private func refreshPlaceholders() { loadPlaceholders? { [weak self] list in self?.placeholders = list } }
-    /// One submenu per trigger; each item shows {token} and an example.
+    private func placeholderSubmenu(_ title: String, in menu: NSMenu) -> NSMenu {
+        if let submenu = menu.item(withTitle: title)?.submenu { return submenu }
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        item.submenu = submenu
+        menu.addItem(item)
+        return submenu
+    }
+
+    /// One submenu per trigger, with a second level for categorized presets.
     func menuNeedsUpdate(_ menu: NSMenu) {
         while menu.items.count > 1 { menu.removeItem(at: 1) }
-        var groups: [(String, NSMenu)] = []
         for item in placeholders {
             guard let token = item["token"] as? String else { continue }
-            // Without a trigger ({cursor}) the item goes straight into the menu.
-            let trigger = item["trigger"] as? String
-            if let trigger, groups.last?.0 != trigger { groups.append((trigger, NSMenu())) }
+            var destination = menu
+            if let trigger = item["trigger"] as? String {
+                destination = placeholderSubmenu("@\(trigger)", in: menu)
+                if let category = item["category"] as? String {
+                    destination = placeholderSubmenu(L(category), in: destination)
+                }
+            }
             let example = (item["example"] as? String) ?? (item["description"] as? String) ?? ""
             let entry = NSMenuItem(title: "{\(token)}", action: #selector(placeholderChosen(_:)), keyEquivalent: "")
             entry.target = self; entry.representedObject = token
             let title = NSMutableAttributedString(string: "{\(token)}", attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium)])
             if !example.isEmpty { title.append(NSAttributedString(string: "   \(example)", attributes: [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.secondaryLabelColor])) }
             entry.attributedTitle = title
-            if trigger == nil { menu.addItem(entry) } else { groups[groups.count - 1].1.addItem(entry) }
-        }
-        for (trigger, submenu) in groups {
-            let item = NSMenuItem(title: "@\(trigger)", action: nil, keyEquivalent: ""); item.submenu = submenu; menu.addItem(item)
+            destination.addItem(entry)
         }
         refreshPlaceholders()   // examples are fresh the next time the menu opens
     }
@@ -882,15 +891,20 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     func testRemoveSelected() { buttons.selectedSegment = 1; buttonPressed(); saveNow() }
     func testIsEditable() -> Bool { editable }
     func testStatus() -> String { status.stringValue }
-    func testPlaceholderTokens() -> [String] {
-        guard let menu = insertPlaceholder.menu else { return [] }
+    func testPlaceholderMenu() -> NSMenu? {
+        guard let menu = insertPlaceholder.menu else { return nil }
         menuNeedsUpdate(menu)
-        return menu.items.dropFirst().flatMap { $0.submenu?.items.compactMap { $0.representedObject as? String } ?? [] }
+        return menu
     }
     func testInsertPlaceholder(_ token: String) -> String {
-        guard let menu = insertPlaceholder.menu else { return "" }
-        menuNeedsUpdate(menu)
-        if let item = menu.items.flatMap({ $0.submenu?.items ?? [] }).first(where: { $0.representedObject as? String == token }) { placeholderChosen(item) }
+        func find(in menu: NSMenu) -> NSMenuItem? {
+            for item in menu.items {
+                if item.representedObject as? String == token { return item }
+                if let submenu = item.submenu, let match = find(in: submenu) { return match }
+            }
+            return nil
+        }
+        if let menu = testPlaceholderMenu(), let item = find(in: menu) { placeholderChosen(item) }
         saveNow(); return content.string
     }
     #endif

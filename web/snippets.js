@@ -18,6 +18,7 @@
 //                group would otherwise look alike (IPv4 vs IPv6)
 //   aliases      other words that find this row directly, such as "timesec"
 //   math         offered only inside a math block (see math-snippets.js)
+//   category     i18n key for a subcategory in completion and Settings
 //
 // A value may hold caret stops, made with field() or "{cursor}" in a
 // template: the caret lands on the first, and Tab / ⇧Tab move between them.
@@ -155,7 +156,7 @@ export function allSnippets(except = new Set()) {
 
 // Letters of `query` appear in `word` in order, starting with its first
 // letter: "wk" fits "week", but "ip" does not fit "timestamp".
-function fuzzy(query, word) {
+export function fuzzySnippetName(query, word) {
   if (word[0] !== query[0]) return false;
   let at = 0; for (const letter of word) if (letter === query[at]) at++;
   return at === query.length;
@@ -181,7 +182,7 @@ export function matchSnippets(prefix, rows = allSnippets().filter(row => !row.ma
     if (exact) return [{ row: exact, alias: query }];
   }
   const starts = rows.filter(row => row.trigger.startsWith(query));
-  const fits = rows.filter(row => !row.trigger.startsWith(query) && fuzzy(query, row.trigger));
+  const fits = rows.filter(row => !row.trigger.startsWith(query) && fuzzySnippetName(query, row.trigger));
   // Aliases of rows not already listed with their group, each alias once.
   const groups = new Set([...starts, ...fits].map(row => row.trigger)), aliases = new Set();
   const aliasMatches = test => rows.flatMap(row => {
@@ -191,7 +192,7 @@ export function matchSnippets(prefix, rows = allSnippets().filter(row => !row.ma
     aliases.add(alias); return [{ row, alias }];
   });
   const aliasStarts = aliasMatches(name => name.startsWith(query));
-  const aliasFits = aliasMatches(name => fuzzy(query, name));
+  const aliasFits = aliasMatches(name => fuzzySnippetName(query, name));
   return [...starts.map(row => ({ row })), ...fits.map(row => ({ row })), ...aliasStarts, ...aliasFits];
 }
 
@@ -233,17 +234,23 @@ export async function expandTemplate(template, context = snippetContext(), rows 
   return values.join('');
 }
 
-// Every built-in row as a placeholder, for the Settings menu: grouped by
+// Preset rows as placeholders for the Settings menu: grouped by
 // trigger, with the shortest way to name it and an example value.
 // The caret stop comes first, without a trigger, so it is listed on its own.
-export function placeholderCatalog(context = snippetContext()) {
+export function placeholderCatalog(context = snippetContext(), rows = builtinSnippets) {
   const positions = new Map();
-  return [{ trigger: null, token: 'cursor', example: null, description: 'snippet.cursor' }, ...builtinSnippets.map(row => {
+  return [{ trigger: null, token: 'cursor', example: null, description: 'snippet.cursor' }, ...rows.map(row => {
     const position = (positions.get(row.trigger) || 0) + 1; positions.set(row.trigger, position);
-    const token = position === 1 ? row.trigger : row.aliases?.[0] ?? `${row.trigger}#${position}`;
+    // Prefer names for math presets so a currency keeps its token when the list changes.
+    const alias = row.math || position > 1 ? row.aliases?.[0] : null;
+    const token = alias ?? (position === 1 ? row.trigger : `${row.trigger}#${position}`);
     let example = null;
-    if (row.live) { try { example = row.preview(context); } catch {} }
-    return { trigger: row.trigger, token, example, description: row.description ?? null };
+    try {
+      if (row.placeholderPreview) example = row.placeholderPreview(context);
+      else if (row.live || row.math) example = row.preview(context);
+    } catch {}
+    const category = row.category ?? null;
+    return { trigger: row.trigger, category, token, example, description: row.description ?? null };
   })];
 }
 

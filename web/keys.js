@@ -3,7 +3,7 @@ import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSele
 import { toggleLineComment, indentMore, indentLess } from '@codemirror/commands';
 import { app, nativeHandler } from './app.js';
 import { isEditing } from './editor-view.js';
-import { acceptBestSnippet } from './snippet-completion.js';
+import { acceptBestSnippet, backSnippetMenu } from './snippet-completion.js';
 import { commandPalette, searchPalette, openCommands, openSearch } from './palettes.js';
 import { lastDeletedId, restoreDeletedNote, deleteNote } from './delete-notices.js';
 import { createNote, navigate, selectAt, selectFirst, selectLast } from './notes.js';
@@ -13,6 +13,7 @@ import { scopeAt } from './features.js';
 import { commentChanges, blockCodeCommentChanges, isCodeAt, selectedLines } from './comments.js';
 import { planCodeEdit } from './code-editing.js';
 import { planListIndent } from './list-editing.js';
+import { checklistToggleChange, planTaskToggle } from './tasks.js';
 
 // Every shortcut in the note window, checked in order from the most global
 // (palettes) to the most local (the cursor's block). The listener runs in the
@@ -75,10 +76,7 @@ function toggleTaskKey(event) {
   const editor = app.editor, sel = editor.state.selection.main, line = editor.state.doc.lineAt(sel.head);
   if (scopeAt(editor.state.doc, line.number)?.mode !== 'list') return false;
   if (!sel.empty || sel.head !== line.to || !line.text.endsWith('/') || line.number <= 1 || /^\s*(?:\/\/|#)/.test(line.text)) return false;
-  const match = /^(\s*(?:(?:[-+*]|\d+[.)])\s+)?)\[([ xX])\](?=\s|$)/.exec(line.text);
-  const changes = [{ from: line.to - 1, to: line.to }];
-  if (match) changes.push({ from: line.from + match[1].length + 1, to: line.from + match[1].length + 2, insert: /[xX]/.test(match[2]) ? ' ' : 'x' });
-  else changes.push({ from: line.from + /^\s*/.exec(line.text)[0].length, insert: '[x] ' });
+  const changes = [{ from: line.to - 1, to: line.to }, checklistToggleChange(editor.state, line)];
   consume(event); editor.dispatch({ changes, userEvent: 'input.task.toggle' });
   return true;
 }
@@ -132,10 +130,9 @@ function escapeKey(event) {
 
 // While the snippet list is open, its keys belong to it (snippet-completion.js).
 // Handled here rather than by keymap, because Vim's keys take precedence over
-// CodeMirror keymaps. Esc only closes the list, so it neither hides the window
-// nor leaves insert mode.
+// CodeMirror keymaps. Esc goes up a level or closes the list at the root.
 const completionKeys = {
-  Enter: acceptCompletion, Tab: acceptCompletion, Escape: closeCompletion,
+  Enter: acceptCompletion, Tab: acceptCompletion, Escape: editor => backSnippetMenu(editor) || closeCompletion(editor),
   ArrowDown: moveCompletionSelection(true), ArrowUp: moveCompletionSelection(false),
   PageDown: moveCompletionSelection(true, 'page'), PageUp: moveCompletionSelection(false, 'page'),
 };
@@ -145,7 +142,7 @@ function completionKey(event) {
   const status = completionStatus(editor.state);
   // 'pending': the list is still updating for the last keystroke.
   if (status === 'pending' && run === acceptCompletion) { if (!acceptBestSnippet(editor)) return false; consume(event); return true; }
-  if (status !== 'active') return false;
+  if (status !== 'active' && !(status === 'pending' && event.key === 'Escape')) return false;
   consume(event); run(editor);
   return true;
 }
@@ -189,6 +186,10 @@ function onKeyDown(event) {
   if (command(event, 'd', { shift: true })) { consume(event); if (!event.repeat) deleteCurrentBlock(editor); return; }
   if (languageMenuOpen() && handleLanguageMenuKey(event)) { consume(event); return; }
   if (blockMenuOpen() && handleBlockMenuKey(event)) { consume(event); return; }
+  if (focused && menusClosed() && command(event, 'enter')) {
+    const plan = planTaskToggle(editor.state);
+    if (plan) { consume(event); if (!event.repeat) editor.dispatch(plan); return; }
+  }
   if (menusClosed() && focused && event.key === 'Tab' && plain(event) && tabKey(event)) return;
   if (menusClosed() && focused && plain(event) && isEditing()) {
     const key = event.key === 'Tab' && event.shiftKey ? 'Shift-Tab' : event.key;

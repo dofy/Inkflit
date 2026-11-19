@@ -97,28 +97,50 @@ export const scopesOf=source=>infoOf(source).scopes;
 export function scopeAt(source, line) {
   return infoOf(source).lines[line] || null;
 }
+const mathSource = input => input.trim().replaceAll('×', '*').replaceAll('÷', '/').replace(/\bof\b/gi, '*');
+function currencyConversion(source) {
+  const match = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([A-Za-z]{3})\s+(?:to|in)\s+([A-Za-z]{3})$/i.exec(source);
+  return match && match[2] === match[2].toUpperCase() && match[3] === match[3].toUpperCase() ? match.slice(1) : null;
+}
+function parseMathExpression(source) {
+  const node = math.parse(source);
+  let nodes = 0, valid = true;
+  node.traverse(n => {
+    if (++nodes > 100) valid = false;
+    if (!['ConstantNode','SymbolNode','OperatorNode','ParenthesisNode','FunctionNode'].includes(n.type)) valid = false;
+    if (n.type === 'ConstantNode' && (typeof n.value !== 'number' || !Number.isFinite(n.value) || Math.abs(n.value) > 1e100)) valid = false;
+    if (n.type === 'OperatorNode' && (!allowedOperators.has(n.fn) || n.fn === 'pow' && n.args[1]?.type !== 'ConstantNode')) valid = false;
+    if (n.type === 'OperatorNode' && n.fn === 'pow' && Math.abs(n.args[1]?.value) > 100) valid = false;
+    if (n.type === 'FunctionNode' && (n.fn.type !== 'SymbolNode' || !allowedFunctions.has(n.fn.name))) valid = false;
+  });
+  return valid ? node : null;
+}
+
+// Formatting checks the parsed expression without calculating it or fetching rates.
+export function sameMathExpression(before, after) {
+  const left = mathSource(before), right = mathSource(after);
+  if (!left || !right || left.length > 256 || right.length > 256) return false;
+  const leftCurrency = currencyConversion(left), rightCurrency = currencyConversion(right);
+  if (leftCurrency || rightCurrency) return !!leftCurrency && leftCurrency.every((value, i) => value === rightCurrency?.[i]);
+  try {
+    const original = parseMathExpression(left), formatted = parseMathExpression(right);
+    return !!original && !!formatted && JSON.stringify(original) === JSON.stringify(formatted);
+  } catch (_) { return false; }
+}
+
 export function evaluateExpression(expression, scope = {}, rates = null) {
   try {
-    let source = expression.trim().replace(/[×]/g,'*').replace(/[÷]/g,'/').replace(/\bof\b/gi,'*');
+    const source = mathSource(expression);
     if (!source || source.length > 256) return null;
-    const currency = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([A-Za-z]{3})\s+(?:to|in)\s+([A-Za-z]{3})$/i.exec(source);
-    if (currency && currency[2] === currency[2].toUpperCase() && currency[3] === currency[3].toUpperCase()) {
+    const currency = currencyConversion(source);
+    if (currency) {
       if (!rates) return {text:t('block.exchangeRatesUnavailable')};
-      const from = currency[2].toUpperCase(), to = currency[3].toUpperCase();
-      if (rates.values[from] && rates.values[to]) return {value:Number(currency[1]) * rates.values[to] / rates.values[from], text:`${formatNumber(Number(currency[1]) * rates.values[to] / rates.values[from])} ${to}`, rateDate:rates.date};
+      const [amount, from, to] = currency;
+      if (rates.values[from] && rates.values[to]) return {value:Number(amount) * rates.values[to] / rates.values[from], text:`${formatNumber(Number(amount) * rates.values[to] / rates.values[from])} ${to}`, rateDate:rates.date};
       return {text:t('block.unsupportedCurrency')};
     }
-    const node = math.parse(source);
-    let nodes = 0, valid = true;
-    node.traverse(n => {
-      if (++nodes > 100) valid = false;
-      if (!['ConstantNode','SymbolNode','OperatorNode','ParenthesisNode','FunctionNode'].includes(n.type)) valid = false;
-      if (n.type === 'ConstantNode' && (typeof n.value !== 'number' || !Number.isFinite(n.value) || Math.abs(n.value) > 1e100)) valid = false;
-      if (n.type === 'OperatorNode' && (!allowedOperators.has(n.fn) || n.fn === 'pow' && n.args[1]?.type !== 'ConstantNode')) valid = false;
-      if (n.type === 'OperatorNode' && n.fn === 'pow' && Math.abs(n.args[1]?.value) > 100) valid = false;
-      if (n.type === 'FunctionNode' && (n.fn.type !== 'SymbolNode' || !allowedFunctions.has(n.fn.name))) valid = false;
-    });
-    if (!valid) return null;
+    const node = parseMathExpression(source);
+    if (!node) return null;
     const value = bindMinute(node, scope).evaluate(new Map(Object.entries(scope)));
     if (typeof value === 'number' && Number.isFinite(value)) return {value, text:formatNumber(value)};
     if (math.isUnit(value) && Number.isFinite(value.value)) return {value, text:math.format(value, {precision:10})};

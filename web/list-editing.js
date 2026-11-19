@@ -111,8 +111,8 @@ function removesLine(tr) {
 }
 export const listPasteRules = EditorState.transactionFilter.of(tr => {
   const event=tr.annotation(Transaction.userEvent);
-  // Only user edits: not loading, automation, undo / redo, or Tab's own indent.
-  if(!tr.docChanged || !event || event==='undo' || event==='redo' || event==='input.list.indent') return tr;
+  // Formatting affects code/math only, even if edits span a checklist.
+  if(!tr.docChanged || !event || event==='undo' || event==='redo' || event==='input.list.indent' || event==='input.format') return tr;
   // "indent" covers indentMore / indentLess; Vim's >> and << arrive as "input.indent".
   if(!(tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop') || tr.isUserEvent('indent') || tr.isUserEvent('input.indent') || vimLayoutChange(tr) || removesLine(tr))) return tr;
   let from=Infinity, to=-1;

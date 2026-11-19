@@ -35,6 +35,7 @@
     {
       "title": {"en": "Editing", "zh-Hans": "编辑", "zh-Hant": "編輯", "ja": "編集"},
       "rows": [
+        {"keys": ["⌘↩"], "en": "Toggle the current checklist or Markdown task", "zh-Hans": "切换当前清单项或 Markdown 任务的完成状态", "zh-Hant": "切換目前清單項目或 Markdown 待辦的完成狀態", "ja": "現在のチェック項目または Markdown タスクの完了状態を切り替える"},
         {"keys": ["⌘/"], "en": "Comment or uncomment lines", "zh-Hans": "注释或取消注释", "zh-Hant": "註解或取消註解", "ja": "行をコメント / 解除"},
         {"keys": ["⌘O", "⌘⇧O"], "en": "New line below / above the current line or block", "zh-Hans": "在当前行或块下方 / 上方插入空行", "zh-Hant": "在目前行或區塊下方 / 上方插入空行", "ja": "現在の行またはブロックの下 / 上に空行を追加"},
         {"keys": ["⌘K"], "en": "Change the current block type", "zh-Hans": "更改当前块类型", "zh-Hant": "變更目前區塊類型", "ja": "現在のブロックの種類を変更"},

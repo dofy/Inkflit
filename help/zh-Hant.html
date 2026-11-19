@@ -42,6 +42,7 @@
     <li>不搜尋備份和垃圾桶。</li>
   </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
+  <p>搜尋 <code>format</code> 並選擇「格式化筆記」，可整理目前筆記中數學公式的空格，以及 JavaScript、TypeScript、JSON、HTML、CSS、Markdown 和 YAML 程式碼區塊。程式碼沿用「程式碼縮排」設定，整次操作可以一步復原。</p>
   <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
   <ul>
     <li>帶 <b>›</b> 的命令會開啟第二層清單，例如介面主色、語言。目前生效的選項帶 <b>✓</b>。</li>
@@ -154,7 +155,7 @@
   <table>
     <thead><tr><th>功能區塊</th><th>作用</th></tr></thead>
     <tbody>
-      <tr><td>清單</td><td>每行一個核取方塊。點擊勾選，或在行尾輸入 <code>/x</code>。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
+      <tr><td>清單</td><td>點擊核取方塊、在行尾輸入 <code>/x</code>，或在目前項目的任何位置按 <kbd>⌘↩</kbd>，都能切換完成狀態。<kbd>⌘↩</kbd> 也支援一般 Markdown 待辦項目。<kbd>Tab</kbd> 和 <kbd>⇧Tab</kbd> 縮排和取消縮排，子項目會跟著父項目一起移動。</td></tr>
       <tr><td>計算</td><td>在行尾輸入 <code>=</code> 得出結果，支援變數、函式、單位和貨幣，見<a href="#math">計算</a>。</td></tr>
       <tr><td>加總 / 平均值</td><td>對區塊裡的數字加總或求平均，不計算運算式。<br>只算獨立的數字：<code>1.2.3.4</code>、IP、日期 <code>2026-11-19</code>、時間 <code>14:05</code> 不算；行首的編號 <code>1.</code>、<code>1.2.</code> 也不算。</td></tr>
       <tr><td>計數</td><td>統計項目數、字數和字元數。</td></tr>
@@ -272,10 +273,10 @@ ans / 2 =
       <tr><td>面積</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>體積</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>質量</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>時間</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">時間</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>速度</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>溫度</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>角度</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">角度</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>力</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>能量</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>功率</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -293,6 +294,34 @@ ans / 2 =
     <li><code>min</code> 單獨寫是分鐘，寫成 <code>min(…)</code> 是函式。<code>in</code> 接在數字後面是英寸（<code>5 in to cm</code>），其他位置是換算（<code>10 km in mi</code>）。</li>
     <li>變數和單位同名時，以變數為準。</li>
   </ul>
+  <h4 id="time-units">時間單位</h4>
+  <table>
+    <thead><tr><th>全名（符號）</th><th>公式寫法</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>毫秒（ms）</td><td><code>ms</code> / <code>millisecond</code></td><td>1 毫秒 = 0.001 秒</td></tr>
+      <tr><td>秒（s）</td><td><code>s</code> / <code>second</code></td><td>1 秒 = 1000 毫秒</td></tr>
+      <tr><td>分鐘（min）</td><td><code>min</code> / <code>minute</code></td><td>1 分鐘 = 60 秒</td></tr>
+      <tr><td>小時（h）</td><td><code>h</code> / <code>hour</code></td><td>1 小時 = 60 分鐘</td></tr>
+      <tr><td>天（d）</td><td><code>day</code></td><td>1 天 = 24 小時</td></tr>
+      <tr><td>週</td><td><code>week</code></td><td>1 週 = 7 天</td></tr>
+      <tr><td>月</td><td><code>month</code></td><td>1 個月 = 30.4375 天</td></tr>
+      <tr><td>年</td><td><code>year</code></td><td>1 年 = 365.25 天 = 12 個月</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit 在單位換算中把月和年視為固定時長。兩個日期之間的實際天數要按日曆計算。</p>
+  <p>公式裡可以直接寫全名 <code>minute</code> 和 <code>second</code>。<code>1 minute to s =</code> 得到 <code>60 s</code>，<code>1 second to ms =</code> 得到 <code>1000 ms</code>。在片段選單中輸入 <code>@sec</code>，選取 <code>@second</code> 就會插入 <code>s</code>。在公式裡，秒要寫 <code>s</code> 或 <code>second</code>，Inkflit 不會辨識 <code>sec</code> 這個時間單位。</p>
+  <h4 id="angle-units">角度單位</h4>
+  <table>
+    <thead><tr><th>全名（符號）</th><th>公式寫法</th><th>換算</th></tr></thead>
+    <tbody>
+      <tr><td>度（°）</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>弧度（rad）</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>百分度（gon）</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>角分（′）</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>角秒（″）</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>一整圈是 360°，也就是 2π rad。公式裡用 <code>pi</code> 表示 π，例如 <code>pi rad to deg =</code> 得到 <code>180 deg</code>。三角函式省略單位時按弧度計算。要算 30° 的正弦，寫 <code>sin(30 deg) =</code>，結果是 <code>0.5</code>。</p>
   <h3>貨幣</h3>
   <ul>
     <li><b>寫法：</b><code>10 USD to HKD =</code>。<code>to</code> 也可以寫成 <code>in</code>。</li>
@@ -351,11 +380,11 @@ ans / 2 =
       <tr><td>數字和常數</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>函式</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>單位</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>貨幣代碼（粗體）</td><td><code>USD</code> <code>HKD</code></td></tr>
+      <tr><td>貨幣代碼（與單位同色）</td><td><code>USD</code> <code>HKD</code></td></tr>
       <tr><td>運算子和換算詞</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>括號、逗號、冒號</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>行尾的等號（粗體，與結果同色）</td><td><code>=</code></td></tr>
-      <tr><td>已定義的變數（粗體）</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>行尾的等號（使用運算子顏色）</td><td><code>=</code></td></tr>
+      <tr><td>變數定義和參照</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>註解</td><td><code>// …</code></td></tr>
     </tbody>
   </table>

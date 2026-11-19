@@ -43,6 +43,7 @@
   </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
   <p>Runs note actions and changes settings without opening the Settings window.</p>
+  <p>Search for <code>format</code> and select <b>Format Note</b> to tidy expression spacing in math blocks and format JavaScript, TypeScript, JSON, HTML, CSS, Markdown, and YAML code blocks in the current note. Code uses your Code indentation setting. The whole operation can be undone in one step.</p>
   <ul>
     <li>Commands marked <b>›</b> open a second list, such as accent colors or languages. The current value has a <b>✓</b>.</li>
     <li>For opacity, blur and backups you can also type a number, for example <code>75</code>.</li>
@@ -154,7 +155,7 @@
   <table>
     <thead><tr><th>Block</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td>Checklist</td><td>A checkbox on every line. Click it or end a line with <code>/x</code>. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
+      <tr><td>Checklist</td><td>Click a checkbox, type <code>/x</code> at the end of an item, or press <kbd>⌘↩</kbd> anywhere in the item. <kbd>⌘↩</kbd> also works on Markdown tasks. <kbd>Tab</kbd> and <kbd>⇧Tab</kbd> indent and outdent; sub-items move with their parent.</td></tr>
       <tr><td>Math</td><td>End a line with <code>=</code> to calculate, with variables, functions, units and currencies. See <a href="#math">Math</a>.</td></tr>
       <tr><td>Sum / Average</td><td>Adds up or averages the numbers in the block, without evaluating expressions.<br>Only standalone numbers count: <code>1.2.3.4</code>, IP addresses, dates such as <code>2026-11-19</code>, times such as <code>14:05</code>, and numbering at the start of a line such as <code>1.</code> or <code>1.2.</code> do not.</td></tr>
       <tr><td>Count</td><td>Counts items, words and characters.</td></tr>
@@ -272,10 +273,10 @@ ans / 2 =
       <tr><td>Area</td><td><code>m2</code> <code>km2</code> <code>cm2</code> <code>sqin</code> <code>sqft</code> <code>sqyd</code> <code>sqmi</code> <code>acre</code> <code>hectare</code></td></tr>
       <tr><td>Volume</td><td><code>L</code> <code>mL</code> <code>m3</code> <code>cc</code> <code>cuin</code> <code>cuft</code> <code>teaspoon</code> <code>tablespoon</code> <code>cup</code> <code>floz</code> <code>pint</code> <code>quart</code> <code>gallon</code> <code>oilbarrel</code></td></tr>
       <tr><td>Mass</td><td><code>mg</code> <code>g</code> <code>kg</code> <code>t</code> <code>ton</code> <code>oz</code> <code>lb</code> <code>stone</code> <code>grain</code></td></tr>
-      <tr><td>Time</td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
+      <tr><td><a href="#time-units">Time</a></td><td><code>ms</code> <code>s</code> <code>min</code> <code>h</code> <code>day</code> <code>week</code> <code>month</code> <code>year</code></td></tr>
       <tr><td>Speed</td><td><code>m/s</code> <code>km/h</code> <code>mph</code></td></tr>
       <tr><td>Temperature</td><td><code>degC</code> <code>degF</code> <code>K</code></td></tr>
-      <tr><td>Angle</td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
+      <tr><td><a href="#angle-units">Angle</a></td><td><code>deg</code> <code>rad</code> <code>grad</code> <code>arcmin</code> <code>arcsec</code></td></tr>
       <tr><td>Force</td><td><code>N</code> <code>kN</code> <code>kgf</code> <code>lbf</code></td></tr>
       <tr><td>Energy</td><td><code>J</code> <code>kJ</code> <code>Wh</code> <code>kWh</code> <code>BTU</code> <code>eV</code></td></tr>
       <tr><td>Power</td><td><code>W</code> <code>kW</code> <code>hp</code></td></tr>
@@ -293,6 +294,34 @@ ans / 2 =
     <li><code>min</code> on its own is minutes; <code>min(…)</code> is the function. <code>in</code> right after a number is inches (<code>5 in to cm</code>); elsewhere it converts (<code>10 km in mi</code>).</li>
     <li>A variable wins over a unit with the same name.</li>
   </ul>
+  <h4 id="time-units">Time units</h4>
+  <table>
+    <thead><tr><th>Unit (symbol)</th><th>Formula input</th><th>Conversion</th></tr></thead>
+    <tbody>
+      <tr><td>Millisecond (ms)</td><td><code>ms</code> / <code>millisecond</code></td><td>1 ms = 0.001 s</td></tr>
+      <tr><td>Second (s)</td><td><code>s</code> / <code>second</code></td><td>1 s = 1000 ms</td></tr>
+      <tr><td>Minute (min)</td><td><code>min</code> / <code>minute</code></td><td>1 min = 60 s</td></tr>
+      <tr><td>Hour (h)</td><td><code>h</code> / <code>hour</code></td><td>1 h = 60 min</td></tr>
+      <tr><td>Day (d)</td><td><code>day</code></td><td>1 day = 24 h</td></tr>
+      <tr><td>Week</td><td><code>week</code></td><td>1 week = 7 day</td></tr>
+      <tr><td>Month</td><td><code>month</code></td><td>1 month = 30.4375 day</td></tr>
+      <tr><td>Year</td><td><code>year</code></td><td>1 year = 365.25 day = 12 month</td></tr>
+    </tbody>
+  </table>
+  <p>Inkflit treats months and years as fixed durations when converting units. It does not count calendar days between dates.</p>
+  <p>You can write the full names <code>minute</code> and <code>second</code> in formulas. <code>1 minute to s =</code> gives <code>60 s</code>, and <code>1 second to ms =</code> gives <code>1000 ms</code>. In the snippet picker, type <code>@sec</code> and choose <code>@second</code> to insert <code>s</code>. In a formula, write <code>s</code> or <code>second</code>. Inkflit does not recognize <code>sec</code> as a time unit.</p>
+  <h4 id="angle-units">Angle units</h4>
+  <table>
+    <thead><tr><th>Unit (symbol)</th><th>Formula input</th><th>Conversion</th></tr></thead>
+    <tbody>
+      <tr><td>Degree (°)</td><td><code>deg</code> / <code>degree</code></td><td>1° = π/180 rad</td></tr>
+      <tr><td>Radian (rad)</td><td><code>rad</code> / <code>radian</code></td><td>π rad = 180°</td></tr>
+      <tr><td>Gradian (gon)</td><td><code>grad</code> / <code>gradian</code></td><td>100 grad = 90°</td></tr>
+      <tr><td>Arcminute (′)</td><td><code>arcmin</code> / <code>arcminute</code></td><td>60 arcmin = 1°</td></tr>
+      <tr><td>Arcsecond (″)</td><td><code>arcsec</code> / <code>arcsecond</code></td><td>60 arcsec = 1 arcmin = 1/60°</td></tr>
+    </tbody>
+  </table>
+  <p>A full turn is 360° or 2π rad. Use <code>pi</code> in a formula, as in <code>pi rad to deg =</code>, which gives <code>180 deg</code>. Trigonometric functions interpret an input with no unit as radians. Write <code>sin(30 deg) =</code> for 30°, which gives <code>0.5</code>.</p>
   <h3>Currency</h3>
   <ul>
     <li><b>Write:</b> <code>10 USD to EUR =</code>. <code>in</code> works in place of <code>to</code>.</li>
@@ -351,11 +380,11 @@ ans / 2 =
       <tr><td>Numbers and constants</td><td><code>80</code> <code>1.5e3</code> <code>pi</code></td></tr>
       <tr><td>Functions</td><td><code>sqrt</code> <code>round</code></td></tr>
       <tr><td>Units</td><td><code>km</code> <code>min</code> <code>degC</code></td></tr>
-      <tr><td>Currency codes (bold)</td><td><code>USD</code> <code>EUR</code></td></tr>
+      <tr><td>Currency codes (use the unit color)</td><td><code>USD</code> <code>EUR</code></td></tr>
       <tr><td>Operators and conversion words</td><td><code>+</code> <code>×</code> <code>%</code> <code>to</code> <code>of</code></td></tr>
       <tr><td>Brackets, commas, colons</td><td><code>(</code> <code>,</code> <code>:</code></td></tr>
-      <tr><td>The closing equals sign (bold, like the result)</td><td><code>=</code></td></tr>
-      <tr><td>Defined variables (bold)</td><td><code>price</code> <code>ans</code></td></tr>
+      <tr><td>The closing equals sign (uses the operator color)</td><td><code>=</code></td></tr>
+      <tr><td>Variable definitions and references</td><td><code>price</code> <code>ans</code></td></tr>
       <tr><td>Comments</td><td><code>// …</code></td></tr>
     </tbody>
   </table>

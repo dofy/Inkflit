@@ -87,7 +87,7 @@ Vim 由 CodeMirror 和 `@replit/codemirror-vim` 提供，並非 Neovim，也不�
 輸入 `@` 加一個詞插入常用值。Return 插入第一種格式，↑／↓ 選擇其他格式。
 
 - **內建詞：**`@date`、`@time`、`@now`、`@year`、`@month`、`@day`、`@week`、`@timestamp`、`@uuid`、`@ip`、`@mac`、`@host`。
-- **計算區塊中：**`@fn`（函式）、`@unit`（單位）、`@cur`（貨幣代碼，附當日匯率）。
+- **計算區塊中：**`@fn`（函式）、`@unit`（單位）、`@cur`（貨幣代碼，附當日匯率）、`@const`（數學和科學常數）。輸入 `@pi` 或 `@speedoflight` 即可直接查找常數。
 - **自訂：**在「設定 → 片段」新增。同一觸發詞的幾行組成一組。儲存在筆記資料夾的 `snippets.json`。
 - **預留位置：**`{date}`、`{date#2}`、`{ipv4}` 這樣的別名，`{{` 表示字面的 `{`。
 - **游標位置：**`{cursor}` 和 `{cursor:姓名}`。`Tab`／`Shift-Tab` 在位置間跳轉，`Esc` 結束跳轉；正在填的位置會突出顯示。
