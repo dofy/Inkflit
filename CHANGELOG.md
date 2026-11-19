@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-19
+
 ### Added
 
 - MCP can page through notes with short summaries, read the selected note, and analyze calculation and checklist blocks.
@@ -39,6 +41,8 @@
 - Recover interrupted note saves without blocking the editor. If the on-disk data conflicts with the pending save, keep both and show where the recovery record was preserved.
 - Keep feature block contents out of Markdown headings when a dash is typed immediately below the block.
 - Preserve existing tabs when changing checklist indentation.
+
+The DMG requires Apple Silicon and macOS 13 or later. The app is ad hoc signed and has no Apple notarization. The release includes `SHA256SUMS.txt` for verification.
 
 ## [0.2.1] - 2026-11-19
 
@@ -84,7 +88,8 @@ The DMG requires Apple Silicon and macOS 13 or later. It is ad hoc signed and wa
 
 - Historical build with the previous bundle ID. Its installer was retired in favor of [0.1.3], which includes settings migration.
 
-[Unreleased]: https://github.com/dofy/Inkflit/compare/v0.2.1...main
+[Unreleased]: https://github.com/dofy/Inkflit/compare/v0.2.2...main
+[0.2.2]: https://github.com/dofy/Inkflit/releases/tag/v0.2.2
 [0.2.1]: https://github.com/dofy/Inkflit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/dofy/Inkflit/releases/tag/v0.2.0
 [0.1.3]: https://github.com/dofy/Inkflit/releases/tag/v0.1.3
