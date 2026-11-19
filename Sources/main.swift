@@ -438,6 +438,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         defaults.set(appearance.colorScheme.rawValue, forKey: "windowColorScheme")
         applyAppColorScheme(appearance.colorScheme)
         applyWindowAppearance()
+        settingsController?.syncHelpAppearance()
     }
     private func applyAppColorScheme(_ scheme: WindowColorScheme) {
         var name = scheme.appearanceName

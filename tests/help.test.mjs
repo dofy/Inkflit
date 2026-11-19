@@ -40,5 +40,19 @@ test('the generated help page carries every language and the current version', a
     assert.ok(page.includes(labelsOf(await read(`help/${language}.html`)).title), `${language}: rebuild Resources/Help.html with scripts/build-help.py`);
   }
   assert.ok(page.includes(` · ${version}<`), 'version from package.json');
-  assert.doesNotMatch(page, /%(APP_VERSION|APP_ICON|LANGUAGES|SHORTCUTS)%/);
+  assert.doesNotMatch(page, /%(APP_VERSION|APP_ICON|UI_THEME_STYLES|LANGUAGES|SHORTCUTS)%/);
+});
+
+test('offline help embeds every editor palette in both appearances', async () => {
+  const page = await read('Resources/Help.html');
+  const themes = JSON.parse(await read('Resources/UIThemes.json'));
+  for (const [index, theme] of themes.entries()) {
+    const selector = index === 0 ? ':root' : `:root[data-ui-theme="${theme.id}"]`;
+    for (const [suffix, colors] of [['', theme.colors], ['[data-color-scheme="dark"]', theme.darkColors]]) {
+      const name = `${selector}${suffix}`;
+      const rules = page.split(`${name} { `).slice(1).map(rule => rule.split('}')[0]);
+      assert.ok(rules.some(rule => Object.entries(colors).every(([key, value]) => rule.includes(`--ui-${key}: ${value};`))),
+        `missing or stale palette ${name}`);
+    }
+  }
 });

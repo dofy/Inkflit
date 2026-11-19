@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Apply the selected interface palette and appearance throughout offline help.
+
 ## [0.2.2] - 2026-11-19
 
 ### Added

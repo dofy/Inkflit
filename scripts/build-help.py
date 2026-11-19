@@ -39,6 +39,22 @@ def section_ids(text):
     return re.findall(r'<section id="([^"]+)"', text)
 
 
+def ui_theme_styles():
+    """Embed the same light and dark palettes the editor loads."""
+    themes = json.loads(Path('Resources/UIThemes.json').read_text())
+    rules = []
+    for scheme, key in (('light', 'colors'), ('dark', 'darkColors')):
+        for index, theme in enumerate(themes):
+            selector = ':root'
+            if index:
+                selector += f'[data-ui-theme="{theme["id"]}"]'
+            if scheme == 'dark':
+                selector += '[data-color-scheme="dark"]'
+            colors = ' '.join(f'--ui-{name}: {value};' for name, value in theme[key].items())
+            rules.append(f'  {selector} {{ {colors} }}')
+    return '\n'.join(rules)
+
+
 def app_icon_url():
     """Embed the app icon at twice the 64 pt title size when available."""
     icon = Path('Resources/Inkflit.icns').read_bytes()
@@ -78,7 +94,13 @@ for language in LANGUAGES:
     blocks.append(f'<template data-lang="{language}">\n{text.strip()}\n</template>')
 
 page = (root / 'template.html').read_text()
-page = page.replace('%APP_VERSION%', version).replace('%APP_ICON%', app_icon_url()).replace('%LANGUAGES%', '\n'.join(blocks))
-for placeholder in ('%APP_VERSION%', '%APP_ICON%', '%LANGUAGES%', '%SHORTCUTS%'):
-    assert placeholder not in page, f'unfilled {placeholder}'
+for placeholder, value in {
+    '%APP_VERSION%': version,
+    '%APP_ICON%': app_icon_url(),
+    '%UI_THEME_STYLES%': ui_theme_styles(),
+    '%LANGUAGES%': '\n'.join(blocks),
+}.items():
+    assert placeholder in page, f'missing {placeholder}'
+    page = page.replace(placeholder, value)
+assert '%SHORTCUTS%' not in page, 'unfilled %SHORTCUTS%'
 Path('Resources/Help.html').write_text(page)

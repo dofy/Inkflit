@@ -767,22 +767,35 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     // Entry points for the command palette.
     func openHelpWindow() { openHelp() }
     @objc private func openHelp() {
-        // One page holds every language; the query picks the language and accent.
+        // Set the initial language and palette before WebKit paints the page.
         guard let page = Bundle.main.url(forResource: "Help", withExtension: "html"),
               var components = URLComponents(url: page, resolvingAgainstBaseURL: false) else { NSSound.beep(); return }
-        components.queryItems = [URLQueryItem(name: "lang", value: Localization.current), URLQueryItem(name: "theme", value: getAppearance().theme)]
+        let appearance = getAppearance()
+        components.queryItems = [
+            URLQueryItem(name: "lang", value: Localization.current),
+            URLQueryItem(name: "theme", value: appearance.theme),
+            URLQueryItem(name: "appearance", value: appearance.colorScheme.rawValue)
+        ]
         guard let url = components.url else { NSSound.beep(); return }
         if helpWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = L("settings.helpWindowTitle"); window.isReleasedWhenClosed = false; window.center()
             let web = WKWebView(frame: .zero)
             web.navigationDelegate = helpLinks
+            helpLinks.onLoad = { [weak self] in self?.syncHelpAppearance() }
             window.contentView = web
             helpWindow = NSWindowController(window: window)
         }
-        // Reload each time so a changed language or accent is picked up.
+        // Reload each time so the current language is picked up.
         (helpWindow?.window?.contentView as? WKWebView)?.loadFileURL(url, allowingReadAccessTo: page.deletingLastPathComponent())
         helpWindow?.showWindow(nil); helpWindow?.window?.makeKeyAndOrderFront(nil)
+    }
+    func syncHelpAppearance() {
+        guard let window = helpWindow?.window, window.isVisible, let web = window.contentView as? WKWebView else { return }
+        let appearance = getAppearance()
+        web.callAsyncJavaScript("window.setHelpAppearance?.(theme, scheme)",
+                                arguments: ["theme": appearance.theme, "scheme": appearance.colorScheme.rawValue],
+                                in: nil, in: .page, completionHandler: nil)
     }
     func show() {
         refresh()
@@ -796,6 +809,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
 
 /// Opens web links from the help page in the default browser instead of the help window.
 final class HelpLinks: NSObject, WKNavigationDelegate {
+    var onLoad: (() -> Void)?
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { onLoad?() }
+
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if let url = action.request.url, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
             NSWorkspace.shared.open(url); decisionHandler(.cancel); return

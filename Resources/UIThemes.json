@@ -1,5 +1,20 @@
 [
-  {"id":"orange","title":"settings.themeWarmOrange","colors":{"ink":"#302921","muted":"#89796e","accent":"#b95c1d","bar":"#fff0e2","paper":"#fffdfa","border":"#f0dbc9","hover":"#f9ddc6","button":"#8c5b39","active":"#fff5ec","cursor":"#ad4f12","checked":"#d87932","selection":"#f8d7bc"}},
-  {"id":"blue","title":"settings.themeOceanBlue","colors":{"ink":"#263341","muted":"#718493","accent":"#2868a2","bar":"#eaf3fc","paper":"#fbfdff","border":"#d4e3f2","hover":"#d4e8f9","button":"#496c88","active":"#f0f7ff","cursor":"#2868a2","checked":"#397fb8","selection":"#cce3f6"}},
-  {"id":"green","title":"settings.themeSage","colors":{"ink":"#29362e","muted":"#728478","accent":"#387452","bar":"#eaf4ec","paper":"#fcfefb","border":"#d7e8da","hover":"#d4ead8","button":"#4e745a","active":"#f0f8f1","cursor":"#387452","checked":"#4c8a60","selection":"#cfe8d4"}}
+  {
+    "id": "orange",
+    "title": "settings.themeWarmOrange",
+    "colors": {"ink":"#302921","muted":"#89796e","accent":"#b95c1d","bar":"#fff0e2","paper":"#fffdfa","border":"#f0dbc9","hover":"#f9ddc6","button":"#8c5b39","active":"#fff5ec","cursor":"#ad4f12","checked":"#d87932","selection":"#f8d7bc"},
+    "darkColors": {"ink":"#f3e9df","muted":"#b9a89a","accent":"#ffac70","bar":"#30251e","paper":"#211c19","border":"#594536","hover":"#543b2b","button":"#e6b794","active":"#392a21","cursor":"#ffad6d","checked":"#d87932","selection":"#76503a"}
+  },
+  {
+    "id": "blue",
+    "title": "settings.themeOceanBlue",
+    "colors": {"ink":"#263341","muted":"#718493","accent":"#2868a2","bar":"#eaf3fc","paper":"#fbfdff","border":"#d4e3f2","hover":"#d4e8f9","button":"#496c88","active":"#f0f7ff","cursor":"#2868a2","checked":"#397fb8","selection":"#cce3f6"},
+    "darkColors": {"ink":"#e4edf6","muted":"#9eafbf","accent":"#8dc9ff","bar":"#202d39","paper":"#19232d","border":"#385063","hover":"#334d62","button":"#a8cbe6","active":"#243747","cursor":"#8dc9ff","checked":"#397fb8","selection":"#375a76"}
+  },
+  {
+    "id": "green",
+    "title": "settings.themeSage",
+    "colors": {"ink":"#29362e","muted":"#728478","accent":"#387452","bar":"#eaf4ec","paper":"#fcfefb","border":"#d7e8da","hover":"#d4ead8","button":"#4e745a","active":"#f0f8f1","cursor":"#387452","checked":"#4c8a60","selection":"#cfe8d4"},
+    "darkColors": {"ink":"#e7efe7","muted":"#a4b7a8","accent":"#9ad8ac","bar":"#233128","paper":"#1b261f","border":"#3d5847","hover":"#355442","button":"#b0d6b8","active":"#293c30","cursor":"#9ad8ac","checked":"#4c8a60","selection":"#3c6148"}
+  }
 ]
