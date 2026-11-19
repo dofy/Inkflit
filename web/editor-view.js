@@ -60,6 +60,13 @@ const plainEnter = Prec.highest(keymap.of([{ key: 'Enter', run: view => { const 
 // True when keystrokes insert text: Vim is off, or Vim is in insert mode.
 export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vim?.insertMode;
 
+// Leave Insert through Vim itself so its state, cursor and input source agree.
+export function prepareToHide() {
+  if (!app.vimEnabled || !app.editor) return;
+  const cm = getCM(app.editor);
+  if (cm?.state?.vim?.insertMode) Vim.handleKey(cm, '<Esc>', 'user');
+}
+
 // Merge the first insert after a Vim command into a single undo step with it.
 const mergeFirstInsert = EditorState.transactionFilter.of(tr => {
   if (!app.mergeFirstInsert || !tr.docChanged || !tr.isUserEvent('input.type')) return tr;

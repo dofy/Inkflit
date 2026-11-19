@@ -1,7 +1,7 @@
 import { t, setLanguage, lang } from './i18n.js';
 import { app, $, newNote, resolveNativeRequest } from './app.js';
 import { persist, saveResult, snapshotForFlush } from './persistence.js';
-import { changeEditor, setVimEnabled, refreshBlockResults } from './editor-view.js';
+import { changeEditor, setVimEnabled, refreshBlockResults, prepareToHide } from './editor-view.js';
 import { applyToolbarLanguage } from './toolbar.js';
 import { select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
@@ -76,6 +76,7 @@ export function installBridge() {
     },
     // Window and panels
     focusEditor: () => { app.editor?.focus(); },
+    prepareToHide,
     openCommands,
     openNoteSearch: openSearch,
     setCommandState,

@@ -932,7 +932,29 @@ final class NativeCodeEditingTest {
     }
     static func startVimToggle(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        running?.focusNoteEditor { running?.testVimToggle() }
+        running?.focusNoteEditor {
+            if ProcessInfo.processInfo.environment["INKFLIT_VIM_RESTART_TEST"] == "1" { running?.testVimToggle() }
+            else { running?.testInsertHide() }
+        }
+    }
+    private func testInsertHide() {
+        key(34, "i")
+        waitForJavaScript("document.getElementById('mode').textContent === 'INSERT'") { [self] in
+            app.hideWindow()
+            later { [self] in
+                guard !app.window.isVisible else { fail("window did not hide from Insert mode") }
+                focusNoteEditor { [self] in
+                    waitForJavaScript("document.getElementById('mode').textContent === 'NORMAL'") { [self] in
+                        key(7, "x")
+                        later { [self] in content { [self] text in
+                            expect(text, "", "reopened editor executes Normal commands instead of inserting")
+                            print("PASS hiding from Insert mode returns to Normal on reopen")
+                            testVimToggle()
+                        } }
+                    }
+                }
+            }
+        }
     }
     private func testVimToggle() {
         if ProcessInfo.processInfo.environment["INKFLIT_VIM_RESTART_TEST"] == "1" {
@@ -952,7 +974,16 @@ final class NativeCodeEditingTest {
         settings.testToggleVim()
         guard !app.vimEnabled() && !settings.testVimSwitchState() else { fail("Vim preference not saved") }
         settings.window?.orderOut(nil); app.showWindow()
-        later { [self] in
+        waitForJavaScript("""
+            (() => {
+                const created = document.getElementById('created');
+                const shortcut = document.getElementById('shortcut');
+                const footer = document.querySelector('footer').getBoundingClientRect();
+                const timestamp = created.getBoundingClientRect();
+                return document.hasFocus() && !created.hidden && timestamp.left - footer.left < 25
+                    && shortcut.getBoundingClientRect().left > timestamp.right;
+            })()
+            """) { [self] in
             sequence([{ self.key(0,"a") }, { self.key(11,"b") }]) { [self] in content { [self] text in
                 expect(text,"ab","direct typing with Vim disabled")
                 key(6,"z","z",.command); later { [self] in content { [self] text in
@@ -996,7 +1027,13 @@ final class NativeCodeEditingTest {
             key(53, "\u{1b}")
             waitForJavaScript("document.getElementById('mode').textContent === 'NORMAL' && document.getElementById('escape-hint').hidden") { [self] in
                 key(53, "\u{1b}")
-                waitForJavaScript("!document.getElementById('escape-hint').hidden") { [self] in
+                waitForJavaScript("""
+                    (() => {
+                        const hint = document.getElementById('escape-hint');
+                        const style = getComputedStyle(hint);
+                        return !hint.hidden && style.color === style.borderTopColor;
+                    })()
+                    """) { [self] in
                     guard app.window.isVisible else { fail("first Escape hid the Vim window") }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [self] in
                         app.web.evaluateJavaScript("document.getElementById('escape-hint').hidden") { [self] value, error in

@@ -643,9 +643,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         hideGeneration += 1; hidePending = true; let request = hideGeneration
         requestFlush { [weak self] success, _ in
             guard let self, self.hideGeneration == request else { return }
-            self.hidePending = false
-            if success { self.restoreInputSource(); self.window.orderOut(nil) }
-            else { self.showWindow() }
+            if !success { self.showWindow(); return }
+            self.web.evaluateJavaScript("window.prepareToHide?.()") { [weak self] _, error in
+                guard let self, self.hideGeneration == request else { return }
+                if let error { self.showError(L("error.saveFailedDetail") + error.localizedDescription); self.showWindow(); return }
+                self.hidePending = false; self.restoreInputSource(); self.window.orderOut(nil)
+            }
         }
     }
     func windowShouldClose(_ sender: NSWindow) -> Bool { hideWindow(); return false }

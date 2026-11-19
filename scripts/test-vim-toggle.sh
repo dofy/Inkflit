@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 source scripts/native-test-common.sh
 setup_native_test inkflit-vim-test vimtest InkflitVimTest.app
 for restart in 0 1; do
-  printf '%s' '{"notes":[{"id":"first","content":"","updated":"1"},{"id":"second","content":"","updated":"2"},{"id":"code","content":":::inkflit code json\n\n:::end","updated":"3"}],"selected":"first"}' > "$test_dir/notes.json"
+  printf '%s' '{"notes":[{"id":"first","content":"","created":"2026-01-01T00:00:00Z","updated":"1"},{"id":"second","content":"","updated":"2"},{"id":"code","content":":::inkflit code json\n\n:::end","updated":"3"}],"selected":"first"}' > "$test_dir/notes.json"
   INKFLIT_ISOLATED_TEST=1 INKFLIT_DATA_PATH="$test_dir/notes.json" INKFLIT_VIM_TOGGLE_TEST=1 INKFLIT_VIM_RESTART_TEST="$restart" python3 - "$test_app/Contents/MacOS/Inkflit" <<'PY'
 import subprocess,sys
 try:

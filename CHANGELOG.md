@@ -17,11 +17,14 @@
 - Math expressions use the code theme for highlighting. Variable definitions and references match code variables, currency codes match units, and trailing equals signs use the operator style.
 - Use GitHub, Solarized, and One Light / One Dark for code highlighting and previews. Each theme follows Inkflit’s appearance. Old theme IDs fall back to GitHub.
 - In Vim Normal mode, press Esc twice within 0.6 seconds to hide the window. The first press shows a hint. With Vim off, a single press still hides the window.
+- Use the current accent color for the Esc hint and a darker background in Dark mode.
 - Match the status bar background to the toolbar across themes and window opacities.
+- With Vim off, align the note's creation time to the left and the keyboard shortcut to the right of the status bar.
 - Offline help now documents time and angle unit names, symbols, and conversions, including the difference between searching for `@sec` and using `s` or `second` in a formula.
 
 ### Fixed
 
+- Return to Vim Normal mode when hiding the window from Insert mode.
 - Recover interrupted note saves without blocking the editor. If the on-disk data conflicts with the pending save, keep both and show where the recovery record was preserved.
 - Keep feature block contents out of Markdown headings when a dash is typed immediately below the block.
 - Preserve existing tabs when changing checklist indentation.
