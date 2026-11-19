@@ -12,6 +12,7 @@ python3 scripts/build-help.py
 rm -f "$APP/Contents/Resources/"Help*.html
 cp Resources/Help.html "$APP/Contents/Resources/Help.html"
 cp Resources/CodeThemes.json "$APP/Contents/Resources/CodeThemes.json"
+cp Resources/CodeThemes-NOTICES.txt "$APP/Contents/Resources/CodeThemes-NOTICES.txt"
 cp Resources/Translations.json "$APP/Contents/Resources/Translations.json"
 cp Resources/UIThemes.json "$APP/Contents/Resources/UIThemes.json"
 cp Resources/Onboarding.*.json "$APP/Contents/Resources/"

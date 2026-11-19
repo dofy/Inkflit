@@ -276,10 +276,10 @@
     "ja": "コードの配色"
   },
   "settings.codeColorsHint": {
-    "en": "Applied immediately; preview shows JSON.",
-    "zh-Hans": "选择后立即应用，预览展示 JSON 代码。",
-    "zh-Hant": "選擇後立即套用，預覽顯示 JSON。",
-    "ja": "すぐに適用されます。プレビューは JSON です。"
+    "en": "Applies immediately and follows the system’s light or dark appearance.",
+    "zh-Hans": "选择后立即应用，浅色和深色随系统切换。",
+    "zh-Hant": "選擇後立即套用，淺色與深色跟隨系統切換。",
+    "ja": "すぐに適用され、ライトとダークはシステムの外観に従います。"
   },
   "settings.codeColorsDetail": {
     "en": "Choose syntax highlighting",
@@ -412,18 +412,6 @@
     "zh-Hans": "鼠尾草",
     "zh-Hant": "鼠尾草",
     "ja": "セージ"
-  },
-  "settings.themeAmber": {
-    "en": "Amber",
-    "zh-Hans": "琥珀",
-    "zh-Hant": "琥珀",
-    "ja": "アンバー"
-  },
-  "settings.themeVivid": {
-    "en": "Vivid",
-    "zh-Hans": "鲜明",
-    "zh-Hant": "鮮明",
-    "ja": "ビビッド"
   },
   "settings.languageSystem": {
     "en": "System",
@@ -1462,6 +1450,12 @@
     "zh-Hans": "操作已完成，但无法返回结果。",
     "zh-Hant": "操作已完成，但無法回傳結果。",
     "ja": "操作は完了しましたが、結果を返せませんでした。"
+  },
+  "editor.escapeToHide": {
+    "en": "Press Esc again to hide",
+    "zh-Hans": "再按一次 Esc 收起窗口",
+    "zh-Hant": "再按一次 Esc 收起視窗",
+    "ja": "もう一度 Esc でウインドウを隠す"
   },
   "settings.insertPlaceholder": {
     "en": "Insert placeholder",

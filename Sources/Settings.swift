@@ -16,7 +16,15 @@ enum CodeThemes {
               let themes = try? JSONDecoder().decode([CodeTheme].self, from: data), !themes.isEmpty else { return [] }
         return themes
     }()
-    static func validID(_ id: String?) -> String { all.first(where: { $0.id == id })?.id ?? all.first?.id ?? "amber" }
+    static var defaultID: String { all.first?.id ?? "github" }
+    static func validID(_ id: String?) -> String { all.first(where: { $0.id == id })?.id ?? defaultID }
+}
+private final class CodeThemePreviewBox: NSBox {
+    var onAppearanceChange: (() -> Void)?
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        onAppearanceChange?()
+    }
 }
 struct UITheme: Decodable { let id: String; let title: String; let colors: [String: String] }
 enum UIThemes {
@@ -189,7 +197,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
-    private let previewBox = NSBox()
+    private let previewBox = CodeThemePreviewBox()
     private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
@@ -333,14 +341,18 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel(L("settings.codeIndentation"))
         let indentMessage = NSTextField(wrappingLabelWithString: L("settings.codeIndentationHint"))
         let indentSection = section(L("settings.codeIndentation"), icon: "increase.indent", detail: L("settings.codeIndentationDetail"), controls: indentation, message: indentMessage)
-        for theme in CodeThemes.all { themePicker.addItem(withTitle: L(theme.title)); themePicker.lastItem?.representedObject = theme.id }
+        for theme in CodeThemes.all { themePicker.addItem(withTitle: theme.title); themePicker.lastItem?.representedObject = theme.id }
         themePicker.target = self; themePicker.action = #selector(themeChanged); themePicker.setAccessibilityLabel(L("settings.codeColors"))
         let themeMessage = NSTextField(wrappingLabelWithString: L("settings.codeColorsHint"))
         let themeSection = section(L("settings.codeColors"), icon: "paintpalette", detail: L("settings.codeColorsDetail"), controls: themePicker, message: themeMessage)
         themePreview.font = .monospacedSystemFont(ofSize: 12, weight: .regular); themePreview.maximumNumberOfLines = 0
         themePreview.setAccessibilityLabel(L("settings.codeColorPreview"))
         previewBox.boxType = .custom; previewBox.borderWidth = 0
-        previewBox.fillColor = NSColor(calibratedRed: 1, green: 0.992, blue: 0.98, alpha: 1); previewBox.cornerRadius = 8
+        previewBox.cornerRadius = 8
+        previewBox.onAppearanceChange = { [weak self] in
+            guard let self else { return }
+            self.renderThemePreview(self.getTheme())
+        }
         themePreview.translatesAutoresizingMaskIntoConstraints = false; previewBox.addSubview(themePreview)
         NSLayoutConstraint.activate([themePreview.leadingAnchor.constraint(equalTo: previewBox.leadingAnchor, constant: 12), themePreview.trailingAnchor.constraint(equalTo: previewBox.trailingAnchor, constant: -12), themePreview.topAnchor.constraint(equalTo: previewBox.topAnchor, constant: 8), themePreview.bottomAnchor.constraint(equalTo: previewBox.bottomAnchor, constant: -8)])
         let previewRow = NSView(); previewBox.translatesAutoresizingMaskIntoConstraints = false; previewRow.addSubview(previewBox)
@@ -471,19 +483,26 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     }
     private func renderThemePreview(_ id: String) {
         guard let theme = CodeThemes.all.first(where: { $0.id == CodeThemes.validID(id) }) else { return }
-        let dark = window?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        previewBox.fillColor = dark ? NSColor(calibratedWhite: 0.12, alpha: 1) : NSColor(calibratedRed: 1, green: 0.992, blue: 0.98, alpha: 1)
+        let dark = previewBox.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let palette = dark ? theme.darkColors : theme.colors
-        let text = "{\n  \"name\": \"Inkflit\",\n  \"active\": true,\n  \"count\": 42\n}"
-        func color(_ key: String) -> NSColor {
-            let hex = palette[key]?.trimmingCharacters(in: CharacterSet(charactersIn: "#")) ?? "302921"
-            let value = UInt64(hex, radix: 16) ?? 0x302921
-            return NSColor(calibratedRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
+        func color(_ key: String, fallback: NSColor = .labelColor) -> NSColor {
+            guard let hex = palette[key], let value = UInt64(hex.dropFirst(), radix: 16) else { return fallback }
+            return NSColor(srgbRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
         }
-        let attributed = NSMutableAttributedString(string: text, attributes: [.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular), .foregroundColor: color("punctuation")])
-        let source = text as NSString
-        for (key, tokens) in [("property", ["\"name\"", "\"active\"", "\"count\""]), ("string", ["\"Inkflit\""]), ("keyword", ["true"]), ("number", ["42"])] {
-            for token in tokens { let range = source.range(of: token); if range.location != NSNotFound { attributed.addAttribute(.foregroundColor, value: color(key), range: range) } }
+        previewBox.fillColor = color("background", fallback: .textBackgroundColor)
+        let attributed = NSMutableAttributedString()
+        let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        let sample = [
+            ("comment", "// Label a note\n"),
+            ("keyword", "const"), ("variable", " note "), ("operator", "="),
+            ("punctuation", " { "), ("property", "title"), ("punctuation", ": "),
+            ("string", "\"Inkflit\""), ("punctuation", " };\n"),
+            ("keyword", "function"), ("function", " label"), ("punctuation", "() {\n  "),
+            ("keyword", "return"), ("variable", " note"), ("punctuation", "."), ("property", "title"),
+            ("operator", " + "), ("string", "\" #\""), ("operator", " + "), ("number", "42"), ("punctuation", ";\n}")
+        ]
+        for (key, text) in sample {
+            attributed.append(NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: color(key)]))
         }
         themePreview.attributedStringValue = attributed
     }
@@ -492,12 +511,17 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         renderThemePreview(value); setTheme(value)
     }
     #if INKFLIT_NATIVE_TEST
-    func testSelectCodeTheme(_ id: String) -> String? {
+    func testSelectCodeTheme(_ id: String) -> (property: String, background: String)? {
         guard let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == id }) else { return nil }
         themePicker.selectItem(at: index)
         NSApp.sendAction(#selector(themeChanged), to: self, from: themePicker)
-        guard let color = themePreview.attributedStringValue.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor else { return nil }
-        return String(format: "#%02x%02x%02x", Int((color.redComponent*255).rounded()), Int((color.greenComponent*255).rounded()), Int((color.blueComponent*255).rounded()))
+        let sample = themePreview.attributedStringValue
+        let property = (sample.string as NSString).range(of: "title")
+        guard property.location != NSNotFound, let color = sample.attribute(.foregroundColor, at: property.location, effectiveRange: nil) as? NSColor else { return nil }
+        func hex(_ color: NSColor) -> String {
+            String(format: "#%02x%02x%02x", Int((color.redComponent*255).rounded()), Int((color.greenComponent*255).rounded()), Int((color.blueComponent*255).rounded()))
+        }
+        return (hex(color), hex(previewBox.fillColor))
     }
     func testSetAppearance(_ appearance: WindowAppearance) -> Bool {
         guard let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) else { return false }

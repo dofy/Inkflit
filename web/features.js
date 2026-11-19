@@ -6,7 +6,26 @@ export const markerPrefix = ':::inkflit';
 const blockTypes = ['list','math','sum','avg','count','code'];
 const headerPattern = new RegExp(`^(${blockTypes.join('|')})(?:\\s+([\\w+.-]+))?(?:\\s*:\\s*.*)?\\s*$`, 'i');
 const blockPattern = new RegExp(`^${markerPrefix} (${blockTypes.join('|')})(?: ([\\w+.-]+))?\\s*$`);
+const blockEndPattern = /^:::end\s*$/;
 const fenceModes = new Set(blockTypes.filter(type=>type!=='code'));
+
+// An invisible feature marker still has to separate Markdown blocks.
+// Otherwise a dash after :::end can turn the entire preceding paragraph into a heading.
+const isBlockMarker = line => blockPattern.test(line) || blockEndPattern.test(line);
+export const markdownBlockMarkers = {
+  defineNodes: [{ name: 'FeatureBlockMarker', block: true }],
+  parseBlock: [{
+    name: 'FeatureBlockMarker',
+    parse(context, line) {
+      if (!isBlockMarker(line.text)) return false;
+      const from = context.lineStart, to = from + line.text.length;
+      context.nextLine();
+      context.addElement(context.elt('FeatureBlockMarker', from, to));
+      return true;
+    },
+    endLeaf(_context, line) { return isBlockMarker(line.text); },
+  }],
+};
 
 const math = create(all);
 math.createUnit({mph:'1 mi/h', nmi:'1852 m'});
@@ -50,7 +69,7 @@ export function featureScopes(text) {
   for(let i=0;i<lines.length;i++) {
     const line=lines[i];
     if(active) {
-      const close=active.kind==='block' ? /^:::end\s*$/.test(line) : new RegExp('^\\s*'+active.marker[0]+'{'+active.marker.length+',}\\s*$').test(line);
+      const close=active.kind==='block' ? blockEndPattern.test(line) : new RegExp('^\\s*'+active.marker[0]+'{'+active.marker.length+',}\\s*$').test(line);
       if(close) { scopes.push({...active,start:active.line,end:i+1,last:i,global:false,closed:true}); active=null; }
       continue;
     }

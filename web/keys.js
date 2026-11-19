@@ -1,7 +1,8 @@
 import { Vim, getCM } from '@replit/codemirror-vim';
 import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection, hasNextSnippetField, hasPrevSnippetField, nextSnippetField, prevSnippetField, clearSnippet } from '@codemirror/autocomplete';
 import { toggleLineComment, indentMore, indentLess } from '@codemirror/commands';
-import { app, nativeHandler } from './app.js';
+import { app, $, nativeHandler } from './app.js';
+import { t } from './i18n.js';
 import { isEditing } from './editor-view.js';
 import { acceptBestSnippet, backSnippetMenu } from './snippet-completion.js';
 import { commandPalette, searchPalette, openCommands, openSearch } from './palettes.js';
@@ -27,6 +28,26 @@ function hide() {
   const handler = nativeHandler();
   if (handler) handler.postMessage({ type: 'hide' });
   else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
+}
+
+const escapeInterval = 600;
+let escapeDeadline = 0, escapeTimer;
+function clearEscapeHint() {
+  if (!escapeDeadline) return;
+  escapeDeadline = 0;
+  clearTimeout(escapeTimer);
+  $('escape-hint').hidden = true;
+}
+function vimEscapeToHide() {
+  const now = performance.now();
+  const confirmed = now < escapeDeadline;
+  clearEscapeHint();
+  if (confirmed) { hide(); return; }
+  const hint = $('escape-hint');
+  hint.textContent = t('editor.escapeToHide');
+  hint.hidden = false;
+  escapeDeadline = now + escapeInterval;
+  escapeTimer = setTimeout(clearEscapeHint, escapeInterval);
 }
 
 // ⌘⇧P and ⌘⇧F toggle their palette from anywhere, switching away from the other one.
@@ -119,13 +140,17 @@ function toggleComments() {
   }
 }
 
-// Esc hides the window unless Vim still has something to finish. Caret stops
-// from a snippet end first, so Tab indents again; Vim still gets the Esc.
+// Vim handles Escape first when it has a mode or command to cancel.
 function escapeKey(event) {
   const endedStops = !!app.editor && clearSnippet(app.editor);
   const cm = getCM(app.editor), vimState = cm?.state?.vim, input = vimState?.inputState;
   const pending = !!(cm?.state?.dialog || vimState?.insertMode || vimState?.visualMode || vimState?.exMode || input?.keyBuffer?.length || input?.operator || input?.motion || input?.repeatOverride || input?.registerName);
-  if (!pending) { consume(event); if (!endedStops) hide(); }
+  if (pending || endedStops) clearEscapeHint();
+  if (pending) return;
+  consume(event);
+  if (endedStops) return;
+  if (app.vimEnabled && vimState) vimEscapeToHide();
+  else hide();
 }
 
 // While the snippet list is open, its keys belong to it (snippet-completion.js).
@@ -163,9 +188,10 @@ function snippetFieldKey(event) {
 }
 
 function onKeyDown(event) {
+  const escape = event.key === 'Escape' && plain(event) && !event.shiftKey;
+  if (!escape || event.isComposing || event.keyCode === 229) clearEscapeHint();
   if (!app.state || event.isComposing || event.keyCode === 229) return;
-  if (palettesKey(event)) return;
-  if (completionKey(event)) return;
+  if (palettesKey(event) || completionKey(event)) { clearEscapeHint(); return; }
   if (snippetFieldKey(event)) return;
   const editor = app.editor, focused = !!editor?.hasFocus, menusClosed = () => !languageMenuOpen() && !blockMenuOpen();
 
@@ -184,8 +210,8 @@ function onKeyDown(event) {
   }
   if (event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'o' && focused && menusClosed()) { insertAdjacentLine(event); return; }
   if (command(event, 'd', { shift: true })) { consume(event); if (!event.repeat) deleteCurrentBlock(editor); return; }
-  if (languageMenuOpen() && handleLanguageMenuKey(event)) { consume(event); return; }
-  if (blockMenuOpen() && handleBlockMenuKey(event)) { consume(event); return; }
+  if (languageMenuOpen() && handleLanguageMenuKey(event)) { clearEscapeHint(); consume(event); return; }
+  if (blockMenuOpen() && handleBlockMenuKey(event)) { clearEscapeHint(); consume(event); return; }
   if (focused && menusClosed() && command(event, 'enter')) {
     const plan = planTaskToggle(editor.state);
     if (plan) { consume(event); if (!event.repeat) editor.dispatch(plan); return; }
@@ -225,7 +251,11 @@ function onKeyDown(event) {
       return;
     }
   }
-  if (event.key === 'Escape' && !event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey && !event.repeat) escapeKey(event);
+  if (escape && !event.repeat) escapeKey(event);
 }
 
-export function installKeys() { document.addEventListener('keydown', onKeyDown, true); }
+export function installKeys() {
+  document.addEventListener('keydown', onKeyDown, true);
+  document.addEventListener('pointerdown', clearEscapeHint, true);
+  window.addEventListener('blur', clearEscapeHint);
+}

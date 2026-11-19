@@ -8,6 +8,7 @@ import { closeLanguageMenu } from './language-menu.js';
 import { select, createNote, navigate, selectFirst, selectLast } from './notes.js';
 import { deleteNote, hasDeleteNotices, restoreLastDeleted } from './delete-notices.js';
 import { formatCurrentNote } from './note-format.js';
+import { codeThemes } from './code-themes.js';
 
 // Note search (⌘⇧F) and the command palette (⌘⇧P) share one palette component.
 
@@ -73,7 +74,7 @@ function availableCommands() {
 
   commands.push(
     { label: t('settings.accentColor'), group: setting, aliases: ['appearance accent theme color'], children: choices('ui-theme', [['orange', 'settings.themeWarmOrange'], ['blue', 'settings.themeOceanBlue'], ['green', 'settings.themeSage']]) },
-    { label: t('settings.codeColors'), group: setting, aliases: ['code syntax theme'], children: choices('code-theme', [['amber', 'settings.themeAmber'], ['ocean', 'settings.themeOceanBlue'], ['contrast', 'settings.themeVivid']]) },
+    { label: t('settings.codeColors'), group: setting, aliases: ['code syntax theme'], children: choices('code-theme', codeThemes.map(({ id, title }) => [id, title])) },
     { label: t('settings.codeIndentation'), group: setting, aliases: ['code indentation indent'], children: choices('indent', [['spaces2', 'settings.indentTwoSpaces'], ['spaces4', 'settings.indentFourSpaces'], ['tabs', 'Tab']]) },
     { label: t('settings.language'), group: setting, aliases: ['language locale'], children: choices('language', [['system', 'settings.languageSystem'], ['en', 'English'], ['zh-Hans', '简体中文'], ['zh-Hant', '繁體中文'], ['ja', '日本語']]) },
     { label: t('settings.windowOpacity'), group: setting, aliases: ['window opacity transparency'], children: percent('opacity', [100, 90, 80, 70, 60, 50], 50, 100) },

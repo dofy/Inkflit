@@ -405,9 +405,13 @@ final class NativeCodeEditingTest {
             guard settings.testAppearanceControls(theme) else { fail("accent not retained on refresh: \(theme)") }
             print("PASS \(theme) settings accents, tick marks and continuous values")
         }
-        let capture=ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE"]
-        if let capture, !settings.testSaveSettingsScreenshot(capture) { fail("settings capture failed") }
-        app.restoreInputSource(); exit(0)
+        waitForJavaScript("!!document.querySelector('.cm-code-line .tok-propertyName')") { [self] in
+            testCodeThemes(0) { [self] in
+                let capture = ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE"]
+                if let capture, !settings.testSaveSettingsScreenshot(capture) { fail("settings capture failed") }
+                app.restoreInputSource(); exit(0)
+            }
+        }
     }
     static func startBlockCalculation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
@@ -497,7 +501,7 @@ final class NativeCodeEditingTest {
                     const a = getComputedStyle(left), b = getComputedStyle(right);
                     return a.color === b.color && a.fontWeight === b.fontWeight;
                   };
-                  for (const [codeTheme, uiTheme] of [['amber', 'green'], ['ocean', 'orange'], ['contrast', 'blue']]) {
+                  for (const [codeTheme, uiTheme] of [['github', 'green'], ['solarized', 'orange'], ['one', 'blue']]) {
                     window.setUIAppearance(uiTheme, 100);
                     window.setCodeTheme(codeTheme);
                     if (!variables.every(node => sameStyle(node, reference)) || !sameStyle(usd, km) ||
@@ -929,9 +933,8 @@ final class NativeCodeEditingTest {
                                                     expect(text,"xc","Vim insert mode after enabling")
                                                     key(32,"u"); later { [self] in content { [self] text in
                                                         expect(text,"x","Vim undo after enabling")
-                                                        app.updateVimEnabled(false)
                                                         print("PASS native Vim settings toggle, editing and undo")
-                                                        app.restoreInputSource(); exit(0)
+                                                        testVimEscapeWindow()
                                                     } }
                                                 } }
                                             }
@@ -943,6 +946,46 @@ final class NativeCodeEditingTest {
                     } }
                 } }
             } }
+        }
+    }
+    private func testVimEscapeWindow() {
+        key(34, "i")
+        later { [self] in
+            key(53, "\u{1b}")
+            waitForJavaScript("document.getElementById('mode').textContent === 'NORMAL' && document.getElementById('escape-hint').hidden") { [self] in
+                key(53, "\u{1b}")
+                waitForJavaScript("!document.getElementById('escape-hint').hidden") { [self] in
+                    guard app.window.isVisible else { fail("first Escape hid the Vim window") }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [self] in
+                        app.web.evaluateJavaScript("document.getElementById('escape-hint').hidden") { [self] value, error in
+                            guard error == nil, value as? Bool == true, app.window.isVisible else { fail("Escape hint did not expire") }
+                            confirmVimEscape()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func confirmVimEscape() {
+        key(53, "\u{1b}")
+        waitForJavaScript("!document.getElementById('escape-hint').hidden") { [self] in
+            guard app.window.isVisible else { fail("an expired Escape counted toward hiding the window") }
+            key(53, "\u{1b}")
+            later { [self] in
+                guard !app.window.isVisible else { fail("two quick Escapes did not hide the Vim window") }
+                print("PASS native Vim Normal Escape waits for two presses within 600 ms")
+                app.updateVimEnabled(false)
+                focusNoteEditor { [self] in
+                    waitForJavaScript("document.getElementById('mode').hidden") { [self] in
+                        key(53, "\u{1b}")
+                        later { [self] in
+                            guard !app.window.isVisible else { fail("Escape did not hide the window with Vim disabled") }
+                            print("PASS native single Escape hides the window with Vim off")
+                            app.restoreInputSource(); exit(0)
+                        }
+                    }
+                }
+            }
         }
     }
     static func startChecklist(_ app: AppDelegate) {
@@ -989,11 +1032,14 @@ final class NativeCodeEditingTest {
               const errors=[], lines=[...document.querySelectorAll('.cm-content .cm-line')];
               const find=text=>lines.find(line=>line.textContent.trim()===text);
               const body=find('// body note'), inner=find('// list note'), code=find('// code note');
+              const item=find('List item'), dash=find('-');
               if(!body?.classList.contains('cm-note-comment-body') || !body.querySelector('.cm-note-comment-marker')) errors.push('body annotation missing');
               if(inner?.classList.contains('cm-note-comment-body') || code?.classList.contains('cm-note-comment-body')) errors.push('block comment styled as body');
               const sizes=[1,2,3,4,5,6].map(n=>parseFloat(getComputedStyle(document.querySelector('.cm-note-heading-'+n)).fontSize));
               if(sizes.some((size,i)=>i && size>=sizes[i-1])) errors.push('heading levels do not descend: '+sizes);
               if(find('# code heading')?.classList.contains('cm-note-heading')) errors.push('code styled as heading');
+              if(!item?.querySelector('.list-checkbox') || item.querySelector('.tok-heading') ||
+                 dash?.classList.contains('cm-note-heading') || !dash || dash.querySelector('.tok-heading')) errors.push('a dash after the list styled the checklist as a heading');
               for(const theme of ['orange','blue','green']) {
                 window.setUIAppearance(theme,100);
                 const root=getComputedStyle(document.documentElement), probe=document.createElement('span'); document.body.append(probe);
@@ -1741,7 +1787,7 @@ final class NativeCodeEditingTest {
                         sequence([{ self.key(53, "\u{1b}") }, { self.key(30, "]", "]", .command) }, { self.key(34, "i") }, { self.key(33, "{", "[", .shift) }]) { [self] in content { [self] text in
                             expect(text, "{", "ordinary text does not auto-pair")
                             sequence([{ self.key(53, "\u{1b}") }, { self.key(33, "[", "[", .command) }, { self.key(33, "[", "[", .command) }]) { [self] in
-                                app.showSettings(); testCodeThemes(0)
+                                app.showSettings(); testCodeThemes(0) { [self] in testAppearance(0) }
                             }
                         } }
                     } }
@@ -1749,35 +1795,52 @@ final class NativeCodeEditingTest {
             } }
         } }
     }
-    private func testCodeThemes(_ index: Int) {
+    private func testCodeThemes(_ index: Int, _ completion: @escaping () -> Void) {
         if index == CodeThemes.all.count {
-            testAppearance(0)
+            completion()
             return
         }
         let theme = CodeThemes.all[index]
         let dark = app.window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        guard let expected = (dark ? theme.darkColors : theme.colors)["property"], let settings = app.settingsController,
+        let palette = dark ? theme.darkColors : theme.colors
+        guard let expected = palette["property"], let background = palette["background"], let settings = app.settingsController,
               let preview = settings.testSelectCodeTheme(theme.id) else { fail("could not select theme or render preview") }
-        expect(preview.lowercased(), expected.lowercased(), "native theme preview \(theme.id)")
+        expect(preview.property, expected, "native theme preview \(theme.id)")
+        expect(preview.background, background, "native theme preview background \(theme.id)")
         guard app.codeTheme() == theme.id else { fail("native theme preference was not saved") }
         later { [self] in
             let script = """
             (() => {
               const p=document.querySelector('.cm-content .tok-propertyName');
-              const v=getComputedStyle(document.documentElement).getPropertyValue('--syntax-property').trim();
-              const probe=document.createElement('span'); probe.style.color=v; document.body.append(probe);
-              const expected=getComputedStyle(probe).color; probe.remove();
-              return {id:document.documentElement.dataset.codeTheme, value:v, actual:p ? getComputedStyle(p).color : null, expected};
+              const line=p?.closest('.cm-code-line');
+              const styles=getComputedStyle(document.documentElement);
+              const variable=name=>styles.getPropertyValue('--syntax-'+name).trim();
+              const probe=document.createElement('span');
+              probe.style.color=variable('property');
+              probe.style.backgroundColor=variable(line?.classList.contains('cm-activeLine') ? 'active' : 'background');
+              document.body.append(probe);
+              const expected=getComputedStyle(probe).color;
+              const expectedSurface=getComputedStyle(probe).backgroundColor;
+              probe.remove();
+              return {
+                id:document.documentElement.dataset.codeTheme, value:variable('property'), actual:p ? getComputedStyle(p).color : null, expected,
+                background:variable('background'), surface:line ? getComputedStyle(line,'::before').backgroundColor : null, expectedSurface
+              };
             })()
             """
             app.web.evaluateJavaScript(script) { [self] result, error in
                 guard error == nil, let values = result as? [String: Any],
                       let id = values["id"] as? String, let value = values["value"] as? String,
-                      let actual = values["actual"] as? String, let rgb = values["expected"] as? String else { fail("code theme or JSON property was not rendered") }
+                      let actual = values["actual"] as? String, let rgb = values["expected"] as? String,
+                      let backgroundVariable = values["background"] as? String,
+                      let surface = values["surface"] as? String, let expectedSurface = values["expectedSurface"] as? String
+                else { fail("code theme or JSON property was not rendered") }
                 expect(id, theme.id, "native applied theme")
-                expect(value.lowercased(), expected.lowercased(), "native theme palette")
+                expect(value, expected, "native theme palette")
                 expect(actual, rgb, "native JSON property color")
-                testCodeThemes(index + 1)
+                expect(backgroundVariable, background, "native theme background")
+                expect(surface, expectedSurface, "native code line surface")
+                testCodeThemes(index + 1, completion)
             }
         }
     }

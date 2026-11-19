@@ -473,7 +473,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 setVimEnabled: { [weak self] value in self?.updateVimEnabled(value) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
                 setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
-                getTheme: { [weak self] in self?.codeTheme() ?? "amber" },
+                getTheme: { [weak self] in self?.codeTheme() ?? CodeThemes.defaultID },
                 setTheme: { [weak self] value in self?.updateCodeTheme(value) },
                 getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
                 setAppearance: { [weak self] value in self?.updateWindowAppearance(value) },

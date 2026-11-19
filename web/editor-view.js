@@ -15,7 +15,7 @@ import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-men
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
-import { scopeAt, calculationModes } from './features.js';
+import { scopeAt, calculationModes, markdownBlockMarkers } from './features.js';
 import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
 import { snippets } from './snippet-completion.js';
@@ -79,7 +79,7 @@ const saveOnChange = EditorView.updateListener.of(update => {
 function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
     vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, listPasteRules, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
-    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage }), tasks, features, noteComments, noteHeadings, noteInlineCode, noteListIndent,
+    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage, extensions: markdownBlockMarkers }), tasks, features, noteComments, noteHeadings, noteInlineCode, noteListIndent,
     syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, snippets,
     plainEnter, keymap.of([...defaultKeymap, ...historyKeymap]),
     saveOnChange

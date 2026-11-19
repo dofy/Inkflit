@@ -10,7 +10,7 @@
       "title": {"en": "Window", "zh-Hans": "窗口", "zh-Hant": "視窗", "ja": "ウインドウ"},
       "rows": [
         {"keys": ["⌃⌥Space"], "en": "Show or hide Inkflit from any app (default; change it in Settings)", "zh-Hans": "在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）", "zh-Hant": "在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）", "ja": "どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）"},
-        {"keys": ["Esc"], "en": "Hide the window (in Vim, leave insert mode first)", "zh-Hans": "隐藏窗口（Vim 模式下先退出插入模式）", "zh-Hant": "隱藏視窗（Vim 模式下先離開插入模式）", "ja": "ウインドウを隠す（Vim では先に挿入モードを終了）"},
+        {"keys": ["Esc"], "en": "Hide the window. In Vim Normal mode, press twice within 0.6 seconds.", "zh-Hans": "收起窗口（Vim Normal 模式下须在 0.6 秒内连按两次）", "zh-Hant": "收起視窗（Vim 一般模式下須在 0.6 秒內連按兩次）", "ja": "ウインドウを隠す（Vim のノーマルモードでは 0.6 秒以内に 2 回）"},
         {"keys": ["⌘,"], "en": "Open Settings", "zh-Hans": "打开设置", "zh-Hant": "開啟設定", "ja": "設定を開く"}
       ]
     },

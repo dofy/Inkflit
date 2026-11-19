@@ -2,10 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EditorState, EditorSelection } from '@codemirror/state';
 import { markdown } from '@codemirror/lang-markdown';
+import { syntaxTree } from '@codemirror/language';
 import { commentChanges, isCodeAt } from '../web/comments.js';
+import { markdownBlockMarkers } from '../web/features.js';
 
 const docState = (doc, selection = 0) => EditorState.create({doc, selection:typeof selection === "number" ? {anchor:selection} : selection, extensions:[markdown()]});
 const toggle = state => state.update({changes:commentChanges(state)}).state;
+
+test('typing a dash after a feature block leaves its contents out of Markdown headings', () => {
+  const doc = 'Normal heading\n---\n:::inkflit list\nfirst\n**second**\n:::end\n';
+  const state = EditorState.create({ doc, extensions: [markdown({ extensions: markdownBlockMarkers })] });
+  for (const [input, node] of [['-', 'BulletList'], ['- next', 'BulletList'], ['---', 'HorizontalRule']]) {
+    const edited = state.update({ changes: { from: doc.length, insert: input } }).state;
+    const root = syntaxTree(edited).topNode;
+    assert.equal(root.firstChild.name, 'SetextHeading2', 'an ordinary Markdown heading still works');
+    assert.equal(root.getChild('Paragraph').getChild('StrongEmphasis').name, 'StrongEmphasis', 'inline Markdown inside the feature block still works');
+    assert.equal(root.lastChild.name, node);
+  }
+});
 
 test('comments a line after indentation and uncomments it again', () => {
   const initial = docState('  中文 task\nhttps://example.com', 3);

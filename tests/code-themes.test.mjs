@@ -5,12 +5,25 @@ import { codeLanguage } from '../web/code-languages.js';
 import { applyCodeTheme, codeTheme, codeThemes } from '../web/code-themes.js';
 
 test('theme selection exposes complete palettes and falls back safely',()=>{
-  assert.equal(codeThemes.length,3);
-  assert.equal(new Set(codeThemes.map(t=>t.id)).size,codeThemes.length);
-  for(const theme of codeThemes)for(const key of ['property','string','keyword','number','comment','function','variable','operator','punctuation'])assert.match(theme.colors[key],/^#[0-9a-f]{6}$/i);
+  assert.deepEqual(codeThemes.map(theme=>theme.id),['github','solarized','one']);
+  const keys=['background','foreground','active','property','string','keyword','constant','number','comment','function','variable','operator','punctuation'];
   const styles={}; const root={dataset:{},style:{setProperty:(key,value)=>{styles[key]=value;}}};
-  applyCodeTheme('ocean',root);assert.equal(root.dataset.codeTheme,'ocean');assert.equal(styles['--syntax-property'],codeTheme('ocean').colors.property);
-  applyCodeTheme('missing',root);assert.equal(root.dataset.codeTheme,'amber');
+  for(const [variant,dark] of [['colors',false],['darkColors',true]]) {
+    for(const theme of codeThemes) {
+      applyCodeTheme(theme.id,root,dark);
+      assert.equal(root.dataset.codeTheme,theme.id);
+      for(const key of keys) {
+        assert.match(theme[variant][key],/^#[0-9a-f]{6}$/i);
+        assert.equal(styles[`--syntax-${key}`],theme[variant][key]);
+      }
+    }
+    for(const key of ['background','keyword','string','function']) {
+      assert.equal(new Set(codeThemes.map(theme=>theme[variant][key])).size,codeThemes.length,key);
+    }
+  }
+  applyCodeTheme('missing',root,false);
+  assert.equal(root.dataset.codeTheme,'github');
+  assert.equal(codeTheme('missing'),codeThemes[0]);
 });
 
 test('JSON keys, strings, booleans and numbers have distinct semantic classes',async()=>{

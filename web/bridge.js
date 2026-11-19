@@ -11,7 +11,7 @@ import { setUserSnippets, settingsSnippetPlaceholders } from './snippet-completi
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
-import { applyCodeTheme } from './code-themes.js';
+import { applyCodeTheme, codeThemes } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 
 // Everything the native app calls on `window`, in one place.
@@ -29,7 +29,7 @@ function applyLanguage(value) {
 }
 
 // Appearance is reapplied when macOS switches between light and dark.
-let codeTheme = 'amber', uiTheme = 'orange', opacity = 100;
+let codeTheme = codeThemes[0].id, uiTheme = 'orange', opacity = 100;
 function watchColorScheme() {
   applyCodeTheme(codeTheme); applyUIAppearance(uiTheme, opacity);
   globalThis.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => { applyUIAppearance(uiTheme, opacity); applyCodeTheme(codeTheme); });

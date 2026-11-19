@@ -23,7 +23,7 @@ PY
 done
 python3 - "$test_dir/notes.json" <<'PY'
 import json, sys
-content='// body note\n# One\n## Two\n### Three\n#### Four\n##### Five\n###### Six\n:::inkflit list\n// list note\n:::end\n:::inkflit code js\n// code note\n# code heading\n:::end'
+content='// body note\n# One\n## Two\n### Three\n#### Four\n##### Five\n###### Six\n:::inkflit list\n// list note\nList item\n:::end\n-\n:::inkflit code js\n// code note\n# code heading\n:::end'
 with open(sys.argv[1], 'w', encoding='utf-8') as f:
     json.dump({'notes':[{'id':'test','content':content,'updated':'2026-01-01'}],'selected':'test'}, f)
 PY
