@@ -58,6 +58,11 @@ final class ToolbarDragView: WindowDragView {
     }
 }
 enum WindowPlacement {
+    static func defaultSize(in visible: NSSize) -> NSSize {
+        let width = max(1, min(480, (visible.height - 32) * 2 / 3, visible.width - 32))
+        return NSSize(width: width, height: width * 3 / 2)
+    }
+
     struct Anchor {
         let left: CGFloat, right: CGFloat, bottom: CGFloat, top: CGFloat
     }
@@ -172,7 +177,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         editRoot.submenu = editMenu; mainMenu.addItem(editRoot)
         let windowRoot = NSMenuItem(title: L("app.window"), action: nil, keyEquivalent: "")
         let windowMenu = NSMenu(title: L("app.window"))
-        windowMenu.addItem(withTitle: L("app.closeWindow"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let closeItem = windowMenu.addItem(withTitle: L("app.closeWindow"), action: #selector(closeActiveWindow), keyEquivalent: "w")
+        closeItem.target = self
         windowRoot.submenu = windowMenu; mainMenu.addItem(windowRoot); NSApp.mainMenu = mainMenu
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "inkflit")
@@ -184,9 +190,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if web.responds(to: NSSelectorFromString("_setDrawsBackground:")) { web.setValue(false, forKey: "drawsBackground") }
         web.wantsLayer = true; web.layer?.cornerRadius = 12; web.layer?.masksToBounds = true
         let visible = NSScreen.main?.visibleFrame.size ?? NSSize(width: 800, height: 832)
-        let defaultWidth = max(1, min(480, (visible.height - 32) * 2 / 3, visible.width - 32))
-        window = NotePanel(contentRect: NSRect(x: 0, y: 0, width: defaultWidth, height: defaultWidth * 3 / 2), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
-        window.title = "Inkflit"; window.minSize = NSSize(width: min(300, defaultWidth), height: min(280, defaultWidth * 3 / 2))
+        let defaultSize = WindowPlacement.defaultSize(in: visible)
+        window = NotePanel(contentRect: NSRect(origin: .zero, size: defaultSize), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
+        window.title = "Inkflit"; window.minSize = NSSize(width: min(300, defaultSize.width), height: min(280, defaultSize.height))
         // Keep the note below system overlays such as macOS screenshot selection.
         window.isFloatingPanel = false; window.level = .normal; window.hidesOnDeactivate = false
         // Join the active Space of the display it is shown on instead of pulling
@@ -385,6 +391,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func syncVimEnabled() {
         web.evaluateJavaScript("window.setVimEnabled?.(\(vimEnabled() ? "true" : "false"))", completionHandler: nil)
     }
+    func vimDoubleEscape() -> Bool {
+        UserDefaults.standard.object(forKey: "vimDoubleEscape") as? Bool ?? true
+    }
+    func updateVimDoubleEscape(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "vimDoubleEscape")
+        syncVimDoubleEscape()
+    }
+    private func syncVimDoubleEscape() {
+        web.evaluateJavaScript("window.setVimDoubleEscape?.(\(vimDoubleEscape() ? "true" : "false"))", completionHandler: nil)
+    }
     func codeIndentation() -> String {
         let value = UserDefaults.standard.string(forKey: "codeIndentation") ?? "spaces2"
         return ["spaces2", "spaces4", "tabs"].contains(value) ? value : "spaces2"
@@ -466,6 +482,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if reopenLanguageSettings { settingsController?.select(.general); reopenLanguageSettings = false }
         settingsController?.show()
     }
+    private func withSettings(_ tab: SettingsController.Tab, _ action: (SettingsController) -> Void) {
+        showSettings()
+        guard let settingsController else { return }
+        settingsController.select(tab)
+        action(settingsController)
+    }
+    @objc private func closeActiveWindow() {
+        if NSApp.keyWindow === window { hideWindow() }
+        else { NSApp.keyWindow?.performClose(nil) }
+    }
+    private func menuShortcut(_ action: Selector) -> String {
+        let items = NSApp.mainMenu?.items.compactMap(\.submenu).flatMap(\.items) ?? []
+        guard let item = items.first(where: { $0.action == action }), !item.keyEquivalent.isEmpty else { return "" }
+        let flags = item.keyEquivalentModifierMask
+        return (flags.contains(.control) ? "⌃" : "") + (flags.contains(.option) ? "⌥" : "")
+            + (flags.contains(.shift) ? "⇧" : "") + (flags.contains(.command) ? "⌘" : "") + item.keyEquivalent.uppercased()
+    }
+    private func restoreDefaultShortcut() -> String? {
+        saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey))
+    }
     func loginItemStatus() -> SMAppService.Status {
         isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_LOGIN_REAL"] != "1" ? testLoginStatus : SMAppService.mainApp.status
     }
@@ -480,17 +516,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 getShortcut: { [weak self] in guard let self else { return "" }; return self.hotKeyDisabled ? "" : self.shortcutLabel() },
                 saveShortcut: { [weak self] code, modifiers in guard let self else { return L("error.settingsUnavailable") }; return self.saveShortcut(code: code, modifiers: modifiers) },
                 clearShortcut: { [weak self] in self?.clearShortcut() },
-                resetShortcut: { [weak self] in guard let self else { return L("error.settingsUnavailable") }; return self.saveShortcut(code: 49, modifiers: UInt32(controlKey | optionKey)) },
+                resetShortcut: { [weak self] in guard let self else { return L("error.settingsUnavailable") }; return self.restoreDefaultShortcut() },
                 getStorage: { [weak self] in self?.storageURL.path ?? "" },
                 changeStorage: { [weak self] url, completion in guard let self else { completion(L("error.settingsUnavailable")); return }; self.changeStorageDirectory(url, completion: completion) },
                 getVimEnabled: { [weak self] in self?.vimEnabled() ?? true },
                 setVimEnabled: { [weak self] value in self?.updateVimEnabled(value) },
+                getVimDoubleEscape: { [weak self] in self?.vimDoubleEscape() ?? true },
+                setVimDoubleEscape: { [weak self] value in self?.updateVimDoubleEscape(value) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
                 setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
                 getTheme: { [weak self] in self?.codeTheme() ?? CodeThemes.defaultID },
                 setTheme: { [weak self] value in self?.updateCodeTheme(value) },
                 getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
                 setAppearance: { [weak self] value in self?.updateWindowAppearance(value) },
+                resetWindowSize: { [weak self] in self?.resetWindowSize() },
                 loginStatus: { [weak self] in self?.loginItemStatus() ?? .notFound },
                 setLogin: { [weak self] enabled in
                     guard let self else { return L("error.settingsUnavailable") }
@@ -545,8 +584,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     @objc func showWindow() {
         hideGeneration += 1; hidePending = false
         if !window.isVisible || !window.isOnActiveSpace, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
-            let source = window.screen?.visibleFrame ?? target.visibleFrame, size = savedWindowSize() ?? window.frame.size
-            let anchor = savedWindowAnchor(source: source, size: size) ?? WindowPlacement.anchor(window.frame, in: source)
+            let source = window.screen?.visibleFrame ?? target.visibleFrame
+            let savedSize = savedWindowSize()
+            let anchor = savedWindowAnchor(source: source, size: savedSize ?? window.frame.size) ?? WindowPlacement.anchor(window.frame, in: source)
+            let size = savedSize ?? WindowPlacement.defaultSize(in: target.visibleFrame.size)
             let frame = WindowPlacement.frame(size: size, anchor: anchor, in: target.visibleFrame)
             if frame != window.frame { relocatingWindow = true; window.setFrame(frame, display: false); relocatingWindow = false }
         }
@@ -619,6 +660,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         guard !relocatingWindow, window.isVisible else { return }
         UserDefaults.standard.set(["width": Double(window.frame.width), "height": Double(window.frame.height)], forKey: "windowSize")
     }
+    private func resetWindowSize() {
+        UserDefaults.standard.removeObject(forKey: "windowSize")
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let anchor = savedWindowAnchor(source: visible, size: window.frame.size) ?? WindowPlacement.anchor(window.frame, in: visible)
+        let size = WindowPlacement.defaultSize(in: visible.size)
+        relocatingWindow = true
+        window.setFrame(WindowPlacement.frame(size: size, anchor: anchor, in: visible), display: true)
+        relocatingWindow = false
+    }
     func windowDidMove(_ notification: Notification) { rememberWindowAnchor() }
     func windowDidResize(_ notification: Notification) { rememberWindowAnchor(); rememberWindowSize() }
     func applicationWillTerminate(_ notification: Notification) {
@@ -654,6 +705,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         syncLanguage()
         syncCodeIndentation()
         syncVimEnabled()
+        syncVimDoubleEscape()
         syncCodeTheme()
         applyWindowAppearance()
         do {
@@ -817,7 +869,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 }
             }
         }
-        if ["create","append","replace","delete"].contains(request["action"] as? String ?? "") {
+        if ["create","append","replace","delete","format-apply"].contains(request["action"] as? String ?? "") {
             requestFlush { ok,message in
                 guard ok else { finish(["error":message ?? "Save failed"]); return }
                 if self.usesNoteFiles && self.requireExistingStorage {
@@ -833,6 +885,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     private func handleAutomationURL(_ url: URL) {
         guard let components=URLComponents(url:url,resolvingAgainstBaseURL:false), components.scheme?.lowercased()=="inkflit" else { return }
+        if let link = AutomationUILink.parse(components) {
+            switch link {
+            case .noteID(let id): openNoteLink(target: ["id": id])
+            case .noteIndex(let index): openNoteLink(target: ["index": index])
+            case .appearance: withSettings(.appearance) { _ in }
+            case .snippets: withSettings(.snippets) { _ in }
+            case .invalid: showWindow(); showError(L("error.invalidNoteLink"))
+            }
+            return
+        }
         let host=(components.host ?? "").lowercased(), path=components.path.split(separator:"/").map(String.init)
         let action=(host == "note" || host == "notes") ? (path.count == 1 ? path[0].lowercased() : "") : (path.isEmpty ? host : "")
         func invalidLink() { showWindow(); showError(L("error.invalidNoteLink")) }
@@ -866,6 +928,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 self.web.callAsyncJavaScript("window.openNoteSearch(query)",arguments:["query":query],in:nil,in:.page,completionHandler:nil)
             } else if let result=reply["result"] as? [String:Any], let note=result["note"] as? [String:Any], let id=note["id"] as? String {
                 self.web.callAsyncJavaScript("window.inkflitSelectNote(id)",arguments:["id":id],in:nil,in:.page,completionHandler:nil)
+            }
+        }
+    }
+    private func openNoteLink(target: [String: Any]) {
+        var request = target
+        request["action"] = "get"
+        enqueueAutomation(request) { [weak self] reply in
+            guard let self else { return }
+            self.showWindow()
+            guard let result = reply["result"] as? [String: Any], let note = result["note"] as? [String: Any],
+                  let id = note["id"] as? String else {
+                self.showError(reply["error"] as? String ?? L("error.invalidNoteLink"))
+                return
+            }
+            self.web.callAsyncJavaScript("return window.inkflitSelectNote(id, true)", arguments: ["id": id], in: nil, in: .page) { [weak self] response in
+                if case .success(let selected) = response, selected as? Bool == true { return }
+                self?.showError(L("error.invalidNoteLink"))
             }
         }
     }
@@ -1007,7 +1086,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             let value = body["value"] as? String ?? ""
             switch action {
             case "settings": showSettings()
+            case "hide-window": hideWindow()
+            case "quit": NSApp.terminate(nil)
+            case "record-shortcut": withSettings(.general) { $0.recordGlobalShortcut() }
+            case "clear-shortcut": clearShortcut(); settingsController?.refresh()
+            case "reset-shortcut":
+                if let error = restoreDefaultShortcut() { showError(error) }
+                settingsController?.refresh()
+            case "login-settings": SMAppService.openSystemSettingsLoginItems()
+            case "choose-notes-folder": withSettings(.data) { $0.chooseStoragePressed() }
+            case "restore-version": withSettings(.data) { $0.restoreBackupPressed() }
+            case "restore-trash": withSettings(.data) { $0.restorePressed() }
+            case "rebuild-index": withSettings(.data) { $0.rebuildPressed() }
+            case "snippet-add": withSettings(.snippets) { $0.addSnippet() }
+            case "snippet-remove": withSettings(.snippets) { $0.removeSnippet() }
+            case "snippet-placeholder": withSettings(.snippets) { $0.insertSnippetPlaceholder() }
             case "toggle-vim": updateVimEnabled(!vimEnabled()); settingsController?.refresh()
+            case "vim-double-escape":
+                guard value == "on" || value == "off" else { return }
+                updateVimDoubleEscape(value == "on"); settingsController?.refresh()
+            case "reset-window-size": resetWindowSize()
             case "ui-theme":
                 guard UIThemes.all.contains(where: { $0.id == value }) else { return }
                 var appearance = windowAppearance(); appearance.theme = value; updateWindowAppearance(appearance); settingsController?.refresh()
@@ -1044,7 +1142,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 let limit = NoteFiles.backupVersionLimit(defaults)
                 let login = loginItemStatus()
                 let state: [String: String] = [
+                    "settings-shortcut": menuShortcut(#selector(showSettings)),
+                    "hide-window-shortcut": menuShortcut(#selector(closeActiveWindow)),
+                    "quit-shortcut": menuShortcut(#selector(NSApplication.terminate(_:))),
                     "ui-theme": appearance.theme, "color-scheme": appearance.colorScheme.rawValue,
+                    "vim-double-escape": vimDoubleEscape() ? "on" : "off",
                     "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
                     "opacity": String(appearance.opacity), "blur": String(appearance.blur),
                     "backup": limit == 0 ? "off" : limit < 0 ? "unlimited" : String(limit),
@@ -1054,7 +1156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 }
             case "onboarding": generateOnboarding { [weak self] error in if let error { self?.showError(error) } }
             case "help": makeSettingsController(); settingsController?.openHelpWindow()
-            case "snippets": showSettings(); settingsController?.select(.snippets)
+            case "snippets": withSettings(.snippets) { _ in }
             default: break
             }
             return
@@ -1071,7 +1173,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             }
             return
         }
-        if type == "hide" { hideWindow(); return }
         if type == "copyCode", let content = body["content"] as? String {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(content, forType: .string)

@@ -49,11 +49,15 @@ export function openLanguageMenu(editor, scope, button=null) {
   if(button)button.setAttribute('aria-expanded','true');
   menu.hidden=false; render(); position(editor,scope,button); return true;
 }
-export function openCurrentLanguageMenu(editor) {
-  const {state}=editor, global=scopesOf(state.doc).find(item=>item.global);
+export function currentLanguageScope(state) {
+  const global=scopesOf(state.doc).find(item=>item.global);
   // In a whole-note code mode the first line names the language.
   const scope=global?.mode==='code' ? global : currentBlockScope(state);
-  if(scope?.mode!=='code')return false;
+  return scope?.mode==='code' ? scope : null;
+}
+export function openCurrentLanguageMenu(editor) {
+  const scope=currentLanguageScope(editor.state);
+  if(!scope)return false;
   const line=editor.state.doc.line(scope.start);
   const button=[...editor.dom.querySelectorAll('.block-language')].find(el=>editor.state.doc.lineAt(editor.posAtDOM(el)).number===line.number);
   return openLanguageMenu(editor,scope,button);

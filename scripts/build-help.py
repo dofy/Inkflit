@@ -11,7 +11,9 @@ the app opens it with ?lang=<language>. Run from the repository root.
 import html
 import json
 import re
+from base64 import b64encode
 from pathlib import Path
+from struct import unpack_from
 
 LANGUAGES = ['en', 'zh-Hans', 'zh-Hant', 'ja']
 root = Path('help')
@@ -37,6 +39,30 @@ def section_ids(text):
     return re.findall(r'<section id="([^"]+)"', text)
 
 
+def app_icon_url():
+    """Embed the app icon at twice the 64 pt title size when available."""
+    icon = Path('Resources/Inkflit.icns').read_bytes()
+    signature, length = unpack_from('>4sI', icon)
+    if signature != b'icns' or length != len(icon):
+        raise ValueError('Invalid Inkflit.icns header')
+    offset = 8
+    images = {}
+    while offset + 8 <= length:
+        _, size = unpack_from('>4sI', icon, offset)
+        if size < 8 or offset + size > length:
+            raise ValueError('Invalid Inkflit.icns image size')
+        png = icon[offset + 8:offset + size]
+        if len(png) >= 24 and png.startswith(b'\x89PNG\r\n\x1a\n') and png[12:16] == b'IHDR':
+            width, height = unpack_from('>II', png, 16)
+            if width == height:
+                images[width] = png
+        offset += size
+    if not images:
+        raise ValueError('No PNG representation in Inkflit.icns')
+    width = min(images, key=lambda size: (size < 128, abs(size - 128)))
+    return 'data:image/png;base64,' + b64encode(images[width]).decode('ascii')
+
+
 shortcuts = json.loads((root / 'shortcuts.json').read_text())
 expected = None
 blocks = []
@@ -52,7 +78,7 @@ for language in LANGUAGES:
     blocks.append(f'<template data-lang="{language}">\n{text.strip()}\n</template>')
 
 page = (root / 'template.html').read_text()
-page = page.replace('%APP_VERSION%', version).replace('%LANGUAGES%', '\n'.join(blocks))
-for placeholder in ('%APP_VERSION%', '%LANGUAGES%', '%SHORTCUTS%'):
+page = page.replace('%APP_VERSION%', version).replace('%APP_ICON%', app_icon_url()).replace('%LANGUAGES%', '\n'.join(blocks))
+for placeholder in ('%APP_VERSION%', '%APP_ICON%', '%LANGUAGES%', '%SHORTCUTS%'):
     assert placeholder not in page, f'unfilled {placeholder}'
 Path('Resources/Help.html').write_text(page)

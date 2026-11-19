@@ -45,7 +45,7 @@ try:
   return json.loads(result['content'][0]['text'])
  init=request('initialize',{'protocolVersion':'2025-11-25','capabilities':{},'clientInfo':{'name':'test','version':'1'}})
  assert init['protocolVersion']=='2025-11-25'
- tools=request('tools/list')['tools'];assert {t['name'] for t in tools}=={'list_notes','get_note','search_notes','create_note','append_note','replace_note','delete_note'}
+ tools=request('tools/list')['tools'];assert {t['name'] for t in tools}=={'list_notes','get_note','get_current_note','analyze_note','preview_note_format','apply_note_format','search_notes','create_note','append_note','replace_note','delete_note'}
  assert call('append_note',{'id':'first','content':'Agent addition'})['result']['note']['content']=='xAlpha 中文\nAgent addition'
  assert (store/'notes'/filename('first')).read_text()=='xAlpha 中文\nAgent addition'
  for _ in range(200):
@@ -73,6 +73,12 @@ try:
   assert sdk_result.returncode==0,sdk_result.stderr
   print(sdk_result.stdout.strip())
  assert [x['content'] for x in call('list_notes')['result']['notes']]==['xAlpha 中文\nAgent addition','Beta note']
+ first_page=call('list_notes',{'limit':1,'include_content':False})['result']
+ assert first_page['total']==2 and first_page['notes'][0]['summary']=='xAlpha 中文' and 'content' not in first_page['notes'][0]
+ last_page=call('list_notes',{'cursor':first_page['next_cursor'],'include_content':False})['result']
+ assert last_page['next_cursor'] is None and last_page['notes'][0]['id']=='second'
+ assert call('get_current_note')['result']['note']['id']=='first'
+ assert call('analyze_note',{'id':'first'})['result']['blocks']==[]
  assert call('search_notes',{'query':'中文'})['result']['results'][0]['id']=='first'
  assert call('get_note',{'index':2})['result']['note']['content']=='Beta note'
  assert call('append_note',{'index':2,'content':'New line'})['result']['note']['content']=='Beta note\nNew line'
@@ -105,6 +111,15 @@ try:
  assert 'error' in call('get_note',{'index':999},error=True)
  assert 'error' in call('delete_note',{},error=True)
  assert 'error' in call('append_note',{'id':'first','index':1,'content':'bad'},error=True)
+ source='Title  stays\n:::inkflit math\n1+2=\n:::end'
+ format_id=call('create_note',{'content':source})['result']['note']['id']
+ old=call('preview_note_format',{'id':format_id})['result']
+ assert '-1+2=' in old['diff'] and '+1 + 2 =' in old['diff'] and call('get_note',{'id':format_id})['result']['note']['content']==source
+ call('append_note',{'id':format_id,'content':'New text'})
+ assert 'changed since preview' in call('apply_note_format',{'id':format_id,'preview_id':old['preview_id']},error=True)['error']
+ fresh=call('preview_note_format',{'id':format_id})['result']
+ assert call('apply_note_format',{'id':format_id,'preview_id':fresh['preview_id']})['result']['changed']
+ assert (store/'notes'/filename(format_id)).read_text()==source.replace('1+2=','1 + 2 =')+'\nNew text'
  external=store/'notes'/filename('first'); external.write_text('external change')
  assert 'error' in call('append_note',{'id':'first','content':'must not overwrite'},error=True)
  assert external.read_text()=='external change'

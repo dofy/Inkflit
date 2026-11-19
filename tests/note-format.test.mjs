@@ -6,7 +6,7 @@ import { app } from '../web/app.js';
 import { analyze } from '../web/features.js';
 import { blockProtection } from '../web/block-protection.js';
 import { listPasteRules } from '../web/list-editing.js';
-import { formatCurrentNote, planNoteFormat } from '../web/note-format.js';
+import { formatCurrentNote, planNoteFormat, previewNoteFormat } from '../web/note-format.js';
 
 test('formats math spacing without changing results, literals or comments', async () => {
   const before = [
@@ -71,4 +71,19 @@ test('does not apply a format computed for an older document', async () => {
     editor.state = editor.state.update({ changes: { from: editor.state.doc.length, insert: '0' } }).state;
     await formatting;
   } finally { app.editor = null; }
+});
+
+test('format preview describes only the affected lines and preserves stored line endings', async () => {
+  const before = 'Prose  stays\r\n:::inkflit code js\r\nif(true){f(1)}\r\n:::end\r\n:::inkflit math\r\n3+4=\r\n:::end';
+  const after = 'Prose  stays\r\n:::inkflit code js\r\nif (true) {\r\n  f(1);\r\n}\r\n:::end\r\n:::inkflit math\r\n3 + 4 =\r\n:::end';
+  const preview = await previewNoteFormat(before, 'spaces2');
+  assert.equal(preview.content, after);
+  assert.equal(preview.diff, [
+    '--- before', '+++ after',
+    '@@ -3,1 +3,3 @@', '-if(true){f(1)}', '+if (true) {', '+  f(1);', '+}',
+    '@@ -6,1 +8,1 @@', '-3+4=', '+3 + 4 =', ''
+  ].join('\n'));
+  assert.equal(await previewNoteFormat(after, 'spaces2'), null);
+  const noFinalNewline = await previewNoteFormat('math\n1+2=', 'spaces2');
+  assert.match(noFinalNewline.diff, /-1\+2=\n\\ No newline at end of file\n\+1 \+ 2 =\n\\ No newline at end of file/);
 });

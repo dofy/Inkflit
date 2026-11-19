@@ -38,8 +38,7 @@
   .brand { display: flex; align-items: center; gap: 10px; margin: 0 4px 16px; }
   .brand b { display: block; font-size: 16px; }
   .brand span { font-size: 11px; color: var(--muted); }
-  .mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; flex: none; }
-  .mark svg { width: 20px; height: 20px; }
+  .app-icon { width: 34px; height: 34px; flex: none; background: center / contain no-repeat url("%APP_ICON%"); }
   #q { width: 100%; padding: 6px 10px; margin-bottom: 14px; font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; }
   #q:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: -1px; }
   nav ol { list-style: none; margin: 0; padding: 0; }
@@ -52,8 +51,7 @@
 
   main { flex: 1; min-width: 0; max-width: 820px; padding: 36px 48px 80px; }
   header.hero { display: flex; gap: 18px; align-items: center; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
-  header.hero .mark { width: 64px; height: 64px; border-radius: 16px; box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent); }
-  header.hero .mark svg { width: 36px; height: 36px; }
+  header.hero .app-icon { width: 64px; height: 64px; }
   header.hero h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
   header.hero p { margin: 4px 0 0; color: var(--muted); }
   section { padding-top: 28px; }
@@ -80,14 +78,14 @@
 <body>
 <div class="layout">
 <nav>
-  <div class="brand"><span class="mark" data-mark></span><div><b>Inkflit</b><span><span id="brand-label"></span> · %APP_VERSION%</span></div></div>
+  <div class="brand"><span class="app-icon" aria-hidden="true"></span><div><b>Inkflit</b><span><span id="brand-label"></span> · %APP_VERSION%</span></div></div>
   <input id="q" type="search" autocomplete="off">
   <ol id="toc"></ol>
   <p class="empty" id="empty"></p>
 </nav>
 <main>
   <header class="hero">
-    <span class="mark" data-mark></span>
+    <span class="app-icon" aria-hidden="true"></span>
     <div><h1 id="title"></h1><p id="tagline"></p></div>
   </header>
   <div id="content"></div>
@@ -127,7 +125,6 @@
 
   // Outline icons, 24px grid, bundled for offline use.
   const icons = {
-    mark: '<path d="M7 3.5h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4"/>',
     start: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
     notes: '<path d="M8 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8"/><path d="M5 6h9a2 2 0 0 1 2 2v13H7a2 2 0 0 1-2-2Z"/>',
     palette: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
@@ -148,7 +145,6 @@
     svg.innerHTML = icons[name] || icons.start;
     return svg;
   }
-  for (const mark of document.querySelectorAll('[data-mark]')) mark.append(icon('mark'));
 
   const sections = [...content.querySelectorAll('section')];
   const toc = document.getElementById('toc');

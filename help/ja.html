@@ -6,11 +6,11 @@
   <ol>
     <li><b>ウインドウを表示：</b>グローバルショートカット（初期設定は <kbd>⌃⌥Space</kbd>。「設定 → 一般」で変更できます）を押すか、メニューバーのアイコンから「Inkflit を開く」を選びます。</li>
     <li><b>書く：</b>変更は自動で保存されます。保存ボタンはありません。</li>
-    <li><b>隠す：</b>同じショートカットか <kbd>Esc</kbd> を押します。Vim のノーマルモードでは 0.6 秒以内に <kbd>Esc</kbd> を 2 回押します。ほかのアプリに切り替えたときも自動で隠れます。</li>
+    <li><b>隠す：</b>同じショートカットか <kbd>Esc</kbd> を押します。Vim のノーマルモードでは、既定で 0.6 秒以内に <kbd>Esc</kbd> を 2 回押します。ほかのアプリに切り替えたときも自動で隠れます。</li>
   </ol>
   <h3>ウインドウの表示場所</h3>
   <p>ウインドウはポインタがあるディスプレイの、いま使っているデスクトップに表示されます。別のデスクトップに引き戻されることはありません。位置は記憶され、再起動後も保たれます。</p>
-  <p>ツールバー中央の空いている部分をドラッグすると移動、端をドラッグするとサイズを変更できます。</p>
+  <p>ツールバー中央の空いている部分をドラッグすると移動、端をドラッグするとサイズを変更できます。「設定 → 外観 → ウインドウのサイズ」でリセットできます。</p>
   <h3>ガイドノート</h3>
   <ul>
     <li>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。</li>
@@ -408,7 +408,7 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim モード</h2>
-  <p>Vim キーは最初からオンです。エディタはノーマルモードで始まり、<kbd>i</kbd> で入力を始め、<kbd>Esc</kbd> でノーマルモードに戻ります。ノーマルモードでは、0.6 秒以内に <kbd>Esc</kbd> を 2 回押すとウインドウが隠れます。</p>
+  <p>Vim キーは最初からオンです。エディタはノーマルモードで始まり、<kbd>i</kbd> で入力を始め、<kbd>Esc</kbd> でノーマルモードに戻ります。ノーマルモードでは、既定で 0.6 秒以内に <kbd>Esc</kbd> を 2 回押すとウインドウが隠れます。「設定 → 編集」で「Esc を 2 回押して隠す」をオフにすると 1 回で隠せます。</p>
   <ul>
     <li>ノーマルモードでは、コマンドが効くように一時的に英字（ASCII）入力に切り替わります。入力を始めるかウインドウを離れると、元の入力方式に戻ります。</li>
     <li>変換候補が開いているときは、<kbd>Esc</kbd> でまず候補を取り消してから挿入モードを終了します。</li>
@@ -477,7 +477,9 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 
 # そのほかのクライアント
 {"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}</code></pre>
-  <p>ツール：<code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code>、<code>delete_note</code>。</p>
+  <p>ツール：<code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>get_current_note</code>、<code>analyze_note</code>、<code>preview_note_format</code>、<code>apply_note_format</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code>、<code>delete_note</code>。</p>
+  <p><code>list_notes</code> に <code>limit</code>、<code>cursor</code>、<code>include_content: false</code> を指定すると概要をページごとに取得できます。<code>get_current_note</code> は選択中のノートを読み取り、<code>analyze_note</code> は <code>id</code> または <code>index</code> で指定したノートの計算結果とチェックリストを返します。</p>
+  <p>ノートの <code>id</code> で <code>preview_note_format</code> を呼び出し、差分を確認します。同じ <code>id</code> と返された <code>preview_id</code> を <code>apply_note_format</code> に渡します。本文を変更した場合は再度プレビューしてください。</p>
   <ul>
     <li>ノートは <code>index</code>（Inkflit に表示される番号）か、変わらない <code>id</code> で指定します。ノートを追加・削除すると番号は変わります。</li>
     <li>新しいノートは末尾に追加されます。<code>position</code> に <code>"first"</code>、<code>"last"</code>、または数値を指定すると別の位置に置けます。</li>
@@ -488,6 +490,7 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 open 'inkflit://note/search?query=milk'
 open 'inkflit://note/get?index=1'</code></pre>
   <p>操作は <code>list</code>、<code>get</code>、<code>search</code>、<code>create</code>、<code>append</code>、<code>replace</code>、<code>delete</code> です。<code>x-success</code> と <code>x-error</code> にコールバック URL を指定すると、結果を JSON で受け取れます。</p>
+  <p><code>inkflit://note/open?index=2</code> でノートを開き、<code>inkflit://settings/appearance</code> または <code>inkflit://settings/snippets</code> で設定を開けます。</p>
   <p class="tip">書き込みや削除のリンクはすぐに実行されます。信頼できるリンクだけを開いてください。</p>
 </section>
 

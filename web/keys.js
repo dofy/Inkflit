@@ -1,37 +1,33 @@
-import { Vim, getCM } from '@replit/codemirror-vim';
+import { getCM } from '@replit/codemirror-vim';
 import { completionStatus, closeCompletion, acceptCompletion, moveCompletionSelection, hasNextSnippetField, hasPrevSnippetField, nextSnippetField, prevSnippetField, clearSnippet } from '@codemirror/autocomplete';
-import { toggleLineComment, indentMore, indentLess } from '@codemirror/commands';
-import { app, $, nativeHandler } from './app.js';
+import { indentMore, indentLess } from '@codemirror/commands';
+import { app, $ } from './app.js';
 import { t } from './i18n.js';
 import { isEditing } from './editor-view.js';
 import { acceptBestSnippet, backSnippetMenu } from './snippet-completion.js';
-import { commandPalette, searchPalette, openCommands, openSearch } from './palettes.js';
-import { lastDeletedId, restoreDeletedNote, deleteNote } from './delete-notices.js';
-import { createNote, navigate, selectAt, selectFirst, selectLast } from './notes.js';
-import { blockMenuOpen, trySlash, handleBlockMenuKey, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine, planAdjacentTextLine } from './block-menu.js';
-import { languageMenuOpen, closeLanguageMenu, handleLanguageMenuKey, openCurrentLanguageMenu } from './language-menu.js';
+import { commandPalette, searchPalette } from './palettes.js';
+import { commandShortcut, runCommand, runShortcut } from './commands.js';
+import { blockMenuOpen, trySlash, handleBlockMenuKey } from './block-menu.js';
+import { languageMenuOpen, handleLanguageMenuKey } from './language-menu.js';
 import { scopeAt } from './features.js';
-import { commentChanges, blockCodeCommentChanges, isCodeAt, selectedLines } from './comments.js';
 import { planCodeEdit } from './code-editing.js';
 import { planListIndent } from './list-editing.js';
-import { checklistToggleChange, planTaskToggle } from './tasks.js';
+import { checklistToggleChange } from './tasks.js';
 
 // Every shortcut in the note window, checked in order from the most global
 // (palettes) to the most local (the cursor's block). The listener runs in the
 // capture phase, so it sees keys before CodeMirror and Vim do.
 
-const command = (event, key, { shift = false } = {}) => event.metaKey && event.shiftKey === shift && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === key;
 const plain = event => !event.metaKey && !event.ctrlKey && !event.altKey;
 const consume = event => { event.preventDefault(); event.stopPropagation(); };
 
-function hide() {
-  const handler = nativeHandler();
-  if (handler) handler.postMessage({ type: 'hide' });
-  else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
-}
-
 const escapeInterval = 600;
+let vimDoubleEscape = true;
 let escapeDeadline = 0, escapeTimer;
+export function setVimDoubleEscape(enabled) {
+  vimDoubleEscape = enabled;
+  clearEscapeHint();
+}
 function clearEscapeHint() {
   if (!escapeDeadline) return;
   escapeDeadline = 0;
@@ -42,7 +38,7 @@ function vimEscapeToHide() {
   const now = performance.now();
   const confirmed = now < escapeDeadline;
   clearEscapeHint();
-  if (confirmed) { hide(); return; }
+  if (confirmed) { runCommand('hide-window'); return; }
   const hint = $('escape-hint');
   hint.textContent = t('editor.escapeToHide');
   hint.hidden = false;
@@ -54,32 +50,12 @@ function vimEscapeToHide() {
 // An open palette handles its own keys; editor tools at the cursor (⌘L, ⌘O)
 // close it instead of being swallowed. Returns true when the key is done.
 function palettesKey(event) {
-  if (command(event, 'p', { shift: true }) || command(event, 'f', { shift: true })) {
-    consume(event); if (event.repeat) return true;
-    const [target, open] = event.key.toLowerCase() === 'p' ? [commandPalette, openCommands] : [searchPalette, () => openSearch()];
-    if (target.open) target.close(); else open();
-    return true;
-  }
+  if (runShortcut(event, 'palette')) { consume(event); return true; }
   const palette = commandPalette.open ? commandPalette : searchPalette.open ? searchPalette : null;
   if (!palette) return false;
   if (palette.handleKey(event)) { consume(event); return true; }
-  if (command(event, 'l') || command(event, 'o')) { palette.close(); return false; }
+  if (commandShortcut(event, 'before-menu')?.closePalette) { palette.close(); return false; }
   return true;
-}
-
-// ⌘O / ⌘⇧O: an empty line below / above the current line or block, in insert mode.
-function insertAdjacentLine(event) {
-  const editor = app.editor;
-  let plan = planAdjacentBlockLine(editor.state, event.shiftKey) ?? planAdjacentTextLine(editor.state, event.shiftKey);
-  if (!plan) return;
-  consume(event);
-  if (event.repeat) return;
-  const cm = getCM(editor);
-  if (cm?.state?.vim?.visualMode) { Vim.handleKey(cm, '<Esc>', 'user'); plan = planAdjacentBlockLine(editor.state, event.shiftKey) ?? planAdjacentTextLine(editor.state, event.shiftKey); }
-  if (!plan) return;
-  editor.dispatch(plan);
-  if (cm && !cm.state.vim?.insertMode) Vim.handleKey(cm, 'i', 'user');
-  editor.focus();
 }
 
 // Tab in a checklist indents items; in Vim normal mode it does nothing.
@@ -114,32 +90,6 @@ function leaveBlockKey(event) {
   return true;
 }
 
-// ⌘C with nothing selected in a code block copies the whole block.
-function copyCodeBlock(event) {
-  const editor = app.editor, doc = editor.state.doc, line = doc.lineAt(editor.state.selection.main.head);
-  const scope = scopeAt(doc, line.number);
-  if (scope?.mode !== 'code') return false;
-  const from = scope.start < doc.lines ? doc.line(scope.start + 1).from : doc.length;
-  const to = doc.line(Math.min(doc.lines, scope.last)).to;
-  const content = doc.sliceString(from, Math.max(from, to));
-  const handler = nativeHandler();
-  if (handler) { consume(event); handler.postMessage({ type: 'copyCode', content }); return true; }
-  if (navigator.clipboard?.writeText) { consume(event); navigator.clipboard.writeText(content).catch(() => {}); return true; }
-  return false;
-}
-
-// ⌘/ toggles comments; code blocks use their language's comment syntax.
-function toggleComments() {
-  const editor = app.editor, lines = selectedLines(editor.state);
-  const customCode = blockCodeCommentChanges(editor.state);
-  if (customCode) { if (customCode.length) editor.dispatch({ changes: customCode, userEvent: 'input.comment' }); return; }
-  const inCode = lines.length && lines.every(line => isCodeAt(editor.state, line.from));
-  if (!inCode || !toggleLineComment(editor)) {
-    const changes = commentChanges(editor.state, { includeCode: !!inCode });
-    if (changes.length) editor.dispatch({ changes, userEvent: 'input.comment' });
-  }
-}
-
 // Vim handles Escape first when it has a mode or command to cancel.
 function escapeKey(event) {
   const endedStops = !!app.editor && clearSnippet(app.editor);
@@ -149,8 +99,8 @@ function escapeKey(event) {
   if (pending) return;
   consume(event);
   if (endedStops) return;
-  if (app.vimEnabled && vimState) vimEscapeToHide();
-  else hide();
+  if (app.vimEnabled && vimState && vimDoubleEscape) vimEscapeToHide();
+  else runCommand('hide-window');
 }
 
 // While the snippet list is open, its keys belong to it (snippet-completion.js).
@@ -195,27 +145,12 @@ function onKeyDown(event) {
   if (snippetFieldKey(event)) return;
   const editor = app.editor, focused = !!editor?.hasFocus, menusClosed = () => !languageMenuOpen() && !blockMenuOpen();
 
-  if (command(event, 'u')) {
-    const id = lastDeletedId();
-    if (id) { consume(event); if (!event.repeat) restoreDeletedNote(id); return; }
-  }
+  if (runShortcut(event, 'early')) { consume(event); return; }
   app.keyStartDoc = editor?.state.doc;
-  if (command(event, 'l') && focused) {
-    if (!event.repeat && openCurrentLanguageMenu(editor)) consume(event);
-    return;
-  }
-  if (command(event, 'k') && focused) {
-    if (!event.repeat && openCurrentBlockMenu(editor)) { closeLanguageMenu(); consume(event); }
-    return;
-  }
-  if (event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'o' && focused && menusClosed()) { insertAdjacentLine(event); return; }
-  if (command(event, 'd', { shift: true })) { consume(event); if (!event.repeat) deleteCurrentBlock(editor); return; }
+  if (runShortcut(event, 'before-menu')) { consume(event); return; }
   if (languageMenuOpen() && handleLanguageMenuKey(event)) { clearEscapeHint(); consume(event); return; }
   if (blockMenuOpen() && handleBlockMenuKey(event)) { clearEscapeHint(); consume(event); return; }
-  if (focused && menusClosed() && command(event, 'enter')) {
-    const plan = planTaskToggle(editor.state);
-    if (plan) { consume(event); if (!event.repeat) editor.dispatch(plan); return; }
-  }
+  if (runShortcut(event, 'after-menu')) { consume(event); return; }
   if (menusClosed() && focused && event.key === 'Tab' && plain(event) && tabKey(event)) return;
   if (menusClosed() && focused && plain(event) && isEditing()) {
     const key = event.key === 'Tab' && event.shiftKey ? 'Shift-Tab' : event.key;
@@ -233,24 +168,7 @@ function onKeyDown(event) {
   if (!blockMenuOpen() && isEditing() && trySlash(event, editor)) { consume(event); return; }
   if (event.key.toLowerCase() === 'x' && plain(event) && isEditing() && toggleTaskKey(event)) return;
   if (event.key === 'Enter' && !event.repeat && plain(event) && isEditing() && leaveBlockKey(event)) return;
-  // ⌘⇧[ / ⌘⇧]: first and last note. Matched by physical key, because ⇧
-  // turns event.key into "{" and "}" (or other characters on other layouts).
-  if (event.metaKey && event.shiftKey && !event.ctrlKey && !event.altKey && (event.code === 'BracketLeft' || event.code === 'BracketRight')) {
-    consume(event);
-    if (event.code === 'BracketLeft') selectFirst(); else selectLast();
-    return;
-  }
-  if (event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
-    const key = event.key.toLowerCase();
-    if (key === 'c' && editor.state.selection.main.empty && copyCodeBlock(event)) return;
-    if (key === '/') { consume(event); toggleComments(); return; }
-    if (['n', 'd', '[', ']'].includes(key) || /^[1-9]$/.test(key)) {
-      consume(event);
-      if (key === 'n') createNote(); else if (key === 'd') deleteNote(); else if (key === '[') navigate(-1); else if (key === ']') navigate(1);
-      else selectAt(Number(key));
-      return;
-    }
-  }
+  if (runShortcut(event, 'main')) { consume(event); return; }
   if (escape && !event.repeat) escapeKey(event);
 }
 

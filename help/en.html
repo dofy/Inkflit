@@ -6,11 +6,11 @@
   <ol>
     <li><b>Show the window</b> with the global shortcut, <kbd>⌃⌥Space</kbd> by default (you can change it in <b>Settings → General</b>), or click the menu bar icon and choose <b>Open Inkflit</b>.</li>
     <li><b>Write.</b> Changes are saved automatically; there is no Save button.</li>
-    <li><b>Hide it</b> with the same shortcut or <kbd>Esc</kbd> (twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
+    <li><b>Hide it</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
   </ol>
   <h3>Where the window appears</h3>
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
-  <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it.</p>
+  <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it. Restore the default size under <b>Settings → Appearance → Window size → Reset</b>.</p>
   <h3>Guide notes</h3>
   <ul>
     <li>The first launch creates seven guide notes in your language. Edit or delete them freely.</li>
@@ -408,7 +408,7 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim mode</h2>
-  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. In Normal mode, press <kbd>Esc</kbd> twice within 0.6 seconds to hide the window.</p>
+  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. In Normal mode, press <kbd>Esc</kbd> twice within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
   <ul>
     <li>In normal mode Inkflit switches to an ASCII keyboard layout so commands work, and restores your input method when you start typing or leave the window.</li>
     <li>An open input method candidate is cancelled before <kbd>Esc</kbd> leaves insert mode.</li>
@@ -477,7 +477,9 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 
 # Other clients
 {"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}</code></pre>
-  <p>Tools: <code>list_notes</code>, <code>search_notes</code>, <code>get_note</code>, <code>create_note</code>, <code>append_note</code>, <code>replace_note</code>, <code>delete_note</code>.</p>
+  <p>Tools: <code>list_notes</code>, <code>search_notes</code>, <code>get_note</code>, <code>get_current_note</code>, <code>analyze_note</code>, <code>preview_note_format</code>, <code>apply_note_format</code>, <code>create_note</code>, <code>append_note</code>, <code>replace_note</code>, <code>delete_note</code>.</p>
+  <p>Use <code>limit</code>, <code>cursor</code>, and <code>include_content: false</code> with <code>list_notes</code> to get pages of short summaries. <code>get_current_note</code> reads the selected note. <code>analyze_note</code> returns calculation and checklist results for an <code>id</code> or <code>index</code>.</p>
+  <p>Call <code>preview_note_format</code> with the note <code>id</code> to review the diff. Pass the same <code>id</code> and the returned <code>preview_id</code> to <code>apply_note_format</code>. If the note has changed, request a new preview.</p>
   <ul>
     <li>Pick a note by <code>index</code> (the number shown in Inkflit) or by its stable <code>id</code>. Indices shift when notes are added or deleted.</li>
     <li>New notes go to the end. Pass <code>position</code> as <code>"first"</code>, <code>"last"</code> or a number to place them elsewhere.</li>
@@ -488,6 +490,7 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 open 'inkflit://note/search?query=milk'
 open 'inkflit://note/get?index=1'</code></pre>
   <p>Actions are <code>list</code>, <code>get</code>, <code>search</code>, <code>create</code>, <code>append</code>, <code>replace</code> and <code>delete</code>. Add <code>x-success</code> and <code>x-error</code> callback URLs to receive the result as JSON.</p>
+  <p>Use <code>inkflit://note/open?index=2</code> to open a note, or <code>inkflit://settings/appearance</code> and <code>inkflit://settings/snippets</code> to open settings.</p>
   <p class="tip">Links that write or delete run immediately. Only open links you trust.</p>
 </section>
 

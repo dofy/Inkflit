@@ -4,27 +4,38 @@
 
 ### Added
 
+- MCP can page through notes with short summaries, read the selected note, and analyze calculation and checklist blocks.
+- MCP can preview a formatting diff for supported code blocks and math expressions, then apply it by note ID if the content still matches the preview.
+- New `inkflit://` links open a specific note or go directly to Appearance or Snippets settings.
 - **Format Note** in the command palette formats math expression spacing and supported code blocks in the current note. Code follows the existing indentation setting, and the entire change can be undone in one step.
 - Press **⌘↩** anywhere in a `list` item or a Markdown task to toggle it, including on a Markdown task's continuation line.
 - Math snippets now include 10 mathematical and 50 scientific constants under `@const`. Search for individual constants with names like `@pi` and `@speedoflight`.
 - The snippet editor's **Insert placeholder** menu includes math functions, units, currencies, and constants.
 - A local install script builds and verifies an app at a new path.
 - Choose Follow System, Light, or Dark in Settings or the command palette. The appearance is saved between launches.
+- Reset the note window to its default 2:3 size from Appearance settings or the command palette.
+- Choose whether to press Esc once or twice to hide the window in Vim Normal mode from Edit settings or the command palette.
+- Run more editor, window, recovery, shortcut, and snippet actions from the command palette.
 
 ### Changed
 
+- Use the Inkflit app icon in both the sidebar and header of offline help.
+- Share command definitions between the command palette, note toolbar, and editor shortcuts. Align command groups and keyboard shortcuts in fixed columns.
+- Show command shortcuts and palette navigation hints as keycaps.
 - Browse unit suggestions by category. Category names support fuzzy search, and Esc returns from a snippet submenu with the previous query and selection restored.
 - Math expressions use the code theme for highlighting. Variable definitions and references match code variables, currency codes match units, and trailing equals signs use the operator style.
 - Use GitHub, Solarized, and One Light / One Dark for code highlighting and previews. Each theme follows Inkflit’s appearance. Old theme IDs fall back to GitHub.
-- In Vim Normal mode, press Esc twice within 0.6 seconds to hide the window. The first press shows a hint. With Vim off, a single press still hides the window.
+- By default, press Esc twice within 0.6 seconds to hide the window in Vim Normal mode. The first press shows a hint.
 - Use the current accent color for the Esc hint and a darker background in Dark mode.
 - Match the status bar background to the toolbar across themes and window opacities.
 - With Vim off, align the note's creation time to the left and the keyboard shortcut to the right of the status bar.
 - Offline help now documents time and angle unit names, symbols, and conversions, including the difference between searching for `@sec` and using `s` or `second` in a formula.
+- Update the guide notes with window settings, Vim Escape behavior, math snippets, and note formatting.
 
 ### Fixed
 
 - Return to Vim Normal mode when hiding the window from Insert mode.
+- Hide the inactive Vim cursor so its outline does not linger when the window reopens.
 - Recover interrupted note saves without blocking the editor. If the on-disk data conflicts with the pending save, keep both and show where the recovery record was preserved.
 - Keep feature block contents out of Markdown headings when a dash is typed immediately below the block.
 - Preserve existing tabs when changing checklist indentation.

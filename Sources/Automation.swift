@@ -118,21 +118,65 @@ final class AutomationServer {
     }
 }
 
+enum AutomationUILink: Equatable {
+    case noteID(String), noteIndex(Int), appearance, snippets, invalid
+
+    static func parse(_ components: URLComponents) -> Self? {
+        let host = components.host?.lowercased()
+        let path = components.path.split(separator: "/").map { $0.lowercased() }
+        let items = components.queryItems ?? []
+        if host == "settings" {
+            guard items.isEmpty else { return .invalid }
+            if path == ["appearance"] { return .appearance }
+            if path == ["snippets"] { return .snippets }
+            return .invalid
+        }
+        guard host == "note" || host == "notes", path == ["open"] else { return nil }
+        guard items.count == 1, let item = items.first, let value = item.value, !value.isEmpty else { return .invalid }
+        switch item.name {
+        case "id": return .noteID(value)
+        case "index":
+            guard let index = Int(value), index > 0 else { return .invalid }
+            return .noteIndex(index)
+        default: return .invalid
+        }
+    }
+}
+
 enum InkflitMCP {
-    private static let descriptors: [[String: Any]] = {
+    private struct Tool {
+        let name: String
+        let action: String
+        let descriptor: [String: Any]
+    }
+    private static let tools: [Tool] = {
         let content:[String:Any] = ["type":"string","description":"Markdown text; append inserts a newline if needed"]
         let target:[String:Any] = ["index":["type":"integer","minimum":1,"description":"1-based note number as displayed in Inkflit"],"id":["type":"string","description":"Stable note ID; use instead of index"]]
-        func tool(_ name:String,_ description:String,_ properties:[String:Any],_ required:[String]=[]) -> [String:Any] {
-            ["name":name,"description":description,"inputSchema":["type":"object","properties":properties,"required":required,"additionalProperties":false]]
+        let formatTarget: [String: Any] = ["id": ["type":"string", "minLength":1, "description":"Stable ID of the note to format."]]
+        var formatApply = formatTarget
+        formatApply["preview_id"] = ["type":"string", "minLength":1, "description":"The ID returned by preview_note_format for this same note."]
+        func tool(_ name:String,_ action:String,_ description:String,_ properties:[String:Any],_ required:[String]=[]) -> Tool {
+            Tool(name: name, action: action, descriptor: [
+                "name":name,"description":description,"inputSchema":["type":"object","properties":properties,"required":required,"additionalProperties":false]
+            ])
         }
         var write=target;write["content"]=content
-        return [tool("list_notes","List current notes in displayed order.",[:]),
-                tool("search_notes","Search all current notes.",["query":["type":"string"]],["query"]),
-                tool("get_note","Read a note by its 1-based index or ID.",target),
-                tool("create_note","Create a new note at the end (default), beginning, or a 1-based position.",["content":content,"position":["description":"first, last, or 1-based insertion position (up to note count + 1)","anyOf":[["type":"string","enum":["first","last"]],["type":"integer","minimum":1]]]], ["content"]),
-                tool("append_note","Append to a note by index or ID; omit both to create a new note.",write,["content"]),
-                tool("replace_note","Replace a note's contents; omit index and ID to create a new note.",write,["content"]),
-                tool("delete_note","Delete a note by index or ID; the previous content goes to Trash.",target)]
+        let pagination: [String: Any] = [
+            "limit": ["type":"integer", "minimum":1, "maximum":100, "description":"Page size. Defaults to 50 when any list option is provided."],
+            "cursor": ["type":"string", "minLength":1, "description":"Pass next_cursor from the previous page."],
+            "include_content": ["type":"boolean", "description":"Set false to return a short first-line summary and metadata without the full text. Repeat on subsequent pages."]
+        ]
+        return [tool("list_notes","list","List notes in displayed order. Use list options for pagination and summaries. With no options, returns all notes with full content.",pagination),
+                tool("search_notes","search","Search all current notes.",["query":["type":"string"]],["query"]),
+                tool("get_note","get","Read a note by its 1-based index or ID.",target),
+                tool("get_current_note","current","Read the note currently selected in Inkflit, including its stable ID.",[:]),
+                tool("analyze_note","analyze","Analyze math, sum, average, count, and checklist blocks in a note. Returns structured results without editing the note. Provide either id or index.",target),
+                tool("preview_note_format","format-preview","Preview a unified diff for formatting existing supported code blocks and math expressions in the specified note. Returns preview_id for apply_note_format when there are changes.",formatTarget,["id"]),
+                tool("apply_note_format","format-apply","Apply a previously previewed diff to the same note by id. Fails if the note content changed since the preview.",formatApply,["id","preview_id"]),
+                tool("create_note","create","Create a new note at the end (default), beginning, or a 1-based position.",["content":content,"position":["description":"first, last, or 1-based insertion position (up to note count + 1)","anyOf":[["type":"string","enum":["first","last"]],["type":"integer","minimum":1]]]], ["content"]),
+                tool("append_note","append","Append to a note by index or ID; omit both to create a new note.",write,["content"]),
+                tool("replace_note","replace","Replace a note's contents; omit index and ID to create a new note.",write,["content"]),
+                tool("delete_note","delete","Delete a note by index or ID; the previous content goes to Trash.",target)]
     }()
     static func run() {
         while let line=readLine() {
@@ -146,12 +190,11 @@ enum InkflitMCP {
                 let supported=["2025-11-25","2025-06-18","2025-03-26","2024-11-05"]
                 result(["protocolVersion":supported.contains(requested) ? requested : "2025-11-25","capabilities":["tools":[:]],"serverInfo":["name":"inkflit","version":(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "unknown")]])
             case "ping":result([:])
-            case "tools/list":result(["tools":descriptors])
+            case "tools/list":result(["tools":tools.map(\.descriptor)])
             case "tools/call":
                 let params=request["params"] as? [String:Any] ?? [:], name=params["name"] as? String ?? ""
-                let names=["list_notes":"list","search_notes":"search","get_note":"get","create_note":"create","append_note":"append","replace_note":"replace","delete_note":"delete"]
-                guard let action=names[name], descriptors.contains(where:{ $0["name"] as? String == name }) else { result(["content":[["type":"text","text":"Unknown tool"]],"isError":true]);continue }
-                var operation=params["arguments"] as? [String:Any] ?? [:];operation["action"]=action
+                guard let tool = tools.first(where: { $0.name == name }) else { result(["content":[["type":"text","text":"Unknown tool"]],"isError":true]);continue }
+                var operation=params["arguments"] as? [String:Any] ?? [:];operation["action"]=tool.action
                 do {
                     let reply=try requestApp(operation)
                     let text=String(data:try JSONSerialization.data(withJSONObject:reply,options:[.sortedKeys]),encoding:.utf8) ?? "{}"

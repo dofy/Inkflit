@@ -60,7 +60,7 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .editor .cm-editor .cm-block-header-line{padding-top:10px}
 .cm-editor.cm-focused .cm-fat-cursor{background:var(--ui-cursor,#ad4f12)!important}
 .cm-editor.cm-focused .cm-fat-cursor:not([style*="color: transparent"]){color:var(--ui-paper,#fffdfa)!important}
-.cm-editor:not(.cm-focused) .cm-fat-cursor{background:transparent!important;outline:1px solid var(--ui-cursor,#ad4f12)!important;color:transparent!important}
+.cm-editor:not(.cm-focused) .cm-vimCursorLayer{display:none}
 /* Vim search and command prompts are CodeMirror panels, not part of the note content. */
 .cm-editor .cm-panels-bottom{background:rgba(var(--ui-bar-rgb,255,240,226),var(--ui-opacity,1))!important;color:var(--ui-ink,#302921)!important;border-top:1px solid var(--ui-border,#f0dbc9)!important}
 .cm-editor .cm-vim-panel{padding:6px 18px;color:var(--ui-ink,#302921);font:13px/1.5 ui-monospace,"SF Mono",Menlo,monospace}
@@ -77,7 +77,7 @@ footer{border-color:var(--ui-border,#f0dbc9);color:var(--ui-muted,#89796e)}.mode
 .delete-notice.is-next .delete-notice-undo{background:var(--ui-paper)}
 
 /* Note search and the command panel share one palette surface. */
-.palette{position:absolute;inset:0;z-index:40;display:flex;justify-content:center;align-items:flex-start;padding:18px 16px;background:rgba(0,0,0,.22)}.palette-card{width:min(100%,460px);max-height:min(75%,430px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--ui-border);border-radius:11px;background:var(--ui-paper);color:var(--ui-ink);box-shadow:0 12px 30px rgba(0,0,0,.2)}.palette-search{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--ui-border)}.palette-prompt{flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:23px;font:600 23px/1 ui-monospace,monospace;color:var(--ui-accent)}.palette-search input{flex:1;min-width:0;padding:0;border:0;outline:0;background:transparent;color:var(--ui-ink);caret-color:var(--ui-cursor);font:14px -apple-system,BlinkMacSystemFont,sans-serif}.palette-results{overflow:auto;padding:5px;min-height:0}.palette-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;text-align:left;color:var(--ui-ink)}.palette-row[aria-selected=true],.palette-row:hover{background:var(--ui-bar)}.palette-row-index{flex:none;min-width:18px;color:var(--ui-accent);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}.palette-row-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.palette-row-group{color:var(--ui-muted);font-size:11px}.palette-row kbd{min-width:54px;text-align:right;font:500 13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI Symbol",sans-serif;letter-spacing:.08em;color:var(--ui-ink);white-space:nowrap}.palette-empty{padding:20px 12px;text-align:center;color:var(--ui-muted)}.palette-footer{display:flex;justify-content:space-between;gap:8px;padding:7px 14px;border-top:1px solid var(--ui-border);font-size:11px;color:var(--ui-muted)}.palette-keys{white-space:nowrap}
+.palette{position:absolute;inset:0;z-index:40;display:flex;justify-content:center;align-items:flex-start;padding:18px 16px;background:rgba(0,0,0,.22)}.palette-card{width:min(100%,460px);max-height:min(75%,430px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--ui-border);border-radius:11px;background:var(--ui-paper);color:var(--ui-ink);box-shadow:0 12px 30px rgba(0,0,0,.2)}.palette-search{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--ui-border)}.palette-prompt{flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:23px;font:600 23px/1 ui-monospace,monospace;color:var(--ui-accent)}.palette-search input{flex:1;min-width:0;padding:0;border:0;outline:0;background:transparent;color:var(--ui-ink);caret-color:var(--ui-cursor);font:14px -apple-system,BlinkMacSystemFont,sans-serif}.palette-results{overflow:auto;padding:5px;min-height:0}.palette-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;text-align:left;color:var(--ui-ink)}.palette-row[aria-selected=true],.palette-row:hover{background:var(--ui-bar)}.palette-row-index{flex:none;min-width:18px;color:var(--ui-accent);font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}.palette-row-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.palette-row-group{color:var(--ui-muted);font-size:11px}.palette-empty{padding:20px 12px;text-align:center;color:var(--ui-muted)}.palette-footer{display:flex;justify-content:space-between;gap:8px;padding:7px 14px;border-top:1px solid var(--ui-border);font-size:11px;color:var(--ui-muted)}.palette-keys{flex:none;white-space:nowrap}
 ::-webkit-scrollbar{width:7px;height:7px;background:transparent}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-thumb{min-height:28px;border:2px solid transparent;border-radius:4px;background:color-mix(in srgb,var(--ui-accent,#b95c1d) 45%,transparent) padding-box}::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,var(--ui-accent,#b95c1d) 75%,transparent)}::-webkit-scrollbar-button{display:none}
 .created{margin-left:auto;color:var(--ui-muted,#a38e7e);font-variant-numeric:tabular-nums;white-space:nowrap}.created:not([hidden])+.hint{margin-left:0}
 .mode[hidden]~.created{order:-1;margin-left:0}.mode[hidden]~.created:not([hidden])+.hint{margin-left:auto}
@@ -92,6 +92,18 @@ footer{position:relative}
 
 .palette-crumb{flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 8px;border-radius:5px;background:var(--ui-bar);color:var(--ui-accent);font-size:12px}.palette-row-more{flex:none;color:var(--ui-muted);font:600 15px/1 ui-monospace,monospace}
 .palette-row-check{flex:none;color:var(--ui-accent);font-weight:700}
+.command-row{display:grid;grid-template-columns:minmax(0,1fr) 60px 54px 12px;column-gap:8px}
+.command-row .palette-row-group{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palette kbd{
+  display:inline-block;min-width:18px;padding:0 4px;
+  border:1px solid color-mix(in srgb,var(--ui-border),var(--ui-ink) 14%);
+  border-bottom-width:2px;border-radius:4px;
+  background:var(--ui-paper);color:var(--ui-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Symbol",sans-serif;
+  font-weight:500;line-height:1.35;text-align:center;white-space:nowrap;
+}
+.command-row kbd{grid-column:3;justify-self:end;letter-spacing:.08em}
+.command-row .palette-row-indicator{grid-column:4;text-align:center}
 .editor .cm-content .inkflit-md-label{color:var(--ui-accent,#b95c1d)}
 .editor .cm-content .cm-note-inline-code{padding:1px 3px;border-radius:4px;background:color-mix(in srgb,var(--ui-ink,#302921) 9%,transparent)}
 /* Snippet list (@codemirror/autocomplete), in the palette's colors. */

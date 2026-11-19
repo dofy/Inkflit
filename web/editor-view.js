@@ -6,7 +6,7 @@ import { HighlightStyle, syntaxHighlighting, defaultHighlightStyle, syntaxTree }
 import { classHighlighter, tags } from '@lezer/highlight';
 import { vim, Vim, getCM, CodeMirror } from '@replit/codemirror-vim';
 import { app, $, current, nativeHandler } from './app.js';
-import { persist } from './persistence.js';
+import { deferAutoSave, persist } from './persistence.js';
 import { refreshNav } from './toolbar.js';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText, markerRanges } from './block-protection.js';
@@ -60,11 +60,14 @@ const plainEnter = Prec.highest(keymap.of([{ key: 'Enter', run: view => { const 
 // True when keystrokes insert text: Vim is off, or Vim is in insert mode.
 export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vim?.insertMode;
 
-// Leave Insert through Vim itself so its state, cursor and input source agree.
 export function prepareToHide() {
-  if (!app.vimEnabled || !app.editor) return;
-  const cm = getCM(app.editor);
+  const editor = app.editor;
+  if (!app.vimEnabled || !editor) return;
+  const cm = getCM(editor);
   if (cm?.state?.vim?.insertMode) Vim.handleKey(cm, '<Esc>', 'user');
+  // WebKit can retain the DOM focus when AppKit orders the window out.
+  editor.contentDOM.blur();
+  editor.dispatch([]);
 }
 
 // Merge the first insert after a Vim command into a single undo step with it.
@@ -80,7 +83,8 @@ const saveOnChange = EditorView.updateListener.of(update => {
   if (languageMenuOpen() && (update.docChanged || update.selectionSet)) closeLanguageMenu();
   if (!update.docChanged || !app.state) return;
   current().content = update.state.doc.toString(); current().updated = new Date().toISOString();
-  refreshInsights(); updateBlockMenu(); if (isEditing()) openMenuAfterInput(update); persist();
+  refreshInsights(); updateBlockMenu(); if (isEditing()) openMenuAfterInput(update);
+  if (!update.transactions.some(transaction => transaction.annotation(deferAutoSave))) persist();
 });
 
 function makeState(content) {

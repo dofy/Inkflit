@@ -5,7 +5,7 @@ import { changeEditor, setVimEnabled, refreshBlockResults, prepareToHide } from 
 import { applyToolbarLanguage } from './toolbar.js';
 import { select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
-import { applyPaletteLanguage, openCommands, openSearch, setCommandState } from './palettes.js';
+import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandState } from './palettes.js';
 import { notesOperation } from './automation.js';
 import { setUserSnippets, settingsSnippetPlaceholders } from './snippet-completion.js';
 import { closeBlockMenu } from './block-menu.js';
@@ -13,6 +13,7 @@ import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
 import { applyCodeTheme, codeThemes } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
+import { setVimDoubleEscape } from './keys.js';
 
 // Everything the native app calls on `window`, in one place.
 
@@ -59,7 +60,14 @@ export function installBridge() {
     snapshotForFlush,
     exportNotesJSON: () => app.state ? JSON.stringify(app.state) : null,
     inkflitNotesOperation: notesOperation,
-    inkflitSelectNote: id => { if (app.state?.notes.some(note => note.id === id)) { select(id); return true; } return false; },
+    inkflitSelectNote: (id, reveal = false) => {
+      if (!app.state?.notes.some(note => note.id === id)) return false;
+      if (reveal) {
+        commandPalette.close(); searchPalette.close(); closeBlockMenu(); closeLanguageMenu();
+      }
+      select(id);
+      return true;
+    },
     // A note restored from backups or the Trash goes last.
     restoreNoteBase64: value => {
       if (!app.state) throw new Error('No note state');
@@ -88,6 +96,7 @@ export function installBridge() {
     // Settings
     setLanguage: applyLanguage,
     setVimEnabled,
+    setVimDoubleEscape,
     setCodeIndentation: value => { app.codeIndentation = normalizeIndentation(value); },
     setCodeTheme: value => { codeTheme = value; applyColors(); },
     setUIAppearance: (theme, value, scheme = colorScheme) => {

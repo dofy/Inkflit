@@ -43,7 +43,7 @@ Run `npm test` for editor tests and `npm run test:native` for isolated native-wi
 
 Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. Appearance follows macOS light/dark mode. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
-When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
+When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. To restore the default size, use **Settings → Appearance → Window size → Reset**. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
 
 ## Keyboard shortcuts
 
@@ -61,7 +61,7 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | `⌘/` | Toggle comments on the current or selected lines |
 | `⌘⇧F` | Search all current notes |
 | `⌘⇧P` | Open the command palette to search note actions and settings |
-| `Esc` | Return to Vim Normal mode. In Normal mode, press twice within 0.6 seconds to hide. With Vim off, press once. |
+| `Esc` | Return to Vim Normal mode. In Normal mode, press twice within 0.6 seconds by default. Turn off **Double Esc to hide** in Editing settings to hide with one press. |
 
 Vim mode is enabled by default. Turn it off in Settings → Editing to type directly; `Esc` then hides the window and `⌘Z` / `⌘⇧Z` undo and redo.
 
@@ -113,7 +113,13 @@ Inkflit provides a local MCP server over stdio. For Codex, run:
 codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 ```
 
-Restart the MCP client after configuring it. The tools are `list_notes`, `search_notes`, `get_note`, `create_note`, `append_note`, `replace_note` and `delete_note`. Supply either `index` (1-based, matching the displayed note number) or the stable `id`; indices change when notes are added or deleted. For `append_note` and `replace_note`, omitting both creates a note. Append adds a separating newline when needed. Deletions go to Trash. Requests use the running app's save and backup pipeline; the server starts Inkflit if necessary.
+Restart the MCP client after configuring it. The tools are `list_notes`, `search_notes`, `get_note`, `get_current_note`, `analyze_note`, `preview_note_format`, `apply_note_format`, `create_note`, `append_note`, `replace_note` and `delete_note`. Supply either `index` (1-based, matching the displayed note number) or the stable `id`; indices change when notes are added or deleted. For `append_note` and `replace_note`, omitting both creates a note. Append adds a separating newline when needed. Deletions go to Trash. Requests use the running app's save and backup pipeline; the server starts Inkflit if necessary.
+
+`list_notes` accepts `limit` (1–100), `cursor`, and `include_content`. Call with `{"limit":20,"include_content":false}` for metadata and short first-line summaries, then pass back `next_cursor` with the same options until it is `null`. With no options, the tool still returns every note with its full text.
+
+`get_current_note` returns the selected note. `analyze_note` accepts `id` or `index` and returns structured math, checklist, sum, average, and count results. Currency calculations use the app’s cached rates.
+
+`preview_note_format` takes a note `id` and returns a unified `diff` and `preview_id` if there are changes. After reviewing the diff, call `apply_note_format` with the same `id` and `preview_id`. Apply uses the previewed edits and rejects the request if the text has changed. Formatting covers supported code blocks and math expressions.
 
 Other MCP clients can use `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`. Each write accepts at most 1,000,000 UTF-16 code units of content.
 
@@ -130,3 +136,5 @@ open 'inkflit://note/get?index=1'
 ```
 
 Without a target, append and replace create a note; get and delete require a target. Without a callback, get opens the note and list/search open the search view. Optional `x-success` and `x-error` parameters accept percent-encoded custom-scheme callback URLs; the callback receives a `result` query parameter containing JSON. HTTP, HTTPS, file and Inkflit callbacks are rejected. Callback JSON is limited to 48 KB. Scheme writes and deletions execute immediately, so only open trusted links.
+
+To open without a callback, use `inkflit://note/open?id=…` (or `?index=2`). `inkflit://settings/appearance` and `inkflit://settings/snippets` open the corresponding settings tabs.

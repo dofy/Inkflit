@@ -1,3 +1,4 @@
+import { Annotation } from '@codemirror/state';
 import { t } from './i18n.js';
 import { app, $, nativeHandler } from './app.js';
 
@@ -5,6 +6,8 @@ import { app, $, nativeHandler } from './app.js';
 // error, revision). Only the newest revision updates the footer.
 let saveRevision = 0;
 const saveCallbacks = new Map();
+// Automation publishes the final snapshot explicitly after updating the stored note.
+export const deferAutoSave = Annotation.define();
 
 export const latestRevision = () => saveRevision;
 

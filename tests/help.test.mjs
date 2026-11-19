@@ -40,5 +40,5 @@ test('the generated help page carries every language and the current version', a
     assert.ok(page.includes(labelsOf(await read(`help/${language}.html`)).title), `${language}: rebuild Resources/Help.html with scripts/build-help.py`);
   }
   assert.ok(page.includes(` · ${version}<`), 'version from package.json');
-  assert.doesNotMatch(page, /%(APP_VERSION|LANGUAGES|SHORTCUTS)%/);
+  assert.doesNotMatch(page, /%(APP_VERSION|APP_ICON|LANGUAGES|SHORTCUTS)%/);
 });

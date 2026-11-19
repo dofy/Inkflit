@@ -95,6 +95,12 @@
     "zh-Hant": "刪除",
     "ja": "削除"
   },
+  "app.continue": {
+    "en": "Continue",
+    "zh-Hans": "继续",
+    "zh-Hant": "繼續",
+    "ja": "続ける"
+  },
   "app.cancel": {
     "en": "Cancel",
     "zh-Hans": "取消",
@@ -340,6 +346,24 @@
     "zh-Hans": "更改后立即应用。",
     "zh-Hant": "更改後立即套用。",
     "ja": "変更はすぐに反映されます。"
+  },
+  "settings.windowSize": {
+    "en": "Window size",
+    "zh-Hans": "窗口大小",
+    "zh-Hant": "視窗大小",
+    "ja": "ウインドウのサイズ"
+  },
+  "settings.windowSizeDetail": {
+    "en": "Restore the default 2:3 size",
+    "zh-Hans": "恢复默认的 2:3 窗口大小",
+    "zh-Hant": "恢復預設的 2:3 視窗大小",
+    "ja": "既定の 2:3 のサイズに戻す"
+  },
+  "settings.resetWindowSize": {
+    "en": "Reset window size",
+    "zh-Hans": "重置窗口大小",
+    "zh-Hant": "重設視窗大小",
+    "ja": "ウインドウのサイズをリセット"
   },
   "settings.windowOpacity": {
     "en": "Window opacity",
@@ -713,6 +737,18 @@
     "zh-Hant": "關閉後可直接輸入，Esc 收起視窗。",
     "ja": "オフの場合は直接入力できます。Esc でウインドウを隠します。"
   },
+  "settings.vimDoubleEscape": {
+    "en": "Double Esc to hide",
+    "zh-Hans": "连按两次 Esc 收起窗口",
+    "zh-Hant": "連按兩次 Esc 收起視窗",
+    "ja": "Esc を 2 回押して隠す"
+  },
+  "settings.vimDoubleEscapeDetail": {
+    "en": "Only in Vim Normal mode",
+    "zh-Hans": "仅在 Vim Normal 模式下生效",
+    "zh-Hant": "僅在 Vim 一般模式下生效",
+    "ja": "Vim のノーマルモードのみ"
+  },
   "settings.windowOpacityHint": {
     "en": "100% is opaque; hold Option to adjust sliders in 5% steps.",
     "zh-Hans": "100% 为不透明；按住 Option 以 5% 为步长调整滑块。",
@@ -814,6 +850,84 @@
     "zh-Hans": "输入关键词搜索笔记",
     "zh-Hant": "輸入關鍵字搜尋筆記",
     "ja": "キーワードを入力"
+  },
+  "palette.hideWindow": {
+    "en": "Hide window",
+    "zh-Hans": "收起窗口",
+    "zh-Hant": "收起視窗",
+    "ja": "ウインドウを隠す"
+  },
+  "palette.insertBlock": {
+    "en": "Insert feature block",
+    "zh-Hans": "插入功能块",
+    "zh-Hant": "插入功能區塊",
+    "ja": "機能ブロックを挿入"
+  },
+  "palette.changeBlockType": {
+    "en": "Change block type",
+    "zh-Hans": "更改功能块类型",
+    "zh-Hant": "變更功能區塊類型",
+    "ja": "ブロックの種類を変更"
+  },
+  "palette.deleteBlock": {
+    "en": "Delete current block",
+    "zh-Hans": "删除当前功能块",
+    "zh-Hant": "刪除目前的功能區塊",
+    "ja": "現在のブロックを削除"
+  },
+  "palette.chooseCodeLanguage": {
+    "en": "Choose code block language",
+    "zh-Hans": "选择代码块语言",
+    "zh-Hant": "選擇程式碼區塊語言",
+    "ja": "コードブロックの言語を選択"
+  },
+  "palette.copyCodeBlock": {
+    "en": "Copy whole code block",
+    "zh-Hans": "复制整个代码块",
+    "zh-Hant": "複製整個程式碼區塊",
+    "ja": "コードブロック全体をコピー"
+  },
+  "palette.toggleTask": {
+    "en": "Toggle task completion",
+    "zh-Hans": "切换任务勾选状态",
+    "zh-Hant": "切換任務勾選狀態",
+    "ja": "タスクの完了状態を切り替え"
+  },
+  "palette.toggleComment": {
+    "en": "Toggle line comment",
+    "zh-Hans": "注释或取消注释",
+    "zh-Hant": "註解或取消註解",
+    "ja": "行のコメントを切り替え"
+  },
+  "palette.insertLineAbove": {
+    "en": "Insert blank line above",
+    "zh-Hans": "在上方插入空行",
+    "zh-Hant": "在上方插入空行",
+    "ja": "上に空行を追加"
+  },
+  "palette.insertLineBelow": {
+    "en": "Insert blank line below",
+    "zh-Hans": "在下方插入空行",
+    "zh-Hant": "在下方插入空行",
+    "ja": "下に空行を追加"
+  },
+  "palette.recordShortcut": {
+    "en": "Record global shortcut",
+    "zh-Hans": "录制全局快捷键",
+    "zh-Hant": "錄製全域快捷鍵",
+    "ja": "グローバルショートカットを登録"
+  },
+  "palette.resetShortcut": {
+    "en": "Restore default global shortcut",
+    "zh-Hans": "恢复默认全局快捷键",
+    "zh-Hant": "恢復預設全域快捷鍵",
+    "ja": "グローバルショートカットを初期化"
+  },
+  "palette.openLoginSettings": {
+    "en": "Open macOS Login Items",
+    "zh-Hans": "打开 macOS 登录项",
+    "zh-Hant": "開啟 macOS 登入項目",
+    "ja": "macOS のログイン項目を開く"
   },
   "palette.formatNote": {
     "en": "Format Note",

@@ -6,11 +6,11 @@
   <ol>
     <li><b>打开窗口：</b>按全局快捷键，默认是 <kbd>⌃⌥Space</kbd>（可在“设置 → 通用”中更改），或点菜单栏图标，选择“打开 Inkflit”。</li>
     <li><b>开始写：</b>内容会自动保存，没有保存按钮。</li>
-    <li><b>收起窗口：</b>再按一次快捷键，或按 <kbd>Esc</kbd>（Vim Normal 模式下须在 0.6 秒内连按两次）。切换到其他应用时也会自动收起。</li>
+    <li><b>收起窗口：</b>再按一次快捷键，或按 <kbd>Esc</kbd>（Vim Normal 模式下默认在 0.6 秒内连按两次）。切换到其他应用时也会自动收起。</li>
   </ol>
   <h3>窗口出现在哪里</h3>
   <p>窗口会出现在鼠标所在的显示器、你当前所在的桌面上，不会把你拉回别的桌面。窗口位置会被记住，重启后也一样。</p>
-  <p>拖动工具栏中间的空白处可以移动窗口，拖动边缘可以调整大小。</p>
+  <p>拖动工具栏中间的空白处可以移动窗口，拖动边缘可以调整大小。在「设置 → 外观 → 窗口大小」中可恢复默认尺寸。</p>
   <h3>引导笔记</h3>
   <ul>
     <li>第一次启动时，Inkflit 按你的语言创建七篇引导笔记，可以随意修改或删除。</li>
@@ -408,7 +408,7 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim 模式</h2>
-  <p>Vim 按键默认开启。编辑器从 Normal 模式开始，按 <kbd>i</kbd> 输入，按 <kbd>Esc</kbd> 返回。在 Normal 模式下，0.6 秒内连按两次 <kbd>Esc</kbd> 会收起窗口。</p>
+  <p>Vim 按键默认开启。编辑器从 Normal 模式开始，按 <kbd>i</kbd> 输入，按 <kbd>Esc</kbd> 返回。在 Normal 模式下，默认在 0.6 秒内连按两次 <kbd>Esc</kbd> 会收起窗口。在「设置 → 编辑」关闭「连按两次 Esc 收起窗口」后，按一次即可。</p>
   <ul>
     <li>普通模式下，Inkflit 会临时切换到英文（ASCII）输入法，让命令键直接生效；开始输入或离开窗口时恢复你原来的输入法。</li>
     <li>如果输入法候选框还开着，按 <kbd>Esc</kbd> 会先取消候选，再退出插入模式。</li>
@@ -477,7 +477,9 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 
 # 其他客户端
 {"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}</code></pre>
-  <p>工具：<code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code>、<code>delete_note</code>。</p>
+  <p>工具：<code>list_notes</code>、<code>search_notes</code>、<code>get_note</code>、<code>get_current_note</code>、<code>analyze_note</code>、<code>preview_note_format</code>、<code>apply_note_format</code>、<code>create_note</code>、<code>append_note</code>、<code>replace_note</code>、<code>delete_note</code>。</p>
+  <p><code>list_notes</code> 可带上 <code>limit</code>、<code>cursor</code> 和 <code>include_content: false</code>，分页获取摘要。<code>get_current_note</code> 读取当前笔记，<code>analyze_note</code> 按 <code>id</code> 或 <code>index</code> 返回计算和清单结果。</p>
+  <p>用笔记 <code>id</code> 调用 <code>preview_note_format</code> 查看差异，再把同一个 <code>id</code> 和返回的 <code>preview_id</code> 传给 <code>apply_note_format</code>。正文变动后需要重新预览。</p>
   <ul>
     <li>用 <code>index</code>（Inkflit 里显示的序号）或稳定的 <code>id</code> 指定笔记。增删笔记后序号会变化。</li>
     <li>新笔记默认加在最后。<code>position</code> 可以设为 <code>"first"</code>、<code>"last"</code> 或一个数字，放到其他位置。</li>
@@ -488,6 +490,7 @@ claude mcp add --transport stdio --scope user inkflit -- /Applications/Inkflit.a
 open 'inkflit://note/search?query=milk'
 open 'inkflit://note/get?index=1'</code></pre>
   <p>可用的操作有 <code>list</code>、<code>get</code>、<code>search</code>、<code>create</code>、<code>append</code>、<code>replace</code> 和 <code>delete</code>。加上 <code>x-success</code> 和 <code>x-error</code> 回调地址，可以收到 JSON 格式的结果。</p>
+  <p>用 <code>inkflit://note/open?index=2</code> 打开指定笔记，用 <code>inkflit://settings/appearance</code> 或 <code>inkflit://settings/snippets</code> 直达对应设置。</p>
   <p class="tip">写入和删除类的链接会立即执行，只打开你信任的链接。</p>
 </section>
 

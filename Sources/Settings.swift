@@ -217,11 +217,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
     private let onboardingButton = NSButton(title: L("settings.restoreGuideNotes"), target: nil, action: nil)
     private let vimSwitch = OrangeSwitch(frame: .zero)
+    private let vimDoubleEscapeSwitch = OrangeSwitch(frame: .zero)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
     private let previewBox = CodeThemePreviewBox()
     private let colorSchemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let resetWindowSizeButton = NSButton(title: L("settings.reset"), target: nil, action: nil)
     private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
@@ -234,10 +236,13 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private var sliderTicks: [SliderTicks] = []
     private let getAppearance: () -> WindowAppearance
     private let setAppearance: (WindowAppearance) -> Void
+    private let resetWindowSize: () -> Void
     private let getTheme: () -> String
     private let setTheme: (String) -> Void
     private let getVimEnabled: () -> Bool
     private let setVimEnabled: (Bool) -> Void
+    private let getVimDoubleEscape: () -> Bool
+    private let setVimDoubleEscape: (Bool) -> Void
     private let getIndentation: () -> String
     private let setIndentation: (String) -> Void
     private let getStorage: () -> String
@@ -251,14 +256,26 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let loginStatus: () -> SMAppService.Status
     private let setLogin: (Bool) -> String?
 
-    init(getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?, clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?, getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void, getVimEnabled: @escaping () -> Bool, setVimEnabled: @escaping (Bool) -> Void, getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void, getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void, getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void, loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?) {
+    init(
+        getShortcut: @escaping () -> String, saveShortcut: @escaping (UInt32, UInt32) -> String?,
+        clearShortcut: @escaping () -> Void, resetShortcut: @escaping () -> String?,
+        getStorage: @escaping () -> String, changeStorage: @escaping (URL, @escaping (String?) -> Void) -> Void,
+        getVimEnabled: @escaping () -> Bool, setVimEnabled: @escaping (Bool) -> Void,
+        getVimDoubleEscape: @escaping () -> Bool, setVimDoubleEscape: @escaping (Bool) -> Void,
+        getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void,
+        getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void,
+        getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void,
+        resetWindowSize: @escaping () -> Void,
+        loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?
+    ) {
         self.getShortcut = getShortcut; self.saveShortcut = saveShortcut; self.clearShortcut = clearShortcut
         self.resetShortcut = resetShortcut; self.loginStatus = loginStatus; self.setLogin = setLogin
         self.getStorage = getStorage; self.changeStorage = changeStorage
         self.getVimEnabled = getVimEnabled; self.setVimEnabled = setVimEnabled
+        self.getVimDoubleEscape = getVimDoubleEscape; self.setVimDoubleEscape = setVimDoubleEscape
         self.getIndentation = getIndentation; self.setIndentation = setIndentation
         self.getTheme = getTheme; self.setTheme = setTheme
-        self.getAppearance = getAppearance; self.setAppearance = setAppearance
+        self.getAppearance = getAppearance; self.setAppearance = setAppearance; self.resetWindowSize = resetWindowSize
         let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = L("settings.windowTitle"); window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
@@ -366,6 +383,9 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let rebuildSection = section(L("settings.indexRecovery"), icon: "wrench.and.screwdriver", detail: L("settings.indexRecoveryDetail"), controls: rebuild, message: NSTextField(wrappingLabelWithString: L("settings.indexRecoveryHint")))
         vimSwitch.target = self; vimSwitch.action = #selector(vimChanged); vimSwitch.setAccessibilityLabel(L("settings.vimMode"))
         let vimSection = section(L("settings.vimMode"), icon: "keyboard", detail: L("settings.vimModeDetail"), controls: vimSwitch, message: NSTextField(wrappingLabelWithString: L("settings.vimModeHint")))
+        vimDoubleEscapeSwitch.target = self; vimDoubleEscapeSwitch.action = #selector(vimDoubleEscapeChanged)
+        vimDoubleEscapeSwitch.setAccessibilityLabel(L("settings.vimDoubleEscape"))
+        let vimEscapeSection = section(L("settings.vimDoubleEscape"), icon: "escape", detail: L("settings.vimDoubleEscapeDetail"), controls: vimDoubleEscapeSwitch)
         for (title, value) in [(L("settings.indentTwoSpaces"), "spaces2"), (L("settings.indentFourSpaces"), "spaces4"), ("Tab", "tabs")] {
             indentation.addItem(withTitle: title); indentation.lastItem?.representedObject = value
         }
@@ -403,6 +423,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let uiThemeSection = section(L("settings.accentColor"), icon: "paintbrush", detail: L("settings.accentColorDetail"), controls: uiThemePicker)
         let opacitySection = section(L("settings.windowOpacity"), icon: "circle.lefthalf.filled", detail: L("settings.windowOpacityDetail"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("settings.windowOpacity")), message: NSTextField(wrappingLabelWithString: L("settings.windowOpacityHint")))
         let blurSection = section(L("settings.backgroundBlur"), icon: "drop.halffull", detail: L("settings.backgroundBlurDetail"), controls: sliderControls(blurSlider, value: blurValue, label: L("settings.backgroundBlur")), message: NSTextField(wrappingLabelWithString: L("settings.backgroundBlurHint")))
+        resetWindowSizeButton.bezelStyle = .rounded
+        resetWindowSizeButton.target = self; resetWindowSizeButton.action = #selector(resetWindowSizePressed)
+        resetWindowSizeButton.setAccessibilityLabel(L("settings.resetWindowSize"))
+        let sizeSection = section(L("settings.windowSize"), icon: "arrow.up.left.and.arrow.down.right", detail: L("settings.windowSizeDetail"), controls: resetWindowSizeButton)
         tabs.tabViewType = .topTabsBezelBorder
         for (title, value) in [(L("settings.languageSystem"), "system"), ("English", "en"), ("简体中文", "zh-Hans"), ("繁體中文", "zh-Hant"), ("日本語", "ja")] {
             languagePicker.addItem(withTitle: title); languagePicker.lastItem?.representedObject = value
@@ -414,8 +438,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let snippetsSection = section(L("settings.snippets"), icon: "text.badge.plus", detail: L("settings.snippetsDetail"), controls: NSView(), message: NSTextField(wrappingLabelWithString: L("settings.snippetsHint")))
         let pages: [(Tab, String, NSView)] = [
             (.general, L("settings.general"), page([languageSection, loginSection, shortcutSection])),
-            (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, opacitySection, blurSection, themeGroup])),
-            (.edit, L("app.edit"), page([vimSection, indentSection])),
+            (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, opacitySection, blurSection, sizeSection, themeGroup])),
+            (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
             (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
         ]
@@ -443,7 +467,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let index = languagePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == Localization.preference }) { languagePicker.selectItem(at: index) }
         shortcut.displayValue = getShortcut()
         vimSwitch.state = getVimEnabled() ? .on : .off
-        vimSwitch.accentColor = UIThemes.accent(getAppearance().theme)
+        vimDoubleEscapeSwitch.state = getVimDoubleEscape() ? .on : .off
         if let index = indentation.itemArray.firstIndex(where: { ($0.representedObject as? String) == getIndentation() }) { indentation.selectItem(at: index) }
         if let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == getTheme() }) { themePicker.selectItem(at: index) }
         renderThemePreview(getTheme())
@@ -472,6 +496,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         }
     }
     @objc private func clearPressed() { shortcut.recording = false; clearShortcut(); refresh(); shortcutMessage.stringValue = L("settings.globalShortcutCleared") }
+    func recordGlobalShortcut() { shortcut.performClick(nil) }
+    func addSnippet() { snippetsEditor.addSnippet() }
+    func removeSnippet() { snippetsEditor.removeSnippetFromCommand() }
+    func insertSnippetPlaceholder() { snippetsEditor.insertPlaceholderFromCommand() }
     @objc private func changeLanguage() {
         guard let value = languagePicker.selectedItem?.representedObject as? String, value == "system" || Localization.supported.contains(value) else { return }
         UserDefaults.standard.set(value, forKey: "language"); languageChanged?()
@@ -485,6 +513,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         do { snippetsEditor.load(try loadSnippets()) } catch { snippetsEditor.loadFailed(error.localizedDescription) }
     }
     @objc private func resetPressed() { shortcut.recording = false; let error = resetShortcut(); refresh(); shortcutMessage.stringValue = error ?? L("settings.defaultShortcutRestored") }
+    @objc private func resetWindowSizePressed() { resetWindowSize() }
     @objc private func loginChanged() {
         let requested = loginSwitch.state == .on
         let error = setLogin(requested)
@@ -493,6 +522,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     }
     @objc private func openLoginSettings() { SMAppService.openSystemSettingsLoginItems() }
     @objc private func vimChanged() { setVimEnabled(vimSwitch.state == .on) }
+    @objc private func vimDoubleEscapeChanged() { setVimDoubleEscape(vimDoubleEscapeSwitch.state == .on) }
     @objc private func indentationChanged() {
         guard let value = indentation.selectedItem?.representedObject as? String else { return }
         setIndentation(value)
@@ -516,7 +546,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private func applySettingsAccent(_ theme: String) {
         let accent = UIThemes.accent(theme)
         symbols.forEach { $0.contentTintColor = accent }
-        loginSwitch.accentColor = accent; vimSwitch.accentColor = accent
+        loginSwitch.accentColor = accent; vimSwitch.accentColor = accent; vimDoubleEscapeSwitch.accentColor = accent
         sliderTicks.forEach { $0.accentColor = accent }
         for slider in [opacitySlider, blurSlider] {
             (slider.cell as? AccentSliderCell)?.accentColor = accent
@@ -632,9 +662,11 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             guard let page = tabs.tabViewItem(at: tab.rawValue).view else { return false }
             return views.allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
         }
-        return fits([colorSchemePicker, previewBox], on: .appearance) && fits([vimSwitch, indentation], on: .edit)
+        return fits([colorSchemePicker, resetWindowSizeButton, previewBox], on: .appearance) && fits([vimSwitch, vimDoubleEscapeSwitch, indentation], on: .edit)
     }
+    func testResetWindowSize() { resetWindowSizeButton.performClick(nil) }
     func testToggleVim() { vimSwitch.performClick(nil) }
+    func testToggleVimDoubleEscape() { vimDoubleEscapeSwitch.performClick(nil) }
     func testSnippetsEditor() -> SnippetsEditor { snippetsEditor }
     func testTabCount() -> Int { tabs.numberOfTabViewItems }
     func testVimSwitchState() -> Bool { vimSwitch.state == .on }
@@ -664,7 +696,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         return NSApp.sendAction(#selector(changeLanguage), to: self, from: languagePicker)
     }
     #endif
-    @objc private func chooseStoragePressed() {
+    @objc func chooseStoragePressed() {
         guard let window else { return }
         let panel = NSOpenPanel(); panel.title = L("settings.chooseNotesFolder"); panel.message = L("settings.notesLocationHint")
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false; panel.canCreateDirectories = true
@@ -688,7 +720,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     func controlTextDidEndEditing(_ notification: Notification) {
         if let field = notification.object as? NSTextField, field === backupCount { backupChanged() }
     }
-    @objc private func restorePressed() {
+    @objc func restorePressed() {
         chooseRecoveryFile(folder: "trash", title: L("settings.restoreDeletedNote"))
     }
     @objc private func onboardingPressed() {
@@ -703,10 +735,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             }
         }
     }
-    @objc private func restoreBackupPressed() {
+    @objc func restoreBackupPressed() {
         chooseRecoveryFile(folder: "backups", title: L("settings.restorePreviousVersion"))
     }
-    @objc private func rebuildPressed() {
+    @objc func rebuildPressed() {
         guard let window else { return }
         let alert = NSAlert(); alert.messageText = L("settings.rebuildIndexTitle")
         alert.informativeText = L("settings.rebuildIndexMessage")
@@ -915,18 +947,66 @@ final class SnippetsEditor: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     }
 
     @objc private func buttonPressed() {
-        if buttons.selectedSegment == 0 {
-            rows.append(UserSnippet(trigger: "", content: "")); table.reloadData()
-            let row = rows.count - 1
-            table.selectRowIndexes([row], byExtendingSelection: false); table.scrollRowToVisible(row)
-            table.editColumn(0, row: row, with: nil, select: true)
-        } else if rows.indices.contains(table.selectedRow) {
-            let row = table.selectedRow
-            rows.remove(at: row); table.reloadData()
-            if !rows.isEmpty { table.selectRowIndexes([min(row, rows.count - 1)], byExtendingSelection: false) }
-            scheduleSave()
-        }
+        if buttons.selectedSegment == 0 { addSnippet() }
+        else { removeSnippet(at: table.selectedRow) }
+    }
+    func addSnippet() {
+        guard editable else { return }
+        rows.append(UserSnippet(trigger: "", content: "")); table.reloadData()
+        let row = rows.count - 1
+        table.selectRowIndexes([row], byExtendingSelection: false); table.scrollRowToVisible(row)
+        table.editColumn(0, row: row, with: nil, select: true)
         updateControls()
+    }
+    private func removeSnippet(at row: Int) {
+        guard editable, rows.indices.contains(row) else { return }
+        rows.remove(at: row); table.reloadData()
+        if !rows.isEmpty { table.selectRowIndexes([min(row, rows.count - 1)], byExtendingSelection: false) }
+        scheduleSave()
+        updateControls()
+    }
+    func removeSnippetFromCommand() {
+        chooseSnippet(title: L("settings.snippetRemove"), confirm: L("app.delete")) { [weak self] row in
+            self?.removeSnippet(at: row)
+        }
+    }
+    func insertPlaceholderFromCommand() {
+        chooseSnippet(title: L("settings.insertPlaceholder"), confirm: L("app.continue")) { [weak self] row in
+            guard let self, self.rows.indices.contains(row) else { return }
+            let selected = self.table.selectedRow
+            self.table.selectRowIndexes([row], byExtendingSelection: false)
+            self.table.scrollRowToVisible(row)
+            self.updateControls()
+            self.window?.makeFirstResponder(self.content)
+            if row != selected {
+                self.content.setSelectedRange(NSRange(location: (self.content.string as NSString).length, length: 0))
+            }
+            self.insertPlaceholder.performClick(nil)
+        }
+    }
+    private func chooseSnippet(title: String, confirm: String, _ choose: @escaping (Int) -> Void) {
+        guard editable, let window, window.attachedSheet == nil else { return }
+        let alert = NSAlert()
+        alert.messageText = title
+        guard !rows.isEmpty else {
+            alert.informativeText = L("settings.snippetsEmpty")
+            alert.beginSheetModal(for: window)
+            return
+        }
+        let picker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 280, height: 28), pullsDown: false)
+        for (index, snippet) in rows.enumerated() {
+            let line = snippet.content.split(whereSeparator: \.isNewline).first ?? ""
+            let preview = line.isEmpty ? "" : " · " + String(line.prefix(52))
+            picker.addItem(withTitle: "\(index + 1). @\(snippet.trigger)\(preview)")
+        }
+        picker.setAccessibilityLabel(L("settings.snippets"))
+        if rows.indices.contains(table.selectedRow) { picker.selectItem(at: table.selectedRow) }
+        alert.accessoryView = picker
+        alert.addButton(withTitle: confirm)
+        alert.addButton(withTitle: L("app.cancel"))
+        alert.beginSheetModal(for: window) { response in
+            if response == .alertFirstButtonReturn { choose(picker.indexOfSelectedItem) }
+        }
     }
 
     private func updateControls() {

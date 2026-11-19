@@ -40,7 +40,7 @@ open build/Inkflit.app
 
 應用程式常駐選單列，按 `Control + Option + Space` 顯示或收起筆記，切換至其他應用程式時自動收起。拖曳視窗頂部或工具列中央空白處可移動視窗。預設寬高比為 2:3，可自由調整大小。選單列或 `⌘,` 可開啟設定，調整快捷鍵、登入時啟動、儲存位置、主色、不透明度、背景模糊、程式碼配色與縮排；介面自動配合 macOS 淺色／深色模式。語言預設跟隨系統，也可選英語、簡體中文、繁體中文或日語。設定內附離線使用說明。
 
-喚起時，視窗會出現在滑鼠所在螢幕，並以視窗可移動範圍（螢幕可用尺寸減去視窗尺寸）的百分比記住上下左右的相對位置，重新啟動後也會還原；視窗大小也會記住。調整不透明度或背景模糊時，按住 `Option` 可吸附至每 5% 一格。
+喚起時，視窗會出現在滑鼠所在螢幕，並以視窗可移動範圍（螢幕可用尺寸減去視窗尺寸）的百分比記住上下左右的相對位置，重新啟動後也會還原；視窗大小也會記住，可在「設定 → 外觀 → 視窗大小」中重設。調整不透明度或背景模糊時，按住 `Option` 可吸附至每 5% 一格。
 
 ## 快捷鍵
 
@@ -58,7 +58,7 @@ open build/Inkflit.app
 | `⌘/` | 切換目前或選取行的註解 |
 | `⌘⇧F` | 搜尋所有目前筆記 |
 | `⌘⇧P` | 開啟命令面板，搜尋筆記操作與設定 |
-| `Esc` | 先回到 Vim 一般模式。一般模式下 0.6 秒內連按兩次收起視窗。關閉 Vim 時按一次即可。 |
+| `Esc` | 先回到 Vim 一般模式。一般模式下預設在 0.6 秒內連按兩次收起視窗。可在「設定 → 編輯」關閉「連按兩次 Esc 收起視窗」，改用單次按鍵。 |
 
 Vim 模式預設開啟，可在「設定 → 編輯」關閉。關閉後可直接輸入，`Esc` 收起視窗，使用 `⌘Z` / `⌘⇧Z` 復原和重做。
 
@@ -110,7 +110,13 @@ Inkflit 提供本機 stdio MCP 服務。Codex 可執行：
 codex mcp add inkflit -- /Applications/Inkflit.app/Contents/MacOS/Inkflit --mcp
 ```
 
-設定後重新啟動 MCP 用戶端。工具包括 `list_notes`、`search_notes`、`get_note`、`create_note`、`append_note`、`replace_note` 和 `delete_note`。使用從 1 開始、與畫面一致的 `index` 或穩定的 `id` 指定筆記；增刪筆記後編號會變化。追加及覆寫未指定目標時會新增筆記，追加時會按需要加入換行；刪除進入回收站。操作經由應用程式儲存並備份，必要時服務會啟動 Inkflit。
+設定後重新啟動 MCP 用戶端。工具包括 `list_notes`、`search_notes`、`get_note`、`get_current_note`、`analyze_note`、`preview_note_format`、`apply_note_format`、`create_note`、`append_note`、`replace_note` 和 `delete_note`。使用從 1 開始、與畫面一致的 `index` 或穩定的 `id` 指定筆記；增刪筆記後編號會變化。追加及覆寫未指定目標時會新增筆記，追加時會按需要加入換行；刪除進入回收站。操作經由應用程式儲存並備份，必要時服務會啟動 Inkflit。
+
+`list_notes` 支援 `limit`（1–100）、`cursor` 和 `include_content`。用 `{"limit":20,"include_content":false}` 分頁取得基本資料和首行摘要，再帶上傳回的 `next_cursor` 和原有選項繼續讀取，直到游標為 `null`。省略所有選項時仍會傳回所有筆記全文。
+
+`get_current_note` 讀取目前選取的筆記。`analyze_note` 依 `id` 或 `index` 傳回數學、清單、加總、平均值與計數的結構化結果。貨幣換算使用應用程式快取的匯率。
+
+`preview_note_format` 依筆記的 `id` 產生格式化預覽。有變更時會傳回統一格式的 `diff` 和 `preview_id`。檢視差異後，把同一個 `id` 和 `preview_id` 傳給 `apply_note_format`。若正文已變更，需要重新預覽。格式化只處理支援的程式碼區塊和數學運算式。
 
 其他 MCP 用戶端可使用 `{"mcpServers":{"inkflit":{"command":"/Applications/Inkflit.app/Contents/MacOS/Inkflit","args":["--mcp"]}}}`。每次寫入最多 1,000,000 個 UTF-16 程式碼單元。
 
@@ -127,3 +133,5 @@ open 'inkflit://note/get?index=1'
 ```
 
 追加及覆寫未指定目標時會新增；讀取及刪除必須指定目標。沒有回呼時，讀取會開啟筆記，列表與搜尋會開啟搜尋畫面。選用的 `x-success` / `x-error` 可指定 URL 編碼的自訂 scheme 回呼，`result` 參數包含 JSON；不接受 HTTP、HTTPS、file 或 Inkflit 回呼，JSON 上限為 48 KB。scheme 寫入及刪除會立即執行，請只開啟可信連結。
+
+用 `inkflit://note/open?id=…`（或 `?index=2`）直接開啟筆記。`inkflit://settings/appearance` 和 `inkflit://settings/snippets` 分別開啟外觀和片段設定。

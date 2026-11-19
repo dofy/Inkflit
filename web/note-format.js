@@ -1,4 +1,5 @@
 import { isolateHistory } from '@codemirror/commands';
+import { ChangeSet, Text } from '@codemirror/state';
 import { app } from './app.js';
 import { normalizeIndentation } from './code-editing.js';
 import { sameMathExpression, scopeAt, scopesOf } from './features.js';
@@ -106,6 +107,72 @@ export async function planNoteFormat(doc, codeIndentation) {
   return [...changes, ...(await Promise.all(code)).filter(Boolean)].sort((a, b) => a.from - b.from);
 }
 
+function diffLines(doc, first, last) {
+  const rows = [];
+  for (let number = first; number <= last; number++) {
+    const { text } = doc.line(number);
+    const newline = number < doc.lines;
+    if (text || newline) rows.push({ text, newline });
+  }
+  return rows;
+}
+
+function formatDiff(before, after, changes) {
+  const output = ['--- before', '+++ after'];
+  const equal = (a, b) => a.text === b.text && a.newline === b.newline;
+  changes.iterChangedRanges((fromA, toA, fromB, toB) => {
+    const startA = before.lineAt(fromA).number, startB = after.lineAt(fromB).number;
+    const oldLines = diffLines(before, startA, before.lineAt(toA).number);
+    const newLines = diffLines(after, startB, after.lineAt(toB).number);
+    let prefix = 0;
+    while (prefix < oldLines.length && prefix < newLines.length && equal(oldLines[prefix], newLines[prefix])) prefix++;
+    while (oldLines.length > prefix && newLines.length > prefix && equal(oldLines.at(-1), newLines.at(-1))) {
+      oldLines.pop(); newLines.pop();
+    }
+    const removed = oldLines.slice(prefix), added = newLines.slice(prefix);
+    const range = (start, length) => `${start + prefix - (length ? 0 : 1)},${length}`;
+    output.push(`@@ -${range(startA, removed.length)} +${range(startB, added.length)} @@`);
+    for (const [sign, lines] of [['-', removed], ['+', added]]) {
+      for (const { text, newline } of lines) {
+        output.push(sign + text);
+        if (!newline) output.push('\\ No newline at end of file');
+      }
+    }
+  });
+  return output.join('\n') + '\n';
+}
+
+// CodeMirror uses LF internally. Preserve the stored separators outside the
+// changed ranges, including CRLF notes imported without opening them first.
+function preserveLineEndings(source, doc, after, changes) {
+  if (!source.includes('\r')) return after.toString();
+  const separators = source.match(/\r\n?|\n/g) ?? [], offsets = [0];
+  for (let i = 0; i < separators.length; i++) offsets.push(offsets[i] + (separators[i].length - 1));
+  const parts = [];
+  let previous = 0;
+  changes.iterChanges((from, to, _fromB, _toB, inserted) => {
+    const first = doc.lineAt(from).number - 1, last = doc.lineAt(to).number - 1;
+    const start = from + offsets[first], end = to + offsets[last];
+    const separator = separators[first] ?? separators[first - 1] ?? '\n';
+    parts.push(source.slice(previous, start), inserted.toString().replaceAll('\n', separator));
+    previous = end;
+  });
+  parts.push(source.slice(previous));
+  return parts.join('');
+}
+
+export async function previewNoteFormat(content, indentation) {
+  const doc = Text.of(content.split(/\r\n?|\n/));
+  const plan = await planNoteFormat(doc, indentation);
+  if (!plan.length) return null;
+  const changes = ChangeSet.of(plan, doc.length), after = changes.apply(doc);
+  return { doc, changes, content: preserveLineEndings(content, doc, after, changes), diff: formatDiff(doc, after, changes) };
+}
+
+export function noteFormatTransaction(changes) {
+  return { changes, userEvent: 'input.format', annotations: [isolateHistory.of('full')] };
+}
+
 export async function formatCurrentNote() {
   const editor = app.editor;
   if (!editor) return;
@@ -113,6 +180,6 @@ export async function formatCurrentNote() {
   const changes = await planNoteFormat(doc, app.codeIndentation);
   // The user may have edited the note or switched away while formatting code.
   if (changes.length && app.editor === editor && editor.state.doc === doc) {
-    editor.dispatch({ changes, userEvent: 'input.format', annotations: isolateHistory.of('full') });
+    editor.dispatch(noteFormatTransaction(changes));
   }
 }

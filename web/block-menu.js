@@ -6,9 +6,9 @@ const items = [
   ['count','block.count','block.countDetail'],['code','block.code','block.codeDetail'],
   ['text','block.convertToText','block.convertToTextDetail'],['delete','block.delete','block.deleteDetail']
 ];
-let menu, view, active=null;
-export function initBlockMenu(element, getView) {
-  menu=element; view=getView;
+let menu, view, deleteShortcut, active=null;
+export function initBlockMenu(element, getView, shortcut) {
+  menu=element; view=getView; deleteShortcut=shortcut;
   document.addEventListener('mousedown', event=>{if(active && !menu.contains(event.target) && !event.target.closest?.('.block-type')) closeBlockMenu();});
 }
 export function blockMenuOpen() { return !!active; }
@@ -26,7 +26,7 @@ function render(query='') {
     const b=document.createElement('button'); b.type='button';b.className='block-menu-item'+(id==='delete'?' danger':'');b.setAttribute('role','option');b.setAttribute('aria-selected',String(index===active.index));
     const title=document.createElement('span'); title.textContent=name;
     const detail=document.createElement('small');detail.textContent=description;
-    const key=document.createElement('kbd');key.textContent=id==='delete'?'⌘⇧D':id;
+    const key=document.createElement('kbd');key.textContent=id==='delete'?deleteShortcut:id;
     b.append(title,detail,key);b.addEventListener('mousedown',e=>e.preventDefault()); b.addEventListener('click',()=>choose(id)); menu.append(b);
   });
   // Rebuilding the options can reset scrollTop. Keep the menu in place, then
@@ -47,9 +47,28 @@ function position(pos) {
   const top=Math.max(8,Math.min(coords.bottom-parent.top+4,parent.height-240));
   menu.style.left=`${left}px`;menu.style.top=`${top}px`;
 }
-export function openBlockMenu({from, scope=null, trigger=false, preserveSelection=false}) {
+export function openBlockMenu({from, scope=null, trigger=false, preserveSelection=false, prefix='', anchor=from}) {
   const editor=view(); if(!editor)return;
-  active={from,scope,trigger,preserveSelection,index:0,choices:[]};menu.hidden=false;render();position(from);
+  active={from,scope,trigger,preserveSelection,prefix,index:0,choices:[]};menu.hidden=false;render();position(anchor);
+}
+function blockInsertionPoint(state) {
+  const { doc, selection } = state, line = doc.lineAt(selection.main.head);
+  const scopes = scopesOf(doc);
+  if (scopes.some(scope => scope.global && scope.mode === 'code')) return null;
+  // A fence's delimiter lines are outside scopeAt(), but still belong to the
+  // block for insertion so its opening line never gains a nested block.
+  const scope = scopes.find(scope => !scope.global && scope.start <= line.number && line.number <= scope.end);
+  if (scope && !scope.closed) return null;
+  if (!scope && !line.text.trim()) return { from: line.from };
+  const end = scope ? doc.line(scope.end) : line;
+  return end.to === doc.length ? { from: end.to, prefix: '\n' } : { from: end.to + 1 };
+}
+export function canInsertBlock(editor) { return !!blockInsertionPoint(editor.state); }
+export function openInsertBlockMenu(editor) {
+  const insertion = blockInsertionPoint(editor.state);
+  if (!insertion) return false;
+  openBlockMenu({ ...insertion, anchor: editor.state.selection.main.head });
+  return true;
 }
 export function currentBlockScope(state) {
   const selection=state.selection.main;
@@ -115,8 +134,8 @@ function choose(mode) {
       anchor=doc.line(scope.start+1).from;
     }
   } else {
-    const insert=`${markerPrefix} ${mode}\n\n:::end\n`;
-    changes.push({from:current.from,to:triggerTo,insert});anchor=current.from+`${markerPrefix} ${mode}\n`.length;
+    const header=`${current.prefix}${markerPrefix} ${mode}\n`;
+    changes.push({from:current.from,to:triggerTo,insert:`${header}\n:::end\n`});anchor=current.from+header.length;
   }
   closeBlockMenu();
   const changeSet=editor.state.changes(changes);

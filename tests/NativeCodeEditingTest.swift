@@ -393,12 +393,26 @@ final class NativeCodeEditingTest {
         running?.focusNoteEditor { running?.testSettingsAccent() }
     }
     private func testSettingsAccent() {
+        guard let screen = app.window.screen else { fail("no screen for note window") }
+        let visible = screen.visibleFrame
+        let defaultSize = WindowPlacement.defaultSize(in: visible.size)
+        let defaults = UserDefaults.standard
+        let expectedScheme = ProcessInfo.processInfo.environment["INKFLIT_TEST_EXPECT_COLOR_SCHEME"]
+        if expectedScheme == nil {
+            let size = NSSize(width: defaultSize.width - 24, height: defaultSize.height - 32)
+            let anchor = WindowPlacement.Anchor(left: 0.25, right: 0.75, bottom: 0.75, top: 0.25)
+            app.window.setFrame(WindowPlacement.frame(size: size, anchor: anchor, in: visible), display: false)
+            guard defaults.dictionary(forKey: "windowSize") != nil else { fail("custom size was not saved") }
+        }
         app.showSettings()
         guard let settings=app.settingsController else { fail("settings unavailable") }
         settings.testSelectSettingsTab(1)
         guard settings.testEditingControlsVisible() else { fail("appearance picker or preview is clipped") }
-        if let expected = ProcessInfo.processInfo.environment["INKFLIT_TEST_EXPECT_COLOR_SCHEME"],
+        if let expected = expectedScheme,
            let scheme = WindowColorScheme(rawValue: expected) {
+            guard app.window.frame.size == defaultSize, defaults.object(forKey: "windowSize") == nil else {
+                fail("default window size was not restored after restart")
+            }
             verifyColorScheme(scheme, dark: scheme == .dark, settings: settings) { [self] in
                 guard settings.testSelectColorScheme(.system) else { fail("could not restore system appearance") }
                 print("PASS explicit Inkflit appearance survives a restart")
@@ -406,6 +420,13 @@ final class NativeCodeEditingTest {
             }
             return
         }
+        let previousAnchor = defaults.dictionary(forKey: "windowAnchor") as? [String: Double]
+        settings.testResetWindowSize()
+        guard app.window.frame.size == defaultSize, defaults.object(forKey: "windowSize") == nil,
+              defaults.dictionary(forKey: "windowAnchor") as? [String: Double] == previousAnchor else {
+            fail("reset did not restore the default size and preserve the window anchor")
+        }
+        print("PASS Reset restores default window size and preserves position")
         let systemDark = app.window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         for theme in ["orange", "blue", "green"] {
             guard settings.testSetAppearance(WindowAppearance(theme: theme, opacity: 85, blur: 75)),
@@ -958,14 +979,18 @@ final class NativeCodeEditingTest {
     }
     private func testVimToggle() {
         if ProcessInfo.processInfo.environment["INKFLIT_VIM_RESTART_TEST"] == "1" {
-            guard !app.vimEnabled() else { fail("disabled Vim preference was not restored") }
+            guard !app.vimEnabled(), !app.vimDoubleEscape() else { fail("Vim preferences were not restored") }
             key(0,"a"); later { [self] in content { [self] text in
                 expect(text,"a","direct input after restarting with Vim disabled")
-                print("PASS Vim preference restored at startup"); app.restoreInputSource(); exit(0)
+                app.updateVimEnabled(true)
+                testSingleEscapeInVim {
+                    print("PASS single Escape preference applies after restart")
+                    self.app.restoreInputSource(); exit(0)
+                }
             } }
             return
         }
-        guard app.vimEnabled() else { fail("Vim must be enabled by default") }
+        guard app.vimEnabled(), app.vimDoubleEscape() else { fail("Vim and double Escape must be enabled by default") }
         app.showSettings()
         guard let settings=app.settingsController else { fail("settings missing") }
         settings.testSelectSettingsTab(2)
@@ -1053,14 +1078,41 @@ final class NativeCodeEditingTest {
             later { [self] in
                 guard !app.window.isVisible else { fail("two quick Escapes did not hide the Vim window") }
                 print("PASS native Vim Normal Escape waits for two presses within 600 ms")
-                app.updateVimEnabled(false)
-                focusNoteEditor { [self] in
-                    waitForJavaScript("document.getElementById('mode').hidden") { [self] in
+                app.showSettings()
+                guard let settings = app.settingsController else { fail("settings missing") }
+                settings.testSelectSettingsTab(2)
+                settings.testToggleVimDoubleEscape()
+                guard !app.vimDoubleEscape() else { fail("single Escape preference was not saved") }
+                settings.window?.orderOut(nil)
+                testSingleEscapeInVim { [self] in
+                    app.updateVimEnabled(false)
+                    focusNoteEditor { [self] in
+                        waitForJavaScript("document.getElementById('mode').hidden") { [self] in
+                            key(53, "\u{1b}")
+                            later { [self] in
+                                guard !app.window.isVisible else { fail("Escape did not hide the window with Vim disabled") }
+                                print("PASS native single Escape hides the window with Vim off")
+                                app.restoreInputSource(); exit(0)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func testSingleEscapeInVim(_ completion: @escaping () -> Void) {
+        focusNoteEditor { [self] in
+            waitForJavaScript("!document.getElementById('mode').hidden && document.getElementById('mode').textContent === 'NORMAL'") { [self] in
+                key(34, "i")
+                waitForJavaScript("document.getElementById('mode').textContent === 'INSERT'") { [self] in
+                    key(53, "\u{1b}")
+                    waitForJavaScript("document.getElementById('mode').textContent === 'NORMAL'") { [self] in
+                        guard app.window.isVisible else { fail("Escape from Insert also hid the window") }
                         key(53, "\u{1b}")
                         later { [self] in
-                            guard !app.window.isVisible else { fail("Escape did not hide the window with Vim disabled") }
-                            print("PASS native single Escape hides the window with Vim off")
-                            app.restoreInputSource(); exit(0)
+                            guard !app.window.isVisible else { fail("single Escape in Normal mode did not hide the window") }
+                            print("PASS single Escape in Normal mode when double Escape is off")
+                            completion()
                         }
                     }
                 }
@@ -1072,6 +1124,10 @@ final class NativeCodeEditingTest {
         running?.focusNoteEditor { running?.testListIndentation(alreadySelected: true) }
     }
     static func testCursorColors(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app)
+        running?.focusNoteEditor { running?.checkCursorColors() }
+    }
+    private func checkCursorColors() {
         let script = """
         (() => {
           const host=document.createElement('div'); host.className='cm-editor cm-focused';
@@ -1087,20 +1143,37 @@ final class NativeCodeEditingTest {
             if(b.backgroundColor!==cursor || b.color!==paper || c.borderLeftColor!==cursor) errors.push(theme+': focused cursor mismatch');
             block.style.color='transparent'; if(getComputedStyle(block).color!=='rgba(0, 0, 0, 0)') errors.push(theme+': partial cursor text must stay transparent');
             block.style.color='rgb(1, 2, 3)';
-            host.classList.remove('cm-focused'); const inactive=getComputedStyle(block);
-            if(inactive.outlineColor!==cursor || inactive.backgroundColor!=='rgba(0, 0, 0, 0)') errors.push(theme+': inactive cursor mismatch');
-            host.classList.add('cm-focused');
           }
           host.remove(); return errors;
         })()
         """
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            app.web.evaluateJavaScript(script) { result, error in
-                guard error == nil, let errors = result as? [String], errors.isEmpty else {
-                    fputs("FAIL native cursor colors: \(String(describing: error)) \(String(describing: result))\n", stderr); exit(1)
+        app.web.evaluateJavaScript(script) { [self] result, error in
+            guard error == nil, let errors = result as? [String], errors.isEmpty else {
+                fail("native cursor colors: \(String(describing: error)) \(String(describing: result))")
+            }
+            print("PASS native cursor colors for all three themes")
+            waitForJavaScript("document.querySelector('.cm-editor.cm-focused .cm-fat-cursor')?.textContent === 'h'") { [self] in
+                checkCursorReopen()
+            }
+        }
+    }
+    private func checkCursorReopen() {
+        app.hideWindow()
+        let hiddenCursor = "document.querySelector('.cm-editor:not(.cm-focused) .cm-fat-cursor')?.getClientRects().length === 0"
+        waitForJavaScript(hiddenCursor) { [self] in
+            guard !app.window.isVisible else { fail("note window did not hide") }
+            focusNoteEditor { [self] in
+                waitForJavaScript("""
+                    (() => {
+                        const cursor = document.querySelector('.cm-editor.cm-focused .cm-fat-cursor');
+                        return !!cursor && cursor.textContent === 'h' && cursor.getBoundingClientRect().width > 0
+                            && getComputedStyle(cursor).outlineStyle === 'none'
+                            && getComputedStyle(cursor.parentElement).animationName.startsWith('cm-blink');
+                    })()
+                    """) { [self] in
+                    print("PASS reopening restores the blinking Vim cursor without an outline or movement")
+                    app.restoreInputSource(); exit(0)
                 }
-                print("PASS native cursor colors for all three themes")
-                app.restoreInputSource(); exit(0)
             }
         }
     }

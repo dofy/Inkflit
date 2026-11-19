@@ -268,11 +268,14 @@ export function analyze(text, rates = null) {
     const joined=content.join('\n');
     const words=typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter(undefined,{granularity:'word'}).segment(joined)].filter(x=>x.isWordLike).length : (joined.match(/[\p{L}\p{N}]+/gu)||[]).length;
     const chars=typeof Intl.Segmenter === 'function' ? [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(joined)].length : Array.from(joined).length;
-    return {mode, results, summary:t('block.countSummary').replace('{items}',content.length).replace('{words}',words).replace('{chars}',chars)};
+    return {mode, results, stats: {items: content.length, words, chars}, summary:t('block.countSummary').replace('{items}',content.length).replace('{words}',words).replace('{chars}',chars)};
   }
   const total=values.reduce((a,b)=>a+b,0);
   const summary=mode==='sum' ? t('block.sumSummary') : mode==='avg' ? t('block.averageSummary') : '';
-  return {mode,results,summary:summary.replace('{total}',mode==='avg' ? (values.length ? formatNumber(total/values.length) : '—') : formatNumber(total)).replace('{count}',values.length)};
+  const count = values.length, average = count ? total / count : null;
+  const stats = mode === 'sum' ? { count, total: Number.isFinite(total) ? total : null }
+    : mode === 'avg' ? { count, average: Number.isFinite(average) ? average : null } : undefined;
+  return {mode,results,summary:summary.replace('{total}',mode==='avg' ? (count ? formatNumber(average) : '—') : formatNumber(total)).replace('{count}',count), ...(stats && {stats})};
 }
 // Lines (1-based) that belong to blocks inside a whole-note mode, markers
 // included. The note's own mode leaves them to their block.
