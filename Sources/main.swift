@@ -145,9 +145,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         NSApp.setActivationPolicy(.accessory)
         #if INKFLIT_NATIVE_TEST
-        if isolatedTest, let appearance = ProcessInfo.processInfo.environment["INKFLIT_TEST_APPEARANCE"] {
-            NSApp.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
-        }
         if isolatedTest, let value = ProcessInfo.processInfo.environment["INKFLIT_NATIVE_INDENT"] {
             UserDefaults.standard.set(value, forKey: "codeIndentation")
         }
