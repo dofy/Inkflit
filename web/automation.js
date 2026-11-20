@@ -166,7 +166,7 @@ export async function notesOperation(request) {
     if (position === 'first') insertion = 0;
     else if (Number.isInteger(position) && position >= 1 && position <= state.notes.length + 1) insertion = position - 1;
     else if (position !== undefined && position !== 'last') throw new Error('Position must be first, last, or an insertion index from 1 through note count + 1');
-    note = newNote(); note.content = request.content; state.notes.splice(insertion, 0, note); refreshNav();
+    note = newNote(request.content); state.notes.splice(insertion, 0, note); refreshNav();
   } else {
     const separator = action === 'append' && note.content && request.content && !note.content.endsWith('\n') && !request.content.startsWith('\n') ? '\n' : '';
     const text = action === 'append' ? note.content + separator + request.content : request.content;

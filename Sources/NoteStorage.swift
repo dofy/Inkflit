@@ -44,6 +44,12 @@ private struct NoteIndex: Codable {
     var notes: [Entry]
     var selected: String
     var saveID: UUID?
+
+    init(snapshot: NoteSnapshot, saveID: UUID? = nil) {
+        notes = snapshot.notes.map { Entry(id: $0.id, created: $0.created, updated: $0.updated) }
+        selected = snapshot.selected
+        self.saveID = saveID
+    }
 }
 
 private struct NoteSave: Codable {
@@ -111,8 +117,8 @@ enum NoteFiles {
         for name in ["notes", "backups", "trash"] { try files.createDirectory(at: root.appendingPathComponent(name), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700]) }
     }
     static func writeIndex(_ snapshot: NoteSnapshot, root: URL) throws {
-        let index = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, created: $0.created, updated: $0.updated) }, selected: snapshot.selected)
-        try JSONEncoder().encode(index).write(to: root.appendingPathComponent("index.json"), options: .atomic)
+        let data = try JSONEncoder().encode(NoteIndex(snapshot: snapshot))
+        try data.write(to: index(root), options: .atomic)
     }
     // Install into an existing user-selected directory without replacing unrelated files.
     static func install(_ stage: URL, in directory: URL) throws {
@@ -277,9 +283,7 @@ enum NoteFiles {
         let oldByID = Dictionary(uniqueKeysWithValues: old.notes.map { ($0.id, $0) })
         let newIDs = Set(snapshot.notes.map(\.id))
         let beforeIndex = try Data(contentsOf: index(root))
-        let next = NoteIndex(notes: snapshot.notes.map { .init(id: $0.id, created: $0.created, updated: $0.updated) },
-                             selected: snapshot.selected, saveID: UUID())
-        let afterIndex = try JSONEncoder().encode(next)
+        let afterIndex = try JSONEncoder().encode(NoteIndex(snapshot: snapshot, saveID: UUID()))
         let deletions = old.notes.filter { !newIDs.contains($0.id) }.map { NoteSave.Deletion(note: $0, archiveID: UUID()) }
         var bodies: [NoteSave.Body] = []
         for note in snapshot.notes {

@@ -18,10 +18,8 @@ setup_native_test() {
   test_bundle_id="local.seven.inkflit.$id_prefix.$(basename "$test_dir" | tr -cd '[:alnum:]')"
   ditto build/Inkflit.app "$test_app"
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $test_bundle_id" "$test_app/Contents/Info.plist"
-  swiftc -D INKFLIT_NATIVE_TEST \
-    Sources/main.swift Sources/Automation.swift Sources/Settings.swift \
-    Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift \
-    tests/NativeCodeEditingTest.swift -o "$test_app/Contents/MacOS/Inkflit" \
+  swiftc -D INKFLIT_NATIVE_TEST Sources/*.swift tests/NativeCodeEditingTest.swift \
+    -o "$test_app/Contents/MacOS/Inkflit" \
     -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
   codesign --force --sign - --timestamp=none "$test_app"
 }

@@ -102,14 +102,34 @@ function makeState(content) {
   return position === initial.selection.main.head ? initial : initial.update({ selection: { anchor: position } }).state;
 }
 
-// Show note `id`, keeping the outgoing note's editor state for its undo history.
-export function changeEditor(id) {
+function unmountEditor(keepHistory) {
   closeBlockMenu(); closeLanguageMenu();
-  if (app.editor) { closeCompletion(app.editor); app.editorStates.set(app.state.selected, app.editor.state); app.editor.destroy(); }
+  if (!app.editor) return;
+  closeCompletion(app.editor);
+  if (keepHistory) app.editorStates.set(app.state.selected, app.editor.state);
+  app.editor.destroy();
+  app.editor = null;
+}
+
+function mountEditor(id) {
   app.state.selected = id;
   app.editor = new EditorView({ parent: $('editor'), state: app.editorStates.get(id) || makeState(current().content) });
   bindVimMode();
   refreshNav(); refreshInsights(); app.editor.focus();
+}
+
+// Navigation retains each note's undo history.
+export function changeEditor(id) {
+  unmountEditor(true);
+  mountEditor(id);
+}
+
+export function loadNoteSnapshot(snapshot) {
+  // Reloaded notes may reuse IDs with different content after rebuilding the index.
+  unmountEditor(false);
+  app.editorStates.clear();
+  app.state = snapshot;
+  mountEditor(snapshot.selected);
 }
 
 function bindVimMode() {

@@ -341,6 +341,36 @@
     "zh-Hant": "設定筆記視窗的主色調",
     "ja": "ノートウインドウの色を選択"
   },
+  "settings.editorTypography": {
+    "en": "Editor font",
+    "zh-Hans": "编辑器字体",
+    "zh-Hant": "編輯器字型",
+    "ja": "エディタのフォント"
+  },
+  "settings.editorTypographyDetail": {
+    "en": "Font and size for note text",
+    "zh-Hans": "设置笔记文字的字体和字号",
+    "zh-Hant": "設定筆記文字的字型與大小",
+    "ja": "ノート本文のフォントとサイズ"
+  },
+  "settings.editorFont": {
+    "en": "Editor font family",
+    "zh-Hans": "编辑器字体",
+    "zh-Hant": "編輯器字型",
+    "ja": "エディタのフォント名"
+  },
+  "settings.editorFontSize": {
+    "en": "Editor font size",
+    "zh-Hans": "编辑器字号",
+    "zh-Hant": "編輯器字型大小",
+    "ja": "エディタの文字サイズ"
+  },
+  "settings.editorFontDefault": {
+    "en": "Default (monospaced)",
+    "zh-Hans": "默认（等宽）",
+    "zh-Hant": "預設（等寬）",
+    "ja": "既定（等幅）"
+  },
   "settings.changesApplyImmediately": {
     "en": "Changes apply immediately.",
     "zh-Hans": "更改后立即应用。",

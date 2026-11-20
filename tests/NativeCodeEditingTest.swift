@@ -1799,12 +1799,32 @@ final class NativeCodeEditingTest {
                             print("PASS native location switch, conflict and missing source protection")
                             print("PASS native backup settings and recovery control layout")
                             print("PASS native edit, delete and restore")
-                            app.restoreInputSource(); exit(0)
+                            testReloadedEditorSnapshot()
                             }
                         }
                     }
                 }
             }
+        }
+    }
+    private func testReloadedEditorSnapshot() {
+        let before = NoteSnapshot(notes: [StoredNote(id: "first", content: "Old body", updated: "1")], selected: "first")
+        let after = NoteSnapshot(notes: [StoredNote(id: "first", content: "Rebuilt body", updated: "2")], selected: "first")
+        guard let previous = try? JSONEncoder().encode(before), let rebuilt = try? JSONEncoder().encode(after) else {
+            fail("could not encode note reload fixtures")
+        }
+        app.web.callAsyncJavaScript("""
+            const body = () => document.querySelector('.cm-content .cm-line')?.textContent;
+            window.loadNotesBase64(previous);
+            const oldBody = body();
+            window.loadNotesBase64(rebuilt);
+            return [oldBody, body()];
+            """, arguments: ["previous": previous.base64EncodedString(), "rebuilt": rebuilt.base64EncodedString()], in: nil, in: .page) { [self] result in
+            guard case .success(let value) = result, value as? [String] == ["Old body", "Rebuilt body"] else {
+                fail("reloaded snapshot did not replace the editor content: \(result)")
+            }
+            print("PASS native snapshot reload replaces cached editor content")
+            app.restoreInputSource(); exit(0)
         }
     }
     private func testTypographyVim(_ index: Int) {

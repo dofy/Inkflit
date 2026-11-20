@@ -6,7 +6,8 @@ APP="$PWD/build/Inkflit.app"
 # The version lives in package.json only.
 VERSION="$(node -p "require('./package.json').version")"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
-swiftc -target arm64-apple-macos13.0 -O -whole-module-optimization Sources/main.swift Sources/Automation.swift Sources/Settings.swift Sources/NoteStorage.swift Sources/Localization.swift Sources/Onboarding.swift -o "$APP/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+swiftc -target arm64-apple-macos13.0 -O -whole-module-optimization Sources/*.swift \
+  -o "$APP/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 cp Resources/Inkflit.icns "$APP/Contents/Resources/Inkflit.icns"
 python3 scripts/build-help.py
 rm -f "$APP/Contents/Resources/"Help*.html

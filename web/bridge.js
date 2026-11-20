@@ -1,9 +1,9 @@
 import { t, setLanguage, lang } from './i18n.js';
 import { app, $, newNote, resolveNativeRequest } from './app.js';
-import { persist, saveResult, snapshotForFlush } from './persistence.js';
-import { changeEditor, setVimEnabled, refreshBlockResults, prepareToHide } from './editor-view.js';
+import { saveResult, snapshotForFlush } from './persistence.js';
+import { loadNoteSnapshot, setVimEnabled, refreshBlockResults, prepareToHide } from './editor-view.js';
 import { applyToolbarLanguage } from './toolbar.js';
-import { select } from './notes.js';
+import { addGuideNotes, createNote, select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
 import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandState } from './palettes.js';
 import { notesOperation } from './automation.js';
@@ -47,8 +47,14 @@ function loadNotesBase64(value) {
   try {
     const loaded = value ? JSON.parse(decodeBase64(value)) : null;
     if (loaded && (!Array.isArray(loaded.notes) || !loaded.notes.length || !loaded.notes.every(n => typeof n.id === 'string' && typeof n.content === 'string' && typeof n.updated === 'string') || !loaded.notes.some(n => n.id === loaded.selected))) throw new Error(t('error.invalidNotesFile'));
-    if (loaded) { delete loaded.timer; app.state = loaded; } else { const note = newNote(); app.state = { notes: [note], selected: note.id }; }
-    changeEditor(app.state.selected); $('save').textContent = ''; $('save').title = ''; $('save').className = '';
+    if (loaded) {
+      delete loaded.timer;
+      loadNoteSnapshot(loaded);
+    } else {
+      const note = newNote();
+      loadNoteSnapshot({ notes: [note], selected: note.id });
+    }
+    $('save').textContent = ''; $('save').title = ''; $('save').className = '';
   } catch (error) { $('save').className = 'error'; $('save').textContent = t('error.readFailed') + error.message; $('save').title = $('save').textContent; }
 }
 
@@ -71,16 +77,14 @@ export function installBridge() {
     // A note restored from backups or the Trash goes last.
     restoreNoteBase64: value => {
       if (!app.state) throw new Error('No note state');
-      const note = newNote(); note.content = decodeBase64(value); app.state.notes.push(note); changeEditor(note.id); persist(true);
+      createNote(decodeBase64(value));
     },
     // Regenerated guide notes go first and open the welcome note.
     addOnboardingNotesBase64: value => {
       if (!app.state) throw new Error('No note state');
       const contents = JSON.parse(decodeBase64(value));
       if (!Array.isArray(contents) || !contents.length || !contents.every(text => typeof text === 'string' && text.trim())) throw new Error('Invalid guide notes');
-      const notes = contents.map(content => ({ ...newNote(), content }));
-      app.state.notes.unshift(...notes); changeEditor(notes[0].id); persist(true);
-      return notes.length;
+      return addGuideNotes(contents);
     },
     // Window and panels
     focusEditor: () => { app.editor?.focus(); },
@@ -101,6 +105,16 @@ export function installBridge() {
     setVimDoubleEscape,
     setCodeIndentation: value => { app.codeIndentation = normalizeIndentation(value); },
     setCodeTheme: value => { codeTheme = value; applyColors(); },
+    setEditorTypography: (family, size) => {
+      const style = document.documentElement.style;
+      const font = family ? `${CSS.escape(family)}, monospace` : '';
+      const fontSize = `${size}px`;
+      if (style.getPropertyValue('--editor-font-family') === font && style.getPropertyValue('--editor-font-size') === fontSize) return;
+      if (font) style.setProperty('--editor-font-family', font);
+      else style.removeProperty('--editor-font-family');
+      style.setProperty('--editor-font-size', fontSize);
+      app.editor?.requestMeasure();
+    },
     setUIAppearance: (theme, value, scheme = colorScheme) => {
       uiTheme = theme; opacity = value; colorScheme = scheme; applyColors();
     },

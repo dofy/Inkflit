@@ -4,7 +4,22 @@ import { changeEditor } from './editor-view.js';
 
 // Notes are ordered like pages: the first is the oldest, new notes go last.
 export function select(id) { if (!app.state || app.state.selected === id) return; changeEditor(id); persist(true); }
-export function createNote() { if (!app.state) return; const note = newNote(); app.state.notes.push(note); changeEditor(note.id); persist(true); }
+export function createNote(content = '') {
+  if (!app.state) return;
+  const note = newNote(content);
+  app.state.notes.push(note);
+  changeEditor(note.id);
+  persist(true);
+}
+
+export function addGuideNotes(contents) {
+  const notes = contents.map(content => newNote(content));
+  app.state.notes.unshift(...notes);
+  changeEditor(notes[0].id);
+  persist(true);
+  return notes.length;
+}
+
 export function navigate(direction) {
   if (!app.state) return;
   const index = app.state.notes.findIndex(note => note.id === app.state.selected), next = index + direction;

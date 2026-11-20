@@ -143,6 +143,47 @@ enum AutomationUILink: Equatable {
     }
 }
 
+// Decodes the note-operation links used by the app's Scheme entry point.
+struct AutomationNoteLink {
+    let action: String
+    let request: [String: Any]
+    let callbacks: [String: URL]
+
+    static func parse(_ components: URLComponents) -> Self? {
+        let host = (components.host ?? "").lowercased()
+        let path = components.path.split(separator: "/")
+        let action: String
+        if host == "note" || host == "notes" {
+            guard path.count == 1 else { return nil }
+            action = path[0].lowercased()
+        } else {
+            guard path.isEmpty else { return nil }
+            action = host
+        }
+        guard ["list", "get", "search", "create", "append", "replace", "delete"].contains(action) else { return nil }
+        let items = components.queryItems ?? []
+        guard Set(items.map(\.name)).count == items.count else { return nil }
+        var callbacks: [String: URL] = [:]
+        var request: [String: Any] = ["action": action]
+        for item in items {
+            guard let value = item.value else { return nil }
+            switch item.name {
+            case "x-success", "x-error":
+                guard let callback = URL(string: value), let scheme = callback.scheme?.lowercased(),
+                      !["http", "https", "file", "inkflit"].contains(scheme) else { return nil }
+                callbacks[item.name] = callback
+            case "position" where value == "first" || value == "last", "id", "content", "query":
+                request[item.name] = value
+            case "index", "position":
+                guard let number = Int(value), number > 0 else { return nil }
+                request[item.name] = number
+            default: return nil
+            }
+        }
+        return Self(action: action, request: request, callbacks: callbacks)
+    }
+}
+
 enum InkflitMCP {
     private struct Tool {
         let name: String

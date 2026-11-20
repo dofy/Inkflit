@@ -6,23 +6,12 @@ import { highlightTree, classHighlighter } from '@lezer/highlight';
 import { openBlockMenu } from './block-menu.js';
 import { openLanguageMenu } from './language-menu.js';
 import { currentRates, currencyCodes, refreshRates } from './rates.js';
-import { isChecklistItem, checklistToggleChange, taskMarker } from './tasks.js';
+import { isChecklistItem, taskMarker, TaskCheckbox } from './tasks.js';
 export { setRateListener } from './rates.js';
 class Result extends WidgetType {
   constructor(text) { super(); this.text=text; }
   eq(other) { return this.text===other.text; }
   toDOM() { const el=document.createElement('span'); el.className='calculation-result'; el.textContent=' '+this.text; return el; }
-}
-class ListBox extends WidgetType {
-  constructor(pos) { super(); this.pos=pos; }
-  eq(other) { return this.pos===other.pos; }
-  toDOM(view) {
-    const b=document.createElement('button'); b.type='button'; b.tabIndex=-1; b.className='task-checkbox list-checkbox'; b.setAttribute('role','checkbox'); b.setAttribute('aria-checked','false'); b.setAttribute('aria-label',t('editor.markComplete'));
-    b.addEventListener('mousedown', e=>{e.preventDefault();e.stopPropagation();});
-    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const line=view.state.doc.lineAt(this.pos);view.dispatch({changes:checklistToggleChange(view.state,line),userEvent:'input.task.toggle'});view.focus();});
-    return b;
-  }
-  ignoreEvent() { return false; }
 }
 const pendingLanguages=new Set();
 const blockNames={list:'block.checklist',math:'block.math',sum:'block.sum',avg:'block.average',count:'block.count',code:'block.code'};
@@ -119,7 +108,8 @@ function decorate(view) {
     const line=doc.line(n);
     if (!isChecklistItem(line) || taskMarker(line)) continue;
     const indent=/^\s*/.exec(line.text)[0].length;
-    decorations.push(Decoration.widget({widget:new ListBox(line.from+indent),side:-1}).range(line.from+indent));
+    const pos = line.from + indent;
+    decorations.push(Decoration.widget({widget:new TaskCheckbox(pos, false, true),side:-1}).range(pos));
   }
   return Decoration.set(decorations,true);
 }

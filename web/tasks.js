@@ -23,18 +23,22 @@ export function checklistToggleChange(state, line) {
   return marker ? toggleMarker(state, marker.from) : { from: line.from + /^\s*/.exec(line.text)[0].length, insert: '[x] ' };
 }
 
-class TaskCheckbox extends WidgetType {
-  constructor(position, checked) { super(); this.position = position; this.checked = checked; }
-  eq(other) { return this.position === other.position && this.checked === other.checked; }
+export class TaskCheckbox extends WidgetType {
+  constructor(position, checked, implicit = false) {
+    super(); this.position = position; this.checked = checked; this.implicit = implicit;
+  }
+  eq(other) { return this.position === other.position && this.checked === other.checked && this.implicit === other.implicit; }
   toDOM(view) {
     const button = document.createElement('button');
     button.className = 'task-checkbox'; button.type = 'button'; button.tabIndex = -1;
+    if (this.implicit) button.classList.add('list-checkbox');
     button.setAttribute('aria-label', this.checked ? t('editor.markIncomplete') : t('editor.markComplete'));
     button.setAttribute('aria-checked', String(this.checked)); button.setAttribute('role', 'checkbox');
     button.addEventListener('mousedown', event => { event.preventDefault(); event.stopPropagation(); });
     button.addEventListener('click', event => {
       event.preventDefault(); event.stopPropagation();
-      const changes = toggleMarker(view.state, this.position);
+      const state = view.state;
+      const changes = this.implicit ? checklistToggleChange(state, state.doc.lineAt(this.position)) : toggleMarker(state, this.position);
       if (!changes) return;
       view.dispatch({changes, userEvent:'input.task.toggle'});
       view.focus();

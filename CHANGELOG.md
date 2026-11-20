@@ -5,10 +5,15 @@
 ### Added
 
 - Toggle snippet groups and individual built-in or custom snippets in Settings without deleting them.
+- Choose an installed font and size for the note editor in Appearance settings.
 
 ### Changed
 
 - Keep the scientific constant suggestions and placeholder picker focused on frequently used constants.
+- Refactor window and snippet settings into dedicated modules, move URL parsing into automation, and consolidate note creation and index generation.
+- Tint inline code with the selected interface palette.
+- Put Launch at login first in General settings.
+- Use theme-colored circular task markers in checklist blocks and Markdown tasks.
 
 ### Fixed
 
@@ -19,6 +24,7 @@
 - Show a no-match message when punctuation in a `/` search has no match. Backspace can return to the previous matches.
 - Temporarily use an ASCII keyboard while searching feature block and snippet suggestions, then restore the previous input source.
 - Show a no-match message for `@` searches and keep the English input source active until the search ends.
+- Reload note contents in the editor after rebuilding the note index.
 
 ## [0.2.2] - 2026-11-19
 

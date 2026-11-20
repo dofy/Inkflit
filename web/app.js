@@ -12,7 +12,7 @@ export const app = {
 
 export const $ = id => document.getElementById(id);
 export const current = () => app.state.notes.find(note => note.id === app.state.selected);
-export const newNote = () => { const now = new Date().toISOString(); return { id: crypto.randomUUID(), content: '', created: now, updated: now }; };
+export const newNote = (content = '') => { const now = new Date().toISOString(); return { id: crypto.randomUUID(), content, created: now, updated: now }; };
 
 // The native app's message handler, absent when the page runs in a browser.
 export const nativeHandler = () => window.webkit?.messageHandlers?.inkflit;
