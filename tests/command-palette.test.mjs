@@ -45,3 +45,17 @@ test('contextual editor commands appear only where they can run', async () => {
     app.editor = null;
   }
 });
+
+test('the hide command is available only when the window is unpinned', async () => {
+  const { EditorState } = await import('@codemirror/state');
+  const canHide = () => availableCommands().some(row => row.id === 'hide-window');
+  app.editor = { state: EditorState.create() };
+  try {
+    assert.equal(canHide(), true);
+    app.windowPinned = true;
+    assert.equal(canHide(), false);
+  } finally {
+    app.editor = null;
+    app.windowPinned = false;
+  }
+});

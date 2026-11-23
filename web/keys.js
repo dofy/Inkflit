@@ -28,7 +28,7 @@ export function setVimDoubleEscape(enabled) {
   vimDoubleEscape = enabled;
   clearEscapeHint();
 }
-function clearEscapeHint() {
+export function clearEscapeHint() {
   if (!escapeDeadline) return;
   escapeDeadline = 0;
   clearTimeout(escapeTimer);
@@ -86,7 +86,7 @@ function escapeKey(event) {
   if (pending || endedStops) clearEscapeHint();
   if (pending) return;
   consume(event);
-  if (endedStops) return;
+  if (endedStops || app.windowPinned) return;
   if (app.vimEnabled && vimState && vimDoubleEscape) vimEscapeToHide();
   else runCommand('hide-window');
 }

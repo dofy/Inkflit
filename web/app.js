@@ -5,6 +5,7 @@ export const app = {
   editor: null,             // the EditorView of the selected note
   editorStates: new Map(),  // note id -> EditorState, keeps undo history per note
   vimEnabled: true,
+  windowPinned: false,
   codeIndentation: 'spaces2',
   keyStartDoc: null,        // document before the current keystroke (Vim undo grouping)
   mergeFirstInsert: false,

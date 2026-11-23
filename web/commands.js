@@ -65,10 +65,18 @@ const editorCommands = [
 const native = (id, label, aliases, group = setting, nativeShortcut = false) =>
   ({ id, label, aliases, group, nativeShortcut, run: () => nativeCommand(id) });
 const nativeCommands = [
-  { ...native('hide-window', 'palette.hideWindow', ['hide close window', '关闭窗口 立即收起窗口', '關閉視窗 立即收起視窗'], windowGroup, true), run: () => {
+  { ...native('hide-window', 'palette.hideWindow', ['hide close window', '关闭窗口 立即收起窗口', '關閉視窗 立即收起視窗'], windowGroup, true), when: () => !app.windowPinned, run: () => {
     if (nativeHandler()) nativeCommand('hide-window');
     else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
   } },
+  { id: 'toggle-window-pin', label: () => app.windowPinned ? 'palette.unpinWindow' : 'palette.pinWindow',
+    aliases: ['toggle pin unpin keep window open', '防止窗口收起 图钉', '防止視窗收起 圖釘', 'ウインドウを開いたまま'], group: windowGroup,
+    run: editor => {
+      const pinned = !app.windowPinned;
+      window.setWindowPinned(pinned);
+      nativeCommand('pin-window', pinned ? 'on' : 'off');
+      editor.focus();
+    } },
   native('quit', 'app.quit', ['quit exit inkflit'], windowGroup, true),
   native('settings', 'palette.openSettings', ['settings preferences'], setting, true),
   native('toggle-vim', () => app.vimEnabled ? 'palette.disableVim' : 'palette.enableVim', ['vim mode toggle']),

@@ -20,6 +20,7 @@ import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
 import { snippets } from './snippet-completion.js';
 import { closeCompletion, completionStatus } from '@codemirror/autocomplete';
+import { cancelPageSlide, replaceNotePage } from './page-slide.js';
 
 // Markdown tokens that defaultHighlightStyle colors for light mode only
 // (#219 dark blue): give them theme colors. Scoped to Markdown, so code
@@ -61,6 +62,7 @@ const plainEnter = Prec.highest(keymap.of([{ key: 'Enter', run: view => { const 
 export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vim?.insertMode;
 
 export function prepareToHide() {
+  cancelPageSlide();
   const editor = app.editor;
   if (!editor) return;
   closeBlockMenu();
@@ -119,13 +121,16 @@ function mountEditor(id) {
 }
 
 // Navigation retains each note's undo history.
-export function changeEditor(id) {
-  unmountEditor(true);
-  mountEditor(id);
+export function changeEditor(id, direction = 0) {
+  replaceNotePage(direction, () => {
+    unmountEditor(true);
+    mountEditor(id);
+  });
 }
 
 export function loadNoteSnapshot(snapshot) {
   // Reloaded notes may reuse IDs with different content after rebuilding the index.
+  cancelPageSlide();
   unmountEditor(false);
   app.editorStates.clear();
   app.state = snapshot;

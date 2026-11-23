@@ -258,7 +258,7 @@ final class NativeCodeEditingTest {
     private func testToolbarCursor(_ index: Int, original: CGPoint) {
         guard AXIsProcessTrusted() else { print("SKIP native cursor test: Accessibility permission unavailable"); exit(0) }
         guard let root=app.window.contentView, let primary=NSScreen.screens.first else { CGWarpMouseCursorPosition(original); fail("cursor test screen unavailable") }
-        guard app.toolbarDrag.buttonRects.count == 5 else { CGWarpMouseCursorPosition(original); fail("cursor test button regions unavailable") }
+        guard app.toolbarDrag.buttonRects.count == 6 else { CGWarpMouseCursorPosition(original); fail("cursor test button regions unavailable") }
         let button=app.toolbarDrag.buttonRects[2]
         let points=[NSPoint(x:root.bounds.midX,y:root.bounds.height-110), NSPoint(x:root.bounds.midX,y:root.bounds.height-25), NSPoint(x:button.midX,y:root.bounds.height-button.midY), NSPoint(x:root.bounds.midX,y:root.bounds.height-110)]
         guard index < points.count else { CGWarpMouseCursorPosition(original); print("PASS pointer switches between editor and toolbar"); app.restoreInputSource(); exit(0) }
@@ -284,7 +284,7 @@ final class NativeCodeEditingTest {
         guard index<6 else { CGWarpMouseCursorPosition(original); print("PASS real mouse drags across toolbar gaps, top strip and page number"); app.restoreInputSource(); exit(0) }
         guard let root=app.window.contentView, let screen=app.window.screen, let primary=NSScreen.screens.first else { CGWarpMouseCursorPosition(original); fail("screen not available") }
         let buttons=app.toolbarDrag.buttonRects
-        guard buttons.count==5 else { CGWarpMouseCursorPosition(original); fail("toolbar buttons unavailable") }
+        guard buttons.count==6 else { CGWarpMouseCursorPosition(original); fail("toolbar buttons unavailable") }
         let positions: [CGPoint] = [CGPoint(x:8,y:28), CGPoint(x:(buttons[0].maxX+buttons[1].minX)/2,y:28), CGPoint(x:root.bounds.midX,y:28), CGPoint(x:(buttons[2].maxX+buttons[3].minX)/2,y:28), CGPoint(x:root.bounds.midX,y:5), CGPoint(x:root.bounds.maxX-8,y:28)]
         let point=positions[index]
         guard root.hitTest(NSPoint(x:point.x,y:root.bounds.height-point.y)) is ToolbarDragView else { CGWarpMouseCursorPosition(original); fail("real drag start is not draggable") }
@@ -316,7 +316,7 @@ final class NativeCodeEditingTest {
         DispatchQueue.main.asyncAfter(deadline: .now()+0.4) { [self] in
             guard let root=app.window.contentView else { fail("missing window content") }
             let overlay=app.toolbarDrag!
-            guard overlay.buttonRects.count==5, abs(overlay.measuredWidth-root.bounds.width)<1 else { fail("toolbar layout not synchronized") }
+            guard overlay.buttonRects.count==6, abs(overlay.measuredWidth-root.bounds.width)<1 else { fail("toolbar layout not synchronized") }
             var draggable=0, buttons=0
             for y in stride(from: CGFloat(2), through: 44, by: 4) {
                 for x in stride(from: CGFloat(2), through: root.bounds.width-2, by: 4) {
@@ -364,18 +364,20 @@ final class NativeCodeEditingTest {
                 clickToolbarButton(0); later { [self] in
                     app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).selected") { [self] value,error in
                         guard error == nil, value as? String == "first" else { fail("previous button click: \(String(describing:value))") }
-                        clickToolbarButton(2); later { [self] in
+                        clickToolbarButton(3); later { [self] in
                             app.web.evaluateJavaScript("JSON.parse(window.exportNotesJSON()).notes.length") { [self] value,error in
                                 guard error == nil, value as? Int == 3 else { fail("new button click: \(String(describing:value))") }
                                 app.web.evaluateJavaScript("window.confirm = () => { window.__deleteAsked = true; return false; }; true") { [self] _,error in
                                     guard error == nil else { fail("could not set up delete confirmation") }
-                                    clickToolbarButton(3); later { [self] in
+                                    clickToolbarButton(4); later { [self] in
                                         app.web.evaluateJavaScript("[window.__deleteAsked === true, JSON.parse(window.exportNotesJSON()).notes.length]") { [self] value,error in
                                             guard error == nil, let result=value as? [Any], result.count==2, result[0] as? Bool == false, result[1] as? Int == 2 else { fail("delete button did not delete without confirmation") }
-                                            clickToolbarButton(4); later { [self] in
+                                            clickToolbarButton(2); later { [self] in
                                                 app.web.evaluateJavaScript("document.getElementById('search-panel').hidden") { [self] value,error in
                                                     guard error == nil, value as? Bool == false else { fail("search button did not open search") }
-                                                    print("PASS native toolbar mouse clicks, search and immediate delete"); app.restoreInputSource(); exit(0)
+                                                    print("PASS native toolbar mouse clicks, search and immediate delete")
+                                                    key(53, "\u{1b}")
+                                                    waitForJavaScript("document.getElementById('search-panel').hidden") { [self] in testPinnedWindow() }
                                                 }
                                             }
                                         }
@@ -385,6 +387,81 @@ final class NativeCodeEditingTest {
                         }
                     }
                 }
+            }
+        }
+    }
+    private func testPinnedWindow() {
+        clickToolbarButton(5)
+        waitForJavaScript("document.getElementById('pin-window').getAttribute('aria-pressed') === 'true'") { [self] in
+            guard UserDefaults.standard.bool(forKey: "windowPinned") else { fail("pin preference was not saved") }
+            app.toggleWindow()
+            key(34, "i")
+            waitForJavaScript("document.getElementById('mode').textContent === 'INSERT'") { [self] in
+                key(53, "\u{1b}")
+                waitForJavaScript("document.getElementById('mode').textContent === 'NORMAL'") { [self] in
+                    key(53, "\u{1b}")
+                    later { [self] in
+                        app.web.evaluateJavaScript("document.getElementById('escape-hint').hidden") { [self] value, error in
+                            guard error == nil, value as? Bool == true, app.window.isVisible else { fail("pinned Vim Escape showed a hint or hid the window") }
+                            key(53, "\u{1b}")
+                            app.updateVimEnabled(false)
+                            testPinnedPlainEscape()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func testPinnedPlainEscape() {
+        waitForJavaScript("document.getElementById('mode').hidden") { [self] in
+            key(53, "\u{1b}")
+            later { [self] in
+                guard app.window.isVisible else { fail("Escape hid the pinned window") }
+                guard let close = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+                                                   timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: app.window.windowNumber,
+                                                   context: nil, characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13),
+                      NSApp.mainMenu?.performKeyEquivalent(with: close) == true else { fail("Cmd-W was not handled") }
+                later { [self] in
+                    guard !app.window.isVisible else { fail("Cmd-W did not close the pinned window") }
+                    focusNoteEditor { [self] in
+                        setWindowPinFromPalette(false) { [self] in
+                            setWindowPinFromPalette(true) { [self] in testUnpinnedWindow() }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func setWindowPinFromPalette(_ pinned: Bool, completion: @escaping () -> Void) {
+        key(35, "P", "p", [.command, .shift])
+        waitForJavaScript("document.activeElement.id === 'command-input'") { [self] in
+            app.web.evaluateJavaScript("""
+                (() => {
+                    const input = document.getElementById('command-input');
+                    input.value = 'toggle window pin';
+                    input.dispatchEvent(new Event('input'));
+                })()
+                """) { [self] _, error in
+                guard error == nil else { fail("could not search for the window pin command") }
+                let label = L(pinned ? "palette.pinWindow" : "palette.unpinWindow")
+                waitForJavaScript("document.querySelector('#command-results [aria-selected=true] .palette-row-title')?.textContent === '\(label)'") { [self] in
+                    key(36, "\r")
+                    waitForJavaScript("document.getElementById('command-panel').hidden && document.getElementById('pin-window').getAttribute('aria-pressed') === '\(pinned)'") { [self] in
+                        guard UserDefaults.standard.bool(forKey: "windowPinned") == pinned else { fail("palette did not save the pin preference") }
+                        completion()
+                    }
+                }
+            }
+        }
+    }
+    private func testUnpinnedWindow() {
+        clickToolbarButton(5)
+        waitForJavaScript("document.getElementById('pin-window').getAttribute('aria-pressed') === 'false'") { [self] in
+            key(53, "\u{1b}")
+            later { [self] in
+                guard !app.window.isVisible else { fail("Escape did not close the unpinned window") }
+                print("PASS toolbar and command palette pin, Vim and plain Escape, and Cmd-W")
+                app.restoreInputSource(); exit(0)
             }
         }
     }
@@ -1446,7 +1523,7 @@ final class NativeCodeEditingTest {
     }
     static func startReadingNavigation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        running?.focusNoteEditor { running?.testReadingAndNavigation() }
+        running?.focusNoteEditor { running?.testPageSlides { running?.testReadingAndNavigation() } }
     }
     private func testReadingAndNavigation() {
         let script = """
@@ -1500,6 +1577,56 @@ final class NativeCodeEditingTest {
                     } }
                 } }
             } }
+        }
+    }
+    private func testPageSlides(_ completion: @escaping () -> Void) {
+        let script = """
+        (() => {
+          const page = document.getElementById('note-page');
+          const outgoing = () => document.querySelector('.note-page-outgoing');
+          const errors = [];
+          const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          function turn(button, direction, selected) {
+            const previousContent = page.querySelector('.cm-content').textContent;
+            document.getElementById(button).click();
+            if (JSON.parse(window.exportNotesJSON()).selected !== selected) errors.push('editor did not switch immediately');
+            const departing = outgoing();
+            if (reducedMotion) {
+              if (departing || page.getAnimations().length) errors.push('animation played with reduced motion');
+              return;
+            }
+            const [enter] = page.getAnimations();
+            const [exit] = departing?.getAnimations() ?? [];
+            if (!enter || !exit) { errors.push(button + ' did not animate both pages'); return; }
+            if (!departing.inert || departing.getAttribute('aria-hidden') !== 'true') errors.push('departing page is interactive');
+            if (departing.querySelector('.cm-content')?.textContent !== previousContent) errors.push('departing content changed');
+            const duration = enter.effect.getTiming().duration;
+            enter.pause(); exit.pause();
+            enter.currentTime = exit.currentTime = duration * .4;
+            const left = page.parentElement.getBoundingClientRect().left;
+            const offset = element => direction * (element.getBoundingClientRect().left - left);
+            if (offset(page) < 5 || offset(departing) > -5) errors.push(button + ' slides in the wrong direction');
+            enter.currentTime = duration * .72;
+            if (offset(page) > -4) errors.push(button + ' did not rebound');
+          }
+          turn('next', 1, 'second');
+          const firstDeparture = outgoing();
+          turn('previous', -1, 'first');
+          if (firstDeparture?.isConnected || document.querySelectorAll('.note-page-outgoing').length > 1) {
+            errors.push('rapid navigation retained a stale page');
+          }
+          for (const animation of page.getAnimations()) animation.finish();
+          return errors;
+        })()
+        """
+        app.web.evaluateJavaScript(script) { [self] value, error in
+            guard error == nil, let errors = value as? [String], errors.isEmpty else {
+                fail("page slide: \(String(describing: error)) \(String(describing: value))")
+            }
+            waitForJavaScript("!document.querySelector('.note-page-outgoing') && !document.getElementById('note-page').getAnimations().length") {
+                print("PASS directional page slides, rebound and rapid navigation cleanup")
+                completion()
+            }
         }
     }
     private func checkNavigation(_ selected: String, _ position: String, _ previousDisabled: Bool, _ nextDisabled: Bool, completion: @escaping () -> Void) {

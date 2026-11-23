@@ -6,8 +6,8 @@ import { app, $, nativeHandler } from './app.js';
 function reportToolbarRegions() {
   const handler = nativeHandler();
   if (!handler) return;
-  const rects = ['previous', 'next', 'new', 'delete', 'search'].map(id => {
-    const r = $(id).getBoundingClientRect();
+  const rects = Array.from(document.querySelectorAll('header button'), button => {
+    const r = button.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
   });
   handler.postMessage({ type: 'toolbarRegions', width: document.documentElement.clientWidth, rects });
@@ -42,4 +42,7 @@ export function applyToolbarLanguage() {
   for (const [id, key, shortcut] of [['previous', 'note.previous', '⌘['], ['next', 'note.next', '⌘]'], ['new', 'note.new', '⌘N'], ['delete', 'note.delete', '⌘D'], ['search', 'palette.searchNotes', '⌘⇧F']]) {
     $(id).setAttribute('aria-label', t(key)); $(id).title = t(key) + ' ' + shortcut;
   }
+  const pin = $('pin-window');
+  pin.setAttribute('aria-label', t('toolbar.pinWindow'));
+  pin.title = t('toolbar.pinWindow');
 }

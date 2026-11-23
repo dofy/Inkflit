@@ -29,9 +29,9 @@ final class ToolbarDragView: WindowDragView {
     var measuredWidth: CGFloat = 0 { didSet { window?.invalidateCursorRects(for: self) } }
     override var isFlipped: Bool { true }
     private var buttonExclusions: [NSRect] {
-        if buttonRects.count == 5 && abs(measuredWidth - bounds.width) <= 1 { return buttonRects }
+        if !buttonRects.isEmpty && abs(measuredWidth - bounds.width) <= 1 { return buttonRects }
         return [NSRect(x: 0, y: 10, width: 130, height: max(0, bounds.height - 10)),
-                NSRect(x: max(0, bounds.width - 130), y: 10, width: 130, height: max(0, bounds.height - 10))]
+                NSRect(x: max(0, bounds.width - 180), y: 10, width: 180, height: max(0, bounds.height - 10))]
     }
     override func hitTest(_ point: NSPoint) -> NSView? {
         let local = convert(point, from: superview)

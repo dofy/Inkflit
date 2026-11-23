@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             guard let self, !self.isolatedTest, self.window.isVisible,
                   let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   activated.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
-            self.hideWindow()
+            self.hideWindow(unlessPinned: true)
         }
         let url = Bundle.main.resourceURL!.appendingPathComponent("web/index.html")
         web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -321,6 +321,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private func syncVimDoubleEscape() {
         web.evaluateJavaScript("window.setVimDoubleEscape?.(\(vimDoubleEscape() ? "true" : "false"))", completionHandler: nil)
     }
+    private var windowPinned: Bool { UserDefaults.standard.bool(forKey: "windowPinned") }
     func codeIndentation() -> String {
         let value = UserDefaults.standard.string(forKey: "codeIndentation") ?? "spaces2"
         return ["spaces2", "spaces4", "tabs"].contains(value) ? value : "spaces2"
@@ -403,7 +404,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
     }
     @objc func showSettings() {
-        hideWindow()
+        hideWindow(unlessPinned: true)
         makeSettingsController()
         if reopenLanguageSettings { settingsController?.select(.general); reopenLanguageSettings = false }
         settingsController?.show()
@@ -528,7 +529,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil)
     }
     @objc func showSearch() { showWindow(); web.evaluateJavaScript("window.openNoteSearch?.()", completionHandler: nil) }
-    func toggleWindow() { if hidePending { showWindow() } else if window.isVisible && window.isKeyWindow { hideWindow() } else { showWindow() } }
+    func toggleWindow() {
+        if !hidePending && window.isVisible && window.isKeyWindow { hideWindow(unlessPinned: true) }
+        else { showWindow() }
+    }
     func inputSourceID(_ source: TISInputSource) -> String? {
         guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
         return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
@@ -548,7 +552,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         savedInputSource = nil; forcedInputSourceID = nil
     }
     func applicationDidResignActive(_ notification: Notification) {
-        if !isolatedTest && window?.isVisible == true { hideWindow() }
+        if !isolatedTest && window?.isVisible == true { hideWindow(unlessPinned: true) }
     }
     func windowDidBecomeKey(_ notification: Notification) { updateInputSource() }
     func windowDidResignKey(_ notification: Notification) {
@@ -625,7 +629,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         return .terminateLater
     }
-    func hideWindow() {
+    func hideWindow(unlessPinned: Bool = false) {
+        guard !unlessPinned || !windowPinned else { return }
         hideGeneration += 1; hidePending = true; let request = hideGeneration
         requestFlush { [weak self] success, _ in
             guard let self, self.hideGeneration == request else { return }
@@ -633,7 +638,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             self.web.evaluateJavaScript("window.prepareToHide?.()") { [weak self] _, error in
                 guard let self, self.hideGeneration == request else { return }
                 if let error { self.showError(L("error.saveFailedDetail") + error.localizedDescription); self.showWindow(); return }
-                self.hidePending = false; self.restoreInputSource(); self.window.orderOut(nil)
+                self.hidePending = false
+                guard !unlessPinned || !self.windowPinned else { return }
+                self.restoreInputSource(); self.window.orderOut(nil)
             }
         }
     }
@@ -645,6 +652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         syncCodeIndentation()
         syncVimEnabled()
         syncVimDoubleEscape()
+        web.evaluateJavaScript("window.setWindowPinned?.(\(windowPinned ? "true" : "false"))", completionHandler: nil)
         syncCodeTheme()
         applyWindowAppearance()
         do {
@@ -1004,14 +1012,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
-        if type == "toolbarRegions", let width = body["width"] as? NSNumber, let regions = body["rects"] as? [[String: NSNumber]], regions.count == 5 {
+        if type == "toolbarRegions", let width = body["width"] as? NSNumber, let regions = body["rects"] as? [[String: NSNumber]], !regions.isEmpty {
             let rects = regions.compactMap { region -> NSRect? in
                 guard let x=region["x"]?.doubleValue, let y=region["y"]?.doubleValue,
                       let w=region["width"]?.doubleValue, let h=region["height"]?.doubleValue,
                       [x,y,w,h].allSatisfy(\.isFinite), w > 0, h > 0 else { return nil }
                 return NSRect(x:x,y:y,width:w,height:h)
             }
-            if rects.count == 5 && width.doubleValue.isFinite && width.doubleValue > 0 {
+            if rects.count == regions.count && width.doubleValue.isFinite && width.doubleValue > 0 {
                 toolbarDrag.buttonRects = rects; toolbarDrag.measuredWidth = width.doubleValue
             }
             return
@@ -1020,7 +1028,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             let value = body["value"] as? String ?? ""
             switch action {
             case "settings": showSettings()
-            case "hide-window": hideWindow()
+            case "hide-window": hideWindow(unlessPinned: true)
+            case "pin-window":
+                guard value == "on" || value == "off" else { return }
+                UserDefaults.standard.set(value == "on", forKey: "windowPinned")
             case "quit": NSApp.terminate(nil)
             case "record-shortcut": withSettings(.general) { $0.recordGlobalShortcut() }
             case "clear-shortcut": clearShortcut(); settingsController?.refresh()

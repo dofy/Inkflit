@@ -13,7 +13,7 @@ import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
 import { applyCodeTheme, codeThemes } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
-import { setVimDoubleEscape } from './keys.js';
+import { clearEscapeHint, setVimDoubleEscape } from './keys.js';
 
 // Everything the native app calls on `window`, in one place.
 
@@ -89,6 +89,11 @@ export function installBridge() {
     // Window and panels
     focusEditor: () => { app.editor?.focus(); },
     prepareToHide,
+    setWindowPinned: pinned => {
+      app.windowPinned = pinned;
+      clearEscapeHint();
+      $('pin-window').setAttribute('aria-pressed', String(pinned));
+    },
     openCommands,
     openNoteSearch: openSearch,
     setCommandState,

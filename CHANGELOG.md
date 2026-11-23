@@ -4,6 +4,8 @@
 
 ### Added
 
+- Slide between notes in the direction of navigation with a soft rebound.
+- Pin the note window from the toolbar or command palette to keep it open when pressing Esc or switching apps. Use ⌘W to close it.
 - Toggle snippet groups and individual built-in or custom snippets in Settings without deleting them.
 - Choose an installed font and size for the note editor in Appearance settings.
 

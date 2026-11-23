@@ -1667,6 +1667,24 @@
     "zh-Hant": "再按一次 Esc 收起視窗",
     "ja": "もう一度 Esc でウインドウを隠す"
   },
+  "toolbar.pinWindow": {
+    "en": "Keep window open",
+    "zh-Hans": "防止窗口收起",
+    "zh-Hant": "防止視窗收起",
+    "ja": "ウインドウを開いたままにする"
+  },
+  "palette.pinWindow": {
+    "en": "Pin Window",
+    "zh-Hans": "固定窗口",
+    "zh-Hant": "固定視窗",
+    "ja": "ウインドウを固定"
+  },
+  "palette.unpinWindow": {
+    "en": "Unpin Window",
+    "zh-Hans": "取消固定窗口",
+    "zh-Hant": "取消固定視窗",
+    "ja": "ウインドウの固定を解除"
+  },
   "settings.insertPlaceholder": {
     "en": "Insert placeholder",
     "zh-Hans": "插入占位符",
