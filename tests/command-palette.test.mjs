@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {filterCommands, rankCommands} from '../web/command-palette.js';
 import { app } from '../web/app.js';
 import { availableCommands, commandShortcut, commandShortcutLabel } from '../web/commands.js';
+import { lang, setLanguage } from '../web/i18n.js';
 
 test('command search matches localized text, aliases and multiple terms',()=>{
  const commands=[{label:'界面主色：海蓝',group:'设置',aliases:['appearance accent theme color','blue']},{label:'关闭 Vim 模式',group:'设置',aliases:['vim mode toggle']}];
@@ -12,11 +13,13 @@ test('command search matches localized text, aliases and multiple terms',()=>{
  assert.deepEqual(filterCommands(commands,'nothing'),[]);
 });
 
-test('the latest available command outranks frequent commands and ties use recency', () => {
-  const commands = ['unused-a', 'frequent', 'tied-older', 'recent', 'unused-b', 'tied-newer'].map(id => ({ id }));
-  const history = ['unavailable', 'recent', 'tied-newer', 'frequent', 'tied-older', 'frequent', 'frequent', 'tied-older', 'tied-newer'];
+test('commands rank by their most recent use even with repeated entries in older history', () => {
+  const commands = ['unused-a', 'frequent', 'second-latest', 'latest', 'unused-b', 'older'].map(id => ({ id }));
+  const history = ['unavailable', 'latest', 'second-latest', 'older', 'frequent', 'frequent', 'frequent', 'second-latest'];
   assert.deepEqual(rankCommands(commands, history).map(command => command.id),
-    ['recent', 'frequent', 'tied-newer', 'tied-older', 'unused-a', 'unused-b']);
+    ['latest', 'second-latest', 'older', 'frequent', 'unused-a', 'unused-b']);
+  assert.deepEqual(rankCommands(commands, ['older', ...history]).map(command => command.id),
+    ['older', 'latest', 'second-latest', 'frequent', 'unused-a', 'unused-b']);
   assert.deepEqual(rankCommands(commands, []), commands);
 });
 
@@ -32,6 +35,20 @@ test('palette labels and keyboard lookup share command bindings', () => {
   assert.equal(commandShortcut({ ...event, key: '1', code: 'Digit1' }, 'main').id, 'note-position-1');
   assert.ok(!availableCommands().some(row => row.id === 'note-position-1'));
   assert.equal(commandShortcut({ ...event, key: 'p', code: 'KeyP', shiftKey: true }, 'palette').id, 'open-command-palette');
+});
+
+test('the interface color command can find multicolor themes by name', () => {
+  const originalLanguage = lang();
+  try {
+    setLanguage('zh-Hans');
+    const options = availableCommands().find(command => command.id === 'ui-theme').children();
+    for (const query of ['pepsi', '百事可乐', 'christmas', '朱漆红', '午夜黑金', '孔雀蓝金']) {
+      assert.equal(filterCommands(options, query).length, 1, query);
+    }
+    assert.equal(filterCommands(options, '莓红冰蓝').length, 0);
+  } finally {
+    setLanguage(originalLanguage);
+  }
 });
 
 test('contextual editor commands appear only where they can run', async () => {

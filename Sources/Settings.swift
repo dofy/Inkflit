@@ -26,7 +26,16 @@ private final class CodeThemePreviewBox: NSBox {
         onAppearanceChange?()
     }
 }
-struct UITheme: Decodable { let id: String; let title: String; let colors: [String: String] }
+private func paletteColor(_ hex: String?) -> NSColor? {
+    guard let hex, hex.count == 7, hex.first == "#", let value = UInt64(hex.dropFirst(), radix: 16) else { return nil }
+    return NSColor(srgbRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
+}
+struct UITheme: Decodable {
+    let id: String
+    let title: String
+    let colors: [String: String]
+    let darkColors: [String: String]
+}
 enum UIThemes {
     static let all: [UITheme] = {
         guard let url = Bundle.main.url(forResource: "UIThemes", withExtension: "json"), let data = try? Data(contentsOf: url),
@@ -34,8 +43,21 @@ enum UIThemes {
         return themes
     }()
     static func validID(_ id: String?) -> String { all.first(where: { $0.id == id })?.id ?? all.first?.id ?? "orange" }
+    private static let paletteAccents = Dictionary(uniqueKeysWithValues: all.compactMap { theme -> (String, NSColor)? in
+        guard let light = paletteColor(theme.colors["accent"]),
+              let dark = paletteColor(theme.darkColors["accent"]) else { return nil }
+        return (theme.id, NSColor(name: nil, dynamicProvider: { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+        }))
+    })
     static func accent(_ id: String) -> NSColor {
-        switch validID(id) { case "blue": return .systemBlue; case "green": return .systemGreen; default: return .systemOrange }
+        let theme = validID(id)
+        switch theme {
+        case "orange": return .systemOrange
+        case "blue": return .systemBlue
+        case "green": return .systemGreen
+        default: return paletteAccents[theme] ?? .systemOrange
+        }
     }
 }
 enum WindowColorScheme: String, CaseIterable {
@@ -56,12 +78,29 @@ enum WindowColorScheme: String, CaseIterable {
         }
     }
 }
+enum NotePaper: String, CaseIterable {
+    case plain, xuan, felt, sandstone, linen
+
+    var title: String {
+        switch self {
+        case .plain: return L("settings.paperPlain")
+        case .xuan: return L("settings.paperXuan")
+        case .felt: return L("settings.paperFelt")
+        case .sandstone: return L("settings.paperSandstone")
+        case .linen: return L("settings.paperLinen")
+        }
+    }
+}
 struct WindowAppearance {
+    static let defaultTextureStrength = 50
+
     var theme: String
     var opacity: Int
     var blur: Int
     var colorScheme: WindowColorScheme = .system
     var typography = EditorTypography()
+    var paper: NotePaper = .plain
+    var textureStrength = WindowAppearance.defaultTextureStrength
 }
 
 struct EditorTypography {
@@ -251,11 +290,14 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let resetWindowSizeButton = NSButton(title: L("settings.reset"), target: nil, action: nil)
     private let uiThemePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let editorFontPicker = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let paperPicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let editorSizePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
+    private let textureStrengthSlider = AccentSlider(value: Double(WindowAppearance.defaultTextureStrength), minValue: 0, maxValue: 100, target: nil, action: nil)
     private let opacitySlider = AccentSlider(value: 100, minValue: 50, maxValue: 100, target: nil, action: nil)
     private let blurSlider = AccentSlider(value: 0, minValue: 0, maxValue: 100, target: nil, action: nil)
+    private let textureStrengthValue = NSTextField(labelWithString: "")
     private let opacityValue = NSTextField(labelWithString: "100%")
     private let blurValue = NSTextField(labelWithString: "0%")
     private let tabs = NSTabView()
@@ -464,6 +506,15 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         uiThemePicker.target = self; uiThemePicker.action = #selector(appearanceChanged(_:)); uiThemePicker.setAccessibilityLabel(L("settings.accentColor"))
         let uiThemeSection = section(L("settings.accentColor"), icon: "paintbrush", detail: L("settings.accentColorDetail"), controls: uiThemePicker)
         let typographySection = section(L("settings.editorTypography"), icon: "textformat.size", detail: L("settings.editorTypographyDetail"), controls: typographyControls())
+        for paper in NotePaper.allCases {
+            paperPicker.addItem(withTitle: paper.title); paperPicker.lastItem?.representedObject = paper.rawValue
+        }
+        paperPicker.target = self; paperPicker.action = #selector(appearanceChanged(_:))
+        paperPicker.setAccessibilityLabel(L("settings.notePaper"))
+        let paperSection = section(L("settings.notePaper"), icon: "square.on.square", detail: L("settings.notePaperDetail"), controls: paperPicker)
+        let textureStrengthTitle = L("settings.textureStrength")
+        let textureStrengthControls = sliderControls(textureStrengthSlider, value: textureStrengthValue, label: textureStrengthTitle)
+        let textureStrengthSection = section(textureStrengthTitle, icon: "slider.horizontal.3", detail: L("settings.textureStrengthDetail"), controls: textureStrengthControls)
         let opacitySection = section(L("settings.windowOpacity"), icon: "circle.lefthalf.filled", detail: L("settings.windowOpacityDetail"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("settings.windowOpacity")), message: NSTextField(wrappingLabelWithString: L("settings.windowOpacityHint")))
         let blurSection = section(L("settings.backgroundBlur"), icon: "drop.halffull", detail: L("settings.backgroundBlurDetail"), controls: sliderControls(blurSlider, value: blurValue, label: L("settings.backgroundBlur")), message: NSTextField(wrappingLabelWithString: L("settings.backgroundBlurHint")))
         resetWindowSizeButton.bezelStyle = .rounded
@@ -481,7 +532,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let snippetsSection = section(L("settings.snippets"), icon: "text.badge.plus", detail: L("settings.snippetsDetail"), controls: NSView(), message: NSTextField(wrappingLabelWithString: L("settings.snippetsHint")))
         let pages: [(Tab, String, NSView)] = [
             (.general, L("settings.general"), page([loginSection, languageSection, shortcutSection])),
-            (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, typographySection, opacitySection, blurSection, sizeSection, themeGroup], scrollable: true)),
+            (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, typographySection, paperSection, textureStrengthSection, opacitySection, blurSection, sizeSection, themeGroup], scrollable: true)),
             (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
             (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
@@ -540,6 +591,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let index = uiThemePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == appearance.theme }) { uiThemePicker.selectItem(at: index) }
         editorFontPicker.selectItem(at: editorFontPicker.indexOfItem(withRepresentedObject: appearance.typography.family))
         editorSizePicker.selectItem(at: appearance.typography.size - EditorTypography.sizes.lowerBound)
+        paperPicker.selectItem(at: paperPicker.indexOfItem(withRepresentedObject: appearance.paper.rawValue))
+        textureStrengthSlider.integerValue = appearance.textureStrength
+        textureStrengthSlider.isEnabled = appearance.paper != .plain
+        textureStrengthValue.stringValue = "\(appearance.textureStrength)%"
         opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         applySettingsAccent(appearance.theme)
@@ -600,13 +655,18 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         guard let theme = uiThemePicker.selectedItem?.representedObject as? String,
               let value = colorSchemePicker.selectedItem?.representedObject as? String,
               let scheme = WindowColorScheme(rawValue: value) else { return }
-        if let slider = sender as? NSSlider, slider === opacitySlider || slider === blurSlider {
-            let option = (slider as? AccentSlider)?.optionAtMouseDown == true || (NSApp.currentEvent?.modifierFlags ?? []).contains(.option) || NSEvent.modifierFlags.contains(.option)
+        if let slider = sender as? AccentSlider {
+            let option = slider.optionAtMouseDown || (NSApp.currentEvent?.modifierFlags ?? []).contains(.option) || NSEvent.modifierFlags.contains(.option)
             slider.integerValue = Self.sliderValue(slider.integerValue, optionPressed: option)
         }
         let typography = EditorTypography(family: editorFontPicker.selectedItem?.representedObject as? String ?? "",
                                           size: editorSizePicker.selectedItem?.representedObject as? Int ?? EditorTypography.defaultSize)
-        let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue, colorScheme: scheme, typography: typography)
+        let paper = (paperPicker.selectedItem?.representedObject as? String).flatMap(NotePaper.init(rawValue:)) ?? .plain
+        let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue,
+                                          colorScheme: scheme, typography: typography, paper: paper,
+                                          textureStrength: textureStrengthSlider.integerValue)
+        textureStrengthSlider.isEnabled = paper != .plain
+        textureStrengthValue.stringValue = "\(appearance.textureStrength)%"
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         applySettingsAccent(theme)
         setAppearance(appearance)
@@ -616,7 +676,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         symbols.forEach { $0.contentTintColor = accent }
         loginSwitch.accentColor = accent; vimSwitch.accentColor = accent; vimDoubleEscapeSwitch.accentColor = accent
         sliderTicks.forEach { $0.accentColor = accent }
-        for slider in [opacitySlider, blurSlider] {
+        for slider in [textureStrengthSlider, opacitySlider, blurSlider] {
             (slider.cell as? AccentSliderCell)?.accentColor = accent
             slider.needsDisplay = true
         }
@@ -626,8 +686,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let dark = previewBox.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         let palette = dark ? theme.darkColors : theme.colors
         func color(_ key: String, fallback: NSColor = .labelColor) -> NSColor {
-            guard let hex = palette[key], let value = UInt64(hex.dropFirst(), radix: 16) else { return fallback }
-            return NSColor(srgbRed: CGFloat((value >> 16) & 255) / 255, green: CGFloat((value >> 8) & 255) / 255, blue: CGFloat(value & 255) / 255, alpha: 1)
+            paletteColor(palette[key]) ?? fallback
         }
         previewBox.fillColor = color("background", fallback: .textBackgroundColor)
         let attributed = NSMutableAttributedString()
@@ -674,14 +733,23 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         uiThemePicker.selectItem(at: index); opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: uiThemePicker)
     }
+    func testSelectNotePaper(_ paper: NotePaper) -> Bool {
+        paperPicker.selectItem(at: paperPicker.indexOfItem(withRepresentedObject: paper.rawValue))
+        return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: paperPicker)
+    }
+    func testSetTextureStrength(_ strength: Int) -> Bool {
+        guard textureStrengthSlider.isEnabled else { return false }
+        textureStrengthSlider.integerValue = strength
+        return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: textureStrengthSlider)
+    }
     func testAppearanceControls(_ theme: String) -> Bool {
         let accent = UIThemes.accent(theme)
         guard loginSwitch.accentColor == accent, vimSwitch.accentColor == accent,
-              symbols.allSatisfy({ $0.contentTintColor == accent }), sliderTicks.count == 2,
+              symbols.allSatisfy({ $0.contentTintColor == accent }), sliderTicks.count == 3,
               sliderTicks.allSatisfy({ $0.accentColor == accent }),
               let page = tabs.tabViewItem(at: Tab.appearance.rawValue).view else { return false }
         page.layoutSubtreeIfNeeded()
-        return [opacitySlider, blurSlider].allSatisfy { slider in
+        return [textureStrengthSlider, opacitySlider, blurSlider].allSatisfy { slider in
             guard let cell = slider.cell as? AccentSliderCell else { return false }
             return cell.accentColor == accent && slider.numberOfTickMarks == 11 && slider.tickMarkPosition == .above && !slider.allowsTickMarkValuesOnly && page.bounds.insetBy(dx: -1, dy: -1).contains(slider.convert(slider.bounds, to: page))
         }
@@ -731,7 +799,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             let page = (view as? NSScrollView)?.documentView ?? view
             return views.allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
         }
-        return fits([colorSchemePicker, editorFontPicker, editorSizePicker, resetWindowSizeButton, previewBox], on: .appearance) && fits([vimSwitch, vimDoubleEscapeSwitch, indentation], on: .edit)
+        return fits([colorSchemePicker, editorFontPicker, editorSizePicker, paperPicker, textureStrengthSlider, resetWindowSizeButton, previewBox], on: .appearance) && fits([vimSwitch, vimDoubleEscapeSwitch, indentation], on: .edit)
     }
     func testResetWindowSize() { resetWindowSizeButton.performClick(nil) }
     func testToggleVim() { vimSwitch.performClick(nil) }

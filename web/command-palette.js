@@ -8,22 +8,16 @@ export function filterCommands(commands, query) {
   });
 }
 
-// History is newest first. The latest available command wins, then frequency
-// and recency. Unused commands stay in their default order.
+// Take the newest occurrence of each available command, then keep the default
+// order for commands without a history entry.
 export function rankCommands(commands, history) {
-  const available = new Set(commands.map(command => command.id));
-  const usage = new Map();
+  const remaining = new Map(commands.map(command => [command.id, command]));
+  const recent = [];
   for (const id of history) {
-    if (!available.has(id)) continue;
-    const stats = usage.get(id);
-    if (stats) stats.count++;
-    else usage.set(id, { count: 1, recency: usage.size });
+    const command = remaining.get(id);
+    if (!command) continue;
+    recent.push(command);
+    remaining.delete(id);
   }
-  const latest = usage.keys().next().value;
-  return [...commands].sort((a, b) => {
-    const first = usage.get(a.id), second = usage.get(b.id);
-    return Number(b.id === latest) - Number(a.id === latest)
-      || (second?.count ?? 0) - (first?.count ?? 0)
-      || (first?.recency ?? history.length) - (second?.recency ?? history.length);
-  });
+  return [...recent, ...remaining.values()];
 }

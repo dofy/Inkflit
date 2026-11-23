@@ -45,7 +45,9 @@ Inkflit lives in the menu bar. Press `Control + Option + Space` to open it. With
 
 When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. To restore the default size, use **Settings → Appearance → Window size → Reset**. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
 
-Use the toolbar pin or **Pin Window** in the command palette to keep the window open when switching apps. Press `⌘W` to close it. In Appearance settings, you can also choose the editor font and size.
+Use the toolbar pin or **Pin Window** in the command palette to keep the window open when pressing `Esc` or switching apps. Press `⌘W` to close it.
+
+Choose the editor font and size in **Settings → Appearance**. Inkflit also includes **Background texture**, with Plain, Xuan paper, Wool felt, Fine sandstone, and Coarse linen. Adjust **Texture strength** independently of window opacity.
 
 Page turns slide horizontally. Each note keeps its cursor and scroll position while Inkflit is running. Small arrows at the edges indicate content above or below the visible area.
 
@@ -63,16 +65,19 @@ Page turns slide horizontally. Each note keeps its cursor and scroll position wh
 | `⌘L` | Choose a code block language |
 | `⌘O` / `⌘⇧O` | Insert an editable line below / above the current text line or feature block |
 | `⌘/` | Toggle comments on the current or selected lines |
+| `⌘↩` | Toggle the current checklist item or Markdown task |
 | `⌘⇧F` | Search all current notes |
 | `⌘⇧P` | Open the command palette to search note actions and settings |
 | `⌘W` | Close the note window |
-| `Esc` | Return to Vim Normal mode. In Normal mode with the window unpinned, press twice within 0.6 seconds by default. Turn off **Double Esc to hide** in Editing settings to hide with one press. |
+| `Esc` | Return to Vim Normal mode. In Normal mode with the window unpinned, press twice by default. Turn off **Double Esc to hide** in Settings → Edit to hide with one press. |
 
-Vim mode is enabled by default. Turn it off in Settings → Editing to type directly; `Esc` then hides an unpinned window and `⌘Z` / `⌘⇧Z` undo and redo.
+Vim mode is enabled by default. Turn it off in Settings → Edit to type directly; `Esc` then hides an unpinned window and `⌘Z` / `⌘⇧Z` undo and redo.
 
 Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and does not load vimrc. Undo history is retained per note while the app runs, but not after exit. Normal mode temporarily switches to an ASCII input source and restores the previous input method in insert mode or when the window loses focus. An active IME candidate is cancelled before Esc leaves insert mode.
 
-The command palette accepts command names and keywords. The last command you ran appears first, followed by other recently used commands in order of frequency. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
+The command palette accepts command names and keywords. Commands you have used are ordered by last use, most recent first. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
+
+Search `format note` to format supported code blocks and math expressions in the current note. Find all searchable commands under **Settings → Open help → Command keywords**.
 
 ## Feature blocks
 
@@ -97,6 +102,7 @@ Type `@` and a word to insert a value. Return inserts the first format; ↑ / �
 - **Built-in words:** `@date`, `@time`, `@now`, `@year`, `@month`, `@day`, `@week`, `@timestamp`, `@uuid`, `@ip`, `@mac`, `@host`.
 - **In math blocks:** `@fn` (functions), `@unit` (units), `@cur` (currency codes with today's rate) and `@const` (mathematical and scientific constants). Use `@pi` or `@speedoflight` to find a constant directly.
 - **Your own:** add them in Settings → Snippets. Rows sharing a trigger form a group. They are saved in `snippets.json` in the notes folder.
+- **Availability** can be changed for groups and individual snippets in **Settings → Snippets → Snippet availability**.
 - **Placeholders:** `{date}`, `{date#2}`, an alias such as `{ipv4}`, and `{{` for a literal brace.
 - **Caret stops:** `{cursor}` and `{cursor:name}`. Tab / Shift-Tab move between stops and Esc ends them; the stop being filled is highlighted.
 

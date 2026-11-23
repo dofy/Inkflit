@@ -17,3 +17,4 @@ for appearance in light dark; do
  if [[ "$appearance" == light ]]; then expected=dark; else expected=light; fi
  run_settings_test INKFLIT_TEST_EXPECT_COLOR_SCHEME="$expected"
 done
+run_settings_test INKFLIT_SETTINGS_ACCENT_TEST=0 INKFLIT_NOTE_PAPER_TEST=1

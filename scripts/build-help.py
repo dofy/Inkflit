@@ -4,6 +4,7 @@
 help/template.html      page layout, styles and script
 help/<language>.html    one file per language: a JSON label block and <section>s
 help/shortcuts.json     the shortcut table, rendered into every language
+help/commands.json      command keywords with labels from the app translations
 
 All languages go into one self-contained page as <template data-lang> blocks;
 the app opens it with ?lang=<language>. Run from the repository root.
@@ -33,6 +34,21 @@ def shortcut_table(language, data):
         body.append(f'<tr class="group"><td colspan="2">{html.escape(group["title"][language])}</td></tr>')
         body += [f'<tr><td>{keys(row)}</td><td>{html.escape(row[language])}</td></tr>' for row in group['rows']]
     return f'<table><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table>'
+
+
+def command_table(language, data, translations):
+    head = ''.join(f'<th scope="col">{html.escape(cell)}</th>' for cell in data['header'][language])
+    body = []
+    for group in data['groups']:
+        title = html.escape(translations[group['title']][language])
+        body.append(f'<tr class="group"><td colspan="2">{title}</td></tr>')
+        for row in group['rows']:
+            label = ' / '.join(translations[key][language] for key in row['labels'])
+            command = html.escape(row['id'])
+            keyword = html.escape(row['keyword'])
+            body.append(f'<tr data-command="{command}"><td><code>{keyword}</code></td><td>{html.escape(label)}</td></tr>')
+    rows = '\n'.join(body)
+    return f'<table class="command-keywords"><thead><tr>{head}</tr></thead><tbody>\n{rows}\n</tbody></table>'
 
 
 def section_ids(text):
@@ -80,6 +96,8 @@ def app_icon_url():
 
 
 shortcuts = json.loads((root / 'shortcuts.json').read_text())
+commands = json.loads((root / 'commands.json').read_text())
+translations = json.loads(Path('Resources/Translations.json').read_text())
 expected = None
 blocks = []
 for language in LANGUAGES:
@@ -89,8 +107,12 @@ for language in LANGUAGES:
     ids = section_ids(text)
     expected = expected or ids
     assert ids == expected, f'{language}: sections {ids} differ from {expected}'
-    assert text.count('%SHORTCUTS%') == 1, f'{language}: needs one %SHORTCUTS% placeholder'
-    text = text.replace('%SHORTCUTS%', shortcut_table(language, shortcuts))
+    for placeholder, table in {
+        '%SHORTCUTS%': shortcut_table(language, shortcuts),
+        '%COMMAND_KEYWORDS%': command_table(language, commands, translations),
+    }.items():
+        assert text.count(placeholder) == 1, f'{language}: needs one {placeholder} placeholder'
+        text = text.replace(placeholder, table)
     blocks.append(f'<template data-lang="{language}">\n{text.strip()}\n</template>')
 
 page = (root / 'template.html').read_text()
@@ -102,5 +124,5 @@ for placeholder, value in {
 }.items():
     assert placeholder in page, f'missing {placeholder}'
     page = page.replace(placeholder, value)
-assert '%SHORTCUTS%' not in page, 'unfilled %SHORTCUTS%'
+assert not re.search(r'%(SHORTCUTS|COMMAND_KEYWORDS)%', page), 'unfilled help table'
 Path('Resources/Help.html').write_text(page)

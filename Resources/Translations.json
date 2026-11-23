@@ -365,6 +365,60 @@
     "zh-Hant": "編輯器字型大小",
     "ja": "エディタの文字サイズ"
   },
+  "settings.notePaper": {
+    "en": "Background texture",
+    "zh-Hans": "背景材质",
+    "zh-Hant": "背景材質",
+    "ja": "背景の質感"
+  },
+  "settings.notePaperDetail": {
+    "en": "Choose a surface for the note",
+    "zh-Hans": "选择笔记正文的背景",
+    "zh-Hant": "選擇筆記正文的背景",
+    "ja": "ノート本文の背景を選びます"
+  },
+  "settings.paperPlain": {
+    "en": "Plain",
+    "zh-Hans": "空白",
+    "zh-Hant": "空白",
+    "ja": "無地"
+  },
+  "settings.paperXuan": {
+    "en": "Xuan paper",
+    "zh-Hans": "宣纸",
+    "zh-Hant": "宣紙",
+    "ja": "宣紙"
+  },
+  "settings.paperFelt": {
+    "en": "Wool felt",
+    "zh-Hans": "羊毛毡",
+    "zh-Hant": "羊毛氈",
+    "ja": "ウールフェルト"
+  },
+  "settings.paperSandstone": {
+    "en": "Fine sandstone",
+    "zh-Hans": "细砂石",
+    "zh-Hant": "細砂石",
+    "ja": "細粒の砂岩"
+  },
+  "settings.paperLinen": {
+    "en": "Coarse linen",
+    "zh-Hans": "粗亚麻",
+    "zh-Hant": "粗亞麻",
+    "ja": "粗織りリネン"
+  },
+  "settings.textureStrength": {
+    "en": "Texture strength",
+    "zh-Hans": "纹理强度",
+    "zh-Hant": "紋理強度",
+    "ja": "質感の強さ"
+  },
+  "settings.textureStrengthDetail": {
+    "en": "Adjust how visible the texture is",
+    "zh-Hans": "调节背景纹理的显眼程度",
+    "zh-Hant": "調整背景紋理的明顯程度",
+    "ja": "背景の質感の目立ち方を調整します"
+  },
   "settings.editorFontDefault": {
     "en": "Default (monospaced)",
     "zh-Hans": "默认（等宽）",
@@ -490,6 +544,36 @@
     "zh-Hans": "海蓝",
     "zh-Hant": "海藍",
     "ja": "オーシャンブルー"
+  },
+  "settings.themeCola": {
+    "en": "Cola Red & Blue",
+    "zh-Hans": "可乐红蓝",
+    "zh-Hant": "可樂紅藍",
+    "ja": "コーラの赤と青"
+  },
+  "settings.themeChristmas": {
+    "en": "Christmas",
+    "zh-Hans": "圣诞松绿",
+    "zh-Hant": "聖誕松綠",
+    "ja": "クリスマス"
+  },
+  "settings.themeLacquerRed": {
+    "en": "Lacquer Red",
+    "zh-Hans": "朱漆红",
+    "zh-Hant": "朱漆紅",
+    "ja": "漆の朱"
+  },
+  "settings.themeMidnightGold": {
+    "en": "Midnight Gold",
+    "zh-Hans": "午夜黑金",
+    "zh-Hant": "午夜黑金",
+    "ja": "ミッドナイトゴールド"
+  },
+  "settings.themePeacockGold": {
+    "en": "Peacock & Gold",
+    "zh-Hans": "孔雀蓝金",
+    "zh-Hant": "孔雀藍金",
+    "ja": "ピーコックブルーと金"
   },
   "settings.themeSage": {
     "en": "Sage",

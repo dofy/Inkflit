@@ -35,14 +35,13 @@ export function openSearch(query = '') { if (!app.state) return; closeBlockMenu(
 
 export function setCommandState(value) { updateCommandState(value); if (commandPalette.open) commandPalette.render(); }
 
-const commandHistoryLimit = 50;
 let commandHistory = [];
 export function setCommandHistory(history) {
-  commandHistory = Array.isArray(history) ? history.slice(0, commandHistoryLimit) : [];
+  commandHistory = Array.isArray(history) ? [...new Set(history)] : [];
 }
 function chooseCommand(command) {
   if (!runCommand(command)) return;
-  commandHistory = [command.id, ...commandHistory].slice(0, commandHistoryLimit);
+  commandHistory = [command.id, ...commandHistory.filter(id => id !== command.id)];
   nativeHandler()?.postMessage({ type: 'commandHistory', ids: commandHistory });
 }
 

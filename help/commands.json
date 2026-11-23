@@ -1,0 +1,80 @@
+{
+  "header": {
+    "en": ["Type in the command palette", "Command"],
+    "zh-Hans": ["输入关键词", "对应指令"],
+    "zh-Hant": ["輸入關鍵詞", "對應指令"],
+    "ja": ["入力するキーワード", "コマンド"]
+  },
+  "groups": [
+    {
+      "title": "note.notes",
+      "rows": [
+        {"id": "new-note", "keyword": "new note", "labels": ["note.new"]},
+        {"id": "find-note", "keyword": "search note", "labels": ["palette.searchNotes"]},
+        {"id": "previous-note", "keyword": "previous note", "labels": ["note.previous"]},
+        {"id": "next-note", "keyword": "next note", "labels": ["note.next"]},
+        {"id": "first-note", "keyword": "first note", "labels": ["note.first"]},
+        {"id": "last-note", "keyword": "last note end", "labels": ["note.last"]},
+        {"id": "format-note", "keyword": "format note", "labels": ["palette.formatNote"]},
+        {"id": "delete-note", "keyword": "delete current note", "labels": ["note.delete"]},
+        {"id": "restore-last-note", "keyword": "undo deleted note", "labels": ["note.restoreLastDeleted"]}
+      ]
+    },
+    {
+      "title": "app.edit",
+      "rows": [
+        {"id": "insert-block", "keyword": "insert block", "labels": ["palette.insertBlock"]},
+        {"id": "change-block", "keyword": "change block type", "labels": ["palette.changeBlockType"]},
+        {"id": "delete-block", "keyword": "delete block", "labels": ["palette.deleteBlock"]},
+        {"id": "code-language", "keyword": "code block language", "labels": ["palette.chooseCodeLanguage"]},
+        {"id": "copy-code-block", "keyword": "copy code block", "labels": ["palette.copyCodeBlock"]},
+        {"id": "toggle-task", "keyword": "toggle task", "labels": ["palette.toggleTask"]},
+        {"id": "toggle-comment", "keyword": "comment lines", "labels": ["palette.toggleComment"]},
+        {"id": "insert-line-below", "keyword": "line below", "labels": ["palette.insertLineBelow"]},
+        {"id": "insert-line-above", "keyword": "line above", "labels": ["palette.insertLineAbove"]}
+      ]
+    },
+    {
+      "title": "app.window",
+      "rows": [
+        {"id": "hide-window", "keyword": "close window", "labels": ["palette.hideWindow"]},
+        {"id": "toggle-window-pin", "keyword": "pin window", "labels": ["palette.pinWindow", "palette.unpinWindow"]},
+        {"id": "quit", "keyword": "quit inkflit", "labels": ["app.quit"]}
+      ]
+    },
+    {
+      "title": "settings.title",
+      "rows": [
+        {"id": "settings", "keyword": "preferences", "labels": ["palette.openSettings"]},
+        {"id": "toggle-vim", "keyword": "toggle vim", "labels": ["palette.enableVim", "palette.disableVim"]},
+        {"id": "vim-double-escape", "keyword": "vim double esc", "labels": ["settings.vimDoubleEscape"]},
+        {"id": "record-shortcut", "keyword": "record shortcut", "labels": ["palette.recordShortcut"]},
+        {"id": "clear-shortcut", "keyword": "clear shortcut", "labels": ["settings.clearGlobalShortcut"]},
+        {"id": "reset-shortcut", "keyword": "reset shortcut", "labels": ["palette.resetShortcut"]},
+        {"id": "login", "keyword": "launch at login", "labels": ["settings.launchAtLogin"]},
+        {"id": "login-settings", "keyword": "login items", "labels": ["palette.openLoginSettings"]},
+        {"id": "language", "keyword": "locale", "labels": ["settings.language"]},
+        {"id": "color-scheme", "keyword": "color scheme", "labels": ["settings.colorScheme"]},
+        {"id": "ui-theme", "keyword": "accent color", "labels": ["settings.accentColor"]},
+        {"id": "note-paper", "keyword": "background material", "labels": ["settings.notePaper"]},
+        {"id": "texture-strength", "keyword": "texture strength", "labels": ["settings.textureStrength"]},
+        {"id": "opacity", "keyword": "window opacity", "labels": ["settings.windowOpacity"]},
+        {"id": "blur", "keyword": "background blur", "labels": ["settings.backgroundBlur"]},
+        {"id": "reset-window-size", "keyword": "reset window size", "labels": ["settings.resetWindowSize"]},
+        {"id": "code-theme", "keyword": "code syntax theme", "labels": ["settings.codeColors"]},
+        {"id": "indent", "keyword": "code indentation", "labels": ["settings.codeIndentation"]},
+        {"id": "choose-notes-folder", "keyword": "notes directory", "labels": ["settings.chooseNotesFolder"]},
+        {"id": "backup", "keyword": "backup versions", "labels": ["settings.automaticBackups"]},
+        {"id": "restore-version", "keyword": "restore version", "labels": ["settings.restorePreviousVersion"]},
+        {"id": "restore-trash", "keyword": "restore trash", "labels": ["settings.restoreDeletedNote"]},
+        {"id": "rebuild-index", "keyword": "rebuild index", "labels": ["settings.rebuildIndex"]},
+        {"id": "snippets", "keyword": "snippets", "labels": ["palette.manageSnippets"]},
+        {"id": "snippet-add", "keyword": "add snippet", "labels": ["settings.snippetAdd"]},
+        {"id": "snippet-remove", "keyword": "remove snippet", "labels": ["settings.snippetRemove"]},
+        {"id": "snippet-placeholder", "keyword": "snippet placeholder", "labels": ["settings.insertPlaceholder"]},
+        {"id": "onboarding", "keyword": "restore guide notes", "labels": ["settings.restoreGuideNotes"]},
+        {"id": "help", "keyword": "help guide", "labels": ["settings.openHelp"]}
+      ]
+    }
+  ]
+}

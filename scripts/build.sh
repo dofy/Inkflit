@@ -5,7 +5,7 @@ npm run build:web
 APP="$PWD/build/Inkflit.app"
 # The version lives in package.json only.
 VERSION="$(node -p "require('./package.json').version")"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/web/textures"
 swiftc -target arm64-apple-macos13.0 -O -whole-module-optimization Sources/*.swift \
   -o "$APP/Contents/MacOS/Inkflit" -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
 cp Resources/Inkflit.icns "$APP/Contents/Resources/Inkflit.icns"
@@ -18,6 +18,7 @@ cp Resources/Translations.json "$APP/Contents/Resources/Translations.json"
 cp Resources/UIThemes.json "$APP/Contents/Resources/UIThemes.json"
 cp Resources/Onboarding.*.json "$APP/Contents/Resources/"
 cp web/index.html web/style.css "$APP/Contents/Resources/web/"
+rsync -r --delete web/textures/ "$APP/Contents/Resources/web/textures/"
 cp web/dist/editor.js "$APP/Contents/Resources/web/editor.js"
 cp node_modules/prettier/LICENSE "$APP/Contents/Resources/Prettier-LICENSE.txt"
 cp node_modules/prettier/THIRD-PARTY-NOTICES.md "$APP/Contents/Resources/Prettier-THIRD-PARTY-NOTICES.md"

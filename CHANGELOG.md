@@ -1,6 +1,19 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0] - 2026-11-23
+
+### Added
+
+- Choose Xuan paper, wool felt, fine sandstone, or coarse linen as a static note background. Adjust texture strength independently of window opacity in Settings or the command palette.
+- Choose five new interface palettes in Light and Dark: Cola Red & Blue, Christmas, Lacquer Red, Midnight Gold, and Peacock & Gold.
+- Find the searchable keyword for each command in the offline help, with examples for entering custom setting values.
+
+### Changed
+
+- Order commands by their last use, most recent first. Reopening Inkflit restores the order.
+- Update the README and offline help in all four languages to cover the new appearance settings and current keyboard shortcuts.
+
+The DMG requires Apple Silicon and macOS 13 or later. The app is ad hoc signed and has no Apple notarization. The release includes `SHA256SUMS.txt` for verification.
 
 ## [0.3.0] - 2026-11-23
 

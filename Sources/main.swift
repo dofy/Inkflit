@@ -349,9 +349,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         let opacity = defaults.object(forKey: "windowOpacity") == nil ? 100 : defaults.integer(forKey: "windowOpacity")
         let blur = defaults.object(forKey: "windowBlur") == nil ? 0 : defaults.integer(forKey: "windowBlur")
         let scheme = defaults.string(forKey: "windowColorScheme").flatMap(WindowColorScheme.init(rawValue:)) ?? .system
+        let paper = defaults.string(forKey: "notePaper").flatMap(NotePaper.init(rawValue:)) ?? .plain
+        let strength = defaults.object(forKey: "noteTextureStrength") as? Int ?? WindowAppearance.defaultTextureStrength
         let typography = EditorTypography(family: defaults.string(forKey: "editorFontFamily") ?? "",
                                           size: defaults.integer(forKey: "editorFontSize"))
-        return WindowAppearance(theme: UIThemes.validID(defaults.string(forKey: "uiTheme")), opacity: max(50, min(100, opacity)), blur: max(0, min(100, blur)), colorScheme: scheme, typography: typography)
+        return WindowAppearance(theme: UIThemes.validID(defaults.string(forKey: "uiTheme")), opacity: max(50, min(100, opacity)),
+                                blur: max(0, min(100, blur)), colorScheme: scheme, typography: typography, paper: paper,
+                                textureStrength: max(0, min(100, strength)))
     }
     func updateWindowAppearance(_ appearance: WindowAppearance) {
         let defaults = UserDefaults.standard
@@ -361,6 +365,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         defaults.set(appearance.colorScheme.rawValue, forKey: "windowColorScheme")
         defaults.set(appearance.typography.family, forKey: "editorFontFamily")
         defaults.set(appearance.typography.size, forKey: "editorFontSize")
+        defaults.set(appearance.paper.rawValue, forKey: "notePaper")
+        defaults.set(appearance.textureStrength, forKey: "noteTextureStrength")
         applyAppColorScheme(appearance.colorScheme)
         applyWindowAppearance()
         settingsController?.syncHelpAppearance()
@@ -387,7 +393,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             // Fallback: a faded effect view only mixes blurred and sharp content.
             backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
         }
-        guard let colors = javaScriptJSON([appearance.theme, appearance.opacity, appearance.colorScheme.rawValue]),
+        let textureScale = Double(appearance.textureStrength) / Double(WindowAppearance.defaultTextureStrength)
+        guard let colors = javaScriptJSON([appearance.theme, appearance.opacity, appearance.colorScheme.rawValue, appearance.paper.rawValue, textureScale]),
               let typography = javaScriptJSON([appearance.typography.family, appearance.typography.size]) else { return }
         web?.evaluateJavaScript("window.setUIAppearance?.(...\(colors)); window.setEditorTypography?.(...\(typography))", completionHandler: nil)
     }
@@ -768,6 +775,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_ACCENT_TEST"] == "1" {
             NativeCodeEditingTest.startSettingsAccent(self)
         }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_NOTE_PAPER_TEST"] == "1" {
+            NativeCodeEditingTest.startNotePaper(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
             NativeCodeEditingTest.startBlockCalculation(self)
         }
@@ -1064,6 +1074,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             case "color-scheme":
                 guard let scheme = WindowColorScheme(rawValue: value) else { return }
                 var appearance = windowAppearance(); appearance.colorScheme = scheme; updateWindowAppearance(appearance); settingsController?.refresh()
+            case "note-paper":
+                guard let paper = NotePaper(rawValue: value) else { return }
+                var appearance = windowAppearance(); appearance.paper = paper
+                updateWindowAppearance(appearance); settingsController?.refresh()
+            case "texture-strength":
+                var appearance = windowAppearance()
+                guard appearance.paper != .plain, let strength = Int(value), (0...100).contains(strength) else { return }
+                appearance.textureStrength = strength
+                updateWindowAppearance(appearance); settingsController?.refresh()
             case "code-theme": updateCodeTheme(value); settingsController?.refresh()
             case "indent": updateCodeIndentation(value); settingsController?.refresh()
             case "language":
@@ -1098,6 +1117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     "hide-window-shortcut": menuShortcut(#selector(closeActiveWindow)),
                     "quit-shortcut": menuShortcut(#selector(NSApplication.terminate(_:))),
                     "ui-theme": appearance.theme, "color-scheme": appearance.colorScheme.rawValue,
+                    "note-paper": appearance.paper.rawValue, "texture-strength": String(appearance.textureStrength),
                     "vim-double-escape": vimDoubleEscape() ? "on" : "off",
                     "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
                     "opacity": String(appearance.opacity), "blur": String(appearance.blur),

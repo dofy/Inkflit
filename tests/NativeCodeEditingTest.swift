@@ -469,6 +469,79 @@ final class NativeCodeEditingTest {
         running=NativeCodeEditingTest(app)
         running?.focusNoteEditor { running?.testSettingsAccent() }
     }
+    static func startNotePaper(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app)
+        running?.focusNoteEditor {
+            guard let test = running else { return }
+            UserDefaults.standard.removeObject(forKey: "noteTextureStrength")
+            for retired in ["grid", "ceramic"] {
+                UserDefaults.standard.set(retired, forKey: "notePaper")
+                guard app.windowAppearance().paper == .plain else { test.fail("the old \(retired) preference did not fall back to plain") }
+            }
+            guard app.windowAppearance().textureStrength == WindowAppearance.defaultTextureStrength else { test.fail("wrong default texture strength") }
+            app.showSettings()
+            guard let settings = app.settingsController else { test.fail("texture settings unavailable") }
+            settings.select(.appearance)
+            settings.window?.orderOut(nil)
+            test.focusNoteEditor { test.testNoteTextureAssets(settings) }
+        }
+    }
+    private func testNoteTextureAssets(_ settings: SettingsController) {
+        let script = """
+        for (const file of ['xuan-paper.jpg', 'wool-felt.jpg', 'fine-sandstone.jpg', 'coarse-linen.jpg']) {
+          const image = new Image();
+          image.src = new URL('textures/' + file, document.baseURI).href;
+          await image.decode();
+          if (!image.naturalWidth || !image.naturalHeight) throw Error('empty texture ' + file);
+        }
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("bundled textures: \(error)") }
+            let samples: [(NotePaper, String, WindowColorScheme, Int, Int)] = [
+                (.xuan, "xuan-paper.jpg", .light, 100, 50),
+                (.felt, "wool-felt.jpg", .dark, 90, 50),
+                (.sandstone, "fine-sandstone.jpg", .dark, 65, 0),
+                (.sandstone, "fine-sandstone.jpg", .dark, 65, 100),
+                (.linen, "coarse-linen.jpg", .light, 75, 40),
+                (.linen, "coarse-linen.jpg", .dark, 50, 70),
+                (.plain, "", .dark, 90, 70),
+            ]
+            testNotePaper(samples[...], settings: settings)
+        }
+    }
+    private func testNotePaper(_ samples: ArraySlice<(NotePaper, String, WindowColorScheme, Int, Int)>, settings: SettingsController) {
+        guard let (paper, image, scheme, opacity, strength) = samples.first else { app.restoreInputSource(); exit(0) }
+        let previousStrength = app.windowAppearance().textureStrength
+        guard settings.testSelectNotePaper(paper), app.windowAppearance().textureStrength == previousStrength,
+              settings.testSelectColorScheme(scheme),
+              settings.testSetSliderValues(opacity: opacity, blur: 0) else { fail("could not apply texture settings") }
+        guard settings.testSetTextureStrength(strength) == (paper != .plain) else { fail("texture slider availability") }
+        let saved = app.windowAppearance()
+        guard saved.paper == paper, saved.textureStrength == strength, saved.opacity == opacity else { fail("texture preference mismatch") }
+        let alpha = Double(opacity) / 100
+        let textureScale = Double(strength) / Double(WindowAppearance.defaultTextureStrength)
+        let condition = """
+        (() => {
+          const root = document.documentElement;
+          const background = document.querySelector('.note-background');
+          const backgroundStyle = getComputedStyle(background);
+          const layer = getComputedStyle(background, '::before');
+          if (root.dataset.notePaper !== '\(paper.rawValue)' || root.dataset.colorScheme !== '\(scheme.rawValue)') return false;
+          if (Number(root.style.getPropertyValue('--ui-opacity')) !== \(alpha) || Math.abs(+backgroundStyle.opacity - \(alpha)) > .002
+              || backgroundStyle.pointerEvents !== 'none' || backgroundStyle.position !== 'absolute') return false;
+          if ('\(paper.rawValue)' === 'plain') return layer.content === 'none' && layer.backgroundImage === 'none';
+          const baseStrength = parseFloat(getComputedStyle(root).getPropertyValue('--note-texture-strength'));
+          return layer.backgroundImage.endsWith('/\(image)")') && layer.backgroundSize === 'cover'
+            && (layer.filter.includes('invert(') === ('\(scheme.rawValue)' === 'dark'))
+            && baseStrength > 0 && Math.abs(+layer.opacity - baseStrength * \(textureScale)) < .002;
+        })()
+        """
+        waitForJavaScript(condition) { [self] in
+            print("PASS \(paper.rawValue) background in \(scheme.rawValue) at \(opacity)% opacity and \(strength)% strength")
+            testNotePaper(samples.dropFirst(), settings: settings)
+        }
+    }
     private func testSettingsAccent() {
         guard let screen = app.window.screen else { fail("no screen for note window") }
         let visible = screen.visibleFrame
@@ -505,7 +578,7 @@ final class NativeCodeEditingTest {
         }
         print("PASS Reset restores default window size and preserves position")
         let systemDark = app.window.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        for theme in ["orange", "blue", "green"] {
+        for theme in UIThemes.all.map(\.id) {
             guard settings.testSetAppearance(WindowAppearance(theme: theme, opacity: 85, blur: 75)),
                   settings.testAppearanceControls(theme) else { fail("accent or ticks not updated: \(theme)") }
             guard settings.testSetSliderValues(opacity: 83, blur: 37),
@@ -865,9 +938,63 @@ final class NativeCodeEditingTest {
                 app.web.evaluateJavaScript("[document.getElementById('command-panel').hidden,JSON.parse(window.exportNotesJSON()).notes.map(n=>n.content)]") { [self] value,error in
                     guard error == nil,let v=value as? [Any],v[0] as? Bool == true,let notes=v[1] as? [String],notes == ["initial",""] else { fail("palette create note: \(String(describing:value))") }
                     print("PASS command palette search, navigation, settings persistence, Escape and new note")
-                    testFormatCommand()
+                    testTextureCommands()
                 }
             }
+        }
+    }
+    private func testTextureCommands() {
+        let script = """
+        const input = document.getElementById('command-input');
+        const search = query => {
+          input.value = query;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const row = (title, current = false) => Array.from(document.querySelectorAll('#command-results .command-row'))
+          .find(row => row.querySelector('.palette-row-title').textContent === title
+            && (!current || row.getAttribute('aria-current') === 'true'));
+        const waitFor = async (read, description) => {
+          for (let attempt = 0; attempt < 40; attempt++) {
+            const value = read();
+            if (value) return value;
+            await new Promise(resolve => setTimeout(resolve, 30));
+          }
+          throw Error(description);
+        };
+        const root = document.documentElement;
+        const linen = paperTitle + '：' + linenTitle;
+        window.openCommands();
+        search('linen');
+        (await waitFor(() => row(linen), 'coarse linen command')).click();
+        await waitFor(() => root.dataset.notePaper === 'linen', 'coarse linen applied');
+
+        window.openCommands();
+        search('texture strength');
+        (await waitFor(() => row(strengthTitle), 'texture strength command')).click();
+        search('37%');
+        (await waitFor(() => row('37%'), 'typed 37% strength option')).click();
+        await waitFor(() => Number(root.style.getPropertyValue('--note-texture-scale')) === 0.74, 'typed strength applied');
+
+        window.openCommands();
+        search('linen');
+        await waitFor(() => row(linen, true), 'current coarse linen marker');
+        search('texture strength');
+        row(strengthTitle).click();
+        await waitFor(() => row('37%', true), 'current strength marker');
+
+        window.openCommands();
+        search('blue');
+        const activeTheme = themeTitle + '：' + blueTitle;
+        (await waitFor(() => row(activeTheme, true), 'repeat the current interface color command')).click();
+        return true;
+        """
+        let labels = ["paperTitle": L("settings.notePaper"), "linenTitle": L("settings.paperLinen"),
+                      "strengthTitle": L("settings.textureStrength"), "themeTitle": L("settings.accentColor"),
+                      "blueTitle": L("settings.themeOceanBlue")]
+        app.web.callAsyncJavaScript(script, arguments: labels, in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("texture commands: \(error)") }
+            print("PASS command palette applies coarse linen and custom texture strength")
+            testFormatCommand()
         }
     }
     private func testFormatCommand() {
@@ -901,16 +1028,21 @@ final class NativeCodeEditingTest {
         }
     }
     private func testCommandHistoryOrder() {
-        let expected = ["format-note", "new-note", "ui-theme", "toggle-vim"]
+        let expected = ["format-note", "ui-theme", "texture-strength", "note-paper", "new-note", "toggle-vim"]
         guard UserDefaults.standard.stringArray(forKey: "commandPaletteHistory") == expected else {
             fail("command palette history did not preserve execution order")
+        }
+        let appearance = app.windowAppearance()
+        guard appearance.paper == .linen, appearance.textureStrength == 37 else {
+            fail("texture commands did not persist their values")
         }
         key(35, "P", "p", [.command, .shift])
         waitForJavaScript("""
             document.activeElement.id === 'command-input'
               && document.querySelector('#command-option-0[aria-selected=true] .palette-row-title')?.textContent === '\(L("palette.formatNote"))'
+              && document.querySelector('#command-option-1 .palette-row-title')?.textContent === '\(L("settings.accentColor"))'
             """) { [self] in
-            print("PASS command history selects the last command at the top")
+            print("PASS command history keeps the last two distinct commands at the top")
             app.restoreInputSource(); exit(0)
         }
     }
@@ -2352,11 +2484,11 @@ final class NativeCodeEditingTest {
         if WindowBlur.isAvailable { guard app.backdrop.isHidden else { fail("effect view should be hidden when the window is blurred by radius") } }
         else { guard app.backdrop.isHidden == (expected.blur == 0), abs(app.backdrop.alphaValue - CGFloat(expected.blur) / 100) < 0.001 else { fail("backdrop state mismatch") } }
         later { [self] in
-            app.web.evaluateJavaScript("[document.documentElement.dataset.uiTheme, document.documentElement.style.getPropertyValue('--ui-opacity'), getComputedStyle(document.querySelector('.app')).backgroundColor, getComputedStyle(document.querySelector('header')).height, getComputedStyle(document.querySelector('.drag-bar')).height]") { [self] value, error in
+            app.web.evaluateJavaScript("[document.documentElement.dataset.uiTheme, document.documentElement.style.getPropertyValue('--ui-opacity'), getComputedStyle(document.querySelector('.note-background')).opacity, getComputedStyle(document.querySelector('header')).height, getComputedStyle(document.querySelector('.drag-bar')).height]") { [self] value, error in
                 guard error == nil, let values = value as? [String], values.count == 5 else { fail("could not read applied appearance") }
                 expect(values[0], expected.theme, "native UI color")
                 guard let opacity = Double(values[1]), abs(opacity - Double(expected.opacity) / 100) < 0.001 else { fail("web opacity mismatch") }
-                guard values[2].contains(expected.opacity == 100 ? "rgb(" : "rgba(") else { fail("window background opacity missing") }
+                guard let backgroundOpacity = Double(values[2]), abs(backgroundOpacity - opacity) < 0.001 else { fail("window background opacity missing") }
                 expect(values[3], "36px", "native compact toolbar")
                 expect(values[4], "10px", "native drag strip")
                 print("PASS native opacity and blur \(expected.opacity)/\(expected.blur)")

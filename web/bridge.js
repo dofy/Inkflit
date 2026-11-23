@@ -121,8 +121,11 @@ export function installBridge() {
       style.setProperty('--editor-font-size', fontSize);
       app.editor?.requestMeasure();
     },
-    setUIAppearance: (theme, value, scheme = colorScheme) => {
+    setUIAppearance: (theme, value, scheme = colorScheme, paper, textureScale) => {
       uiTheme = theme; opacity = value; colorScheme = scheme; applyColors();
+      const root = document.documentElement;
+      if (paper !== undefined && root.dataset.notePaper !== paper) root.dataset.notePaper = paper;
+      if (Number.isFinite(textureScale)) root.style.setProperty('--note-texture-scale', String(textureScale));
     },
   });
   watchColorScheme();

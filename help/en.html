@@ -6,9 +6,9 @@
   <ol>
     <li><b>Show the window</b> with the global shortcut, <kbd>⌃⌥Space</kbd> by default (you can change it in <b>Settings → General</b>), or click the menu bar icon and choose <b>Open Inkflit</b>.</li>
     <li><b>Write.</b> Changes are saved automatically; there is no Save button.</li>
-    <li><b>Hide an unpinned window</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
+    <li><b>Hide an unpinned window</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice in Vim Normal mode). Switching to another app also hides it.</li>
   </ol>
-  <p>Use the toolbar pin or <b>Pin Window</b> in the command palette to keep the window open when switching apps. Press <kbd>⌘W</kbd> to close it.</p>
+  <p>Use the toolbar pin or <b>Pin Window</b> in the command palette to keep the window open when pressing <kbd>Esc</kbd> or switching apps. Press <kbd>⌘W</kbd> to close it.</p>
   <h3>Where the window appears</h3>
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it. Restore the default size under <b>Settings → Appearance → Window size → Reset</b>.</p>
@@ -21,17 +21,18 @@
 
 <section id="notes">
   <h2>Notes</h2>
-  <p>Notes are kept in order like the pages of a notebook: the first note is the oldest, and a new note is added at the end. The toolbar shows where you are, for example <code>2 / 5</code>.</p>
+  <p>Notes are arranged like pages in a notebook. The toolbar shows your position, such as <code>2 / 5</code>. New notes from the toolbar or keyboard go at the end.</p>
   <ul>
     <li><b>New note:</b> <kbd>⌘N</kbd> or the <b>+</b> button.</li>
     <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar. <kbd>⌘⇧[</kbd> and <kbd>⌘⇧]</kbd> jump to the first and the last note.</li>
     <li><b>Jump to a page:</b> <kbd>⌘1</kbd> to <kbd>⌘9</kbd> open notes 1 to 9.</li>
   </ul>
   <p>Pages slide horizontally. Each note keeps its cursor and scroll position while Inkflit is running. Small arrows near the right edge show that more content is above or below.</p>
+  <p>The page gives a small nudge when you use the shortcut to turn past the first or last note. Page motion follows the system’s Reduce Motion setting.</p>
   <p>The footer shows when the current note was created, in your local time. Notes created before this was recorded show no date.</p>
   <h3>Deleting and undoing</h3>
   <p><kbd>⌘D</kbd> deletes the current note right away. A notice stays for 12 seconds; press <kbd>⌘U</kbd> or click it to bring the note back.</p>
-  <p class="tip">Deleted notes are never erased. They stay in the Trash folder, and <b>Settings → Backups → Restore deleted note…</b> brings any of them back as a new note.</p>
+  <p class="tip">Deleted notes go to the Trash folder. <b>Settings → Data → Restore deleted note…</b> brings a Trash item back as a new note.</p>
 </section>
 
 <section id="palette">
@@ -44,15 +45,23 @@
     <li>Backups and the Trash are not searched.</li>
   </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
-  <p>Run note actions and change settings from the palette. Your last command appears first, followed by other recently used commands in order of frequency.</p>
+  <p>Run note actions and change settings from the palette. Commands you have used are ordered by last use, most recent first.</p>
   <p>Search for <code>format</code> and select <b>Format Note</b> to tidy expression spacing in math blocks and format JavaScript, TypeScript, JSON, HTML, CSS, Markdown, and YAML code blocks in the current note. Code uses your Code indentation setting. The whole operation can be undone in one step.</p>
   <ul>
     <li>Commands marked <b>›</b> open a second list, such as accent colors or languages. The current value has a <b>✓</b>.</li>
-    <li>For opacity, blur and backups you can also type a number, for example <code>75</code>.</li>
+    <li>Open the setting first, then type an exact value for opacity, blur, texture strength or backup count, such as <code>75%</code> for opacity.</li>
     <li><kbd>Esc</kbd>, or <kbd>⌫</kbd> in an empty field, goes back one level with the previous row still selected.</li>
     <li>Typing on the first level also finds second-level options, so <code>english</code> finds <b>Language: English</b>.</li>
   </ul>
   <p>Press either shortcut again to close its panel, or the other shortcut to switch panels.</p>
+  <p><a href="#command-keywords">Command keywords</a></p>
+</section>
+
+<section id="command-keywords">
+  <h2>Command keywords</h2>
+  <p>Type the keyword in the command palette to find the named command. These English keywords work in every interface language, and the displayed command name is searchable too.</p>
+  <p>Some commands appear only when they apply. For example, Choose code language appears when the cursor is in code, and Texture strength appears after you choose a textured background.</p>
+  %COMMAND_KEYWORDS%
 </section>
 
 <section id="writing">
@@ -407,12 +416,12 @@ ans / 2 =
     <li>Brackets and quotes are closed for you. <kbd>Return</kbd> keeps the indentation, <kbd>Tab</kbd> indents and <kbd>⇧Tab</kbd> outdents.</li>
     <li>With nothing selected, <kbd>⌘C</kbd> copies the whole block.</li>
   </ul>
-  <p>Indentation (2 spaces, 4 spaces or tabs) and the three color themes are in <b>Settings → Edit</b>, with a live preview.</p>
+  <p>Choose 2 spaces, 4 spaces, or tabs under <b>Settings → Edit → Code indentation</b>. Choose and preview a theme under <b>Settings → Appearance → Code colors</b>.</p>
 </section>
 
 <section id="vim">
   <h2>Vim mode</h2>
-  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. With the window unpinned, press <kbd>Esc</kbd> twice in Normal mode within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
+  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. With the window unpinned, press <kbd>Esc</kbd> twice in Normal mode by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
   <ul>
     <li>In normal mode Inkflit switches to an ASCII keyboard layout so commands work, and restores your input method when you start typing or leave the window.</li>
     <li>An open input method candidate is cancelled before <kbd>Esc</kbd> leaves insert mode.</li>
@@ -429,13 +438,16 @@ ans / 2 =
     <thead><tr><th>Tab</th><th>Options</th></tr></thead>
     <tbody>
       <tr><td>General</td><td>Launch at login, language, the global shortcut</td></tr>
-      <tr><td>Appearance</td><td>Appearance mode, accent color, editor font and size, window size reset, window opacity, background blur, code colors. Hold <kbd>⌥</kbd> while dragging a slider to move in 5% steps.</td></tr>
+      <tr><td>Appearance</td><td>Appearance mode, accent color, editor font and size, background texture, texture strength, window size reset, window opacity, background blur, code colors. Hold <kbd>⌥</kbd> while dragging a slider to move in 5% steps.</td></tr>
       <tr><td>Edit</td><td>Vim mode, Double Esc to hide, code indentation</td></tr>
-      <tr><td>Snippets</td><td>Your own snippets; see <a href="#writing">Writing</a></td></tr>
+      <tr><td>Snippets</td><td>Custom snippets and <a href="#writing">snippet availability</a></td></tr>
       <tr><td>Data</td><td>Notes folder, automatic backups, previous versions, Trash, index recovery</td></tr>
     </tbody>
   </table>
-  <p>Choose Follow System (the default), Light, or Dark under <b>Appearance</b>.</p>
+  <p>Choose Follow System (the default), Light, or Dark under <b>Appearance</b>. Under <b>Accent color</b>, the multicolor palettes coordinate the toolbar, note, and menus. Choices include Cola Red &amp; Blue, Christmas, Lacquer Red, Midnight Gold, and Peacock &amp; Gold. Each follows your selected appearance mode.</p>
+  <h3>Background texture</h3>
+  <p>Choose Plain, Xuan paper, Wool felt, Fine sandstone, or Coarse linen under <b>Settings → Appearance → Background texture</b>. <b>Texture strength</b> starts at 50% and controls how visible the texture is. Set it to 0% for a solid background. Use <b>Window opacity</b> to control how much of the desktop shows through.</p>
+  <p>In the command palette, type <code>background material</code> or search for a surface by name. With a texture selected, open <code>texture strength</code> and enter a value such as <code>37%</code>.</p>
 </section>
 
 <section id="shortcuts">
@@ -460,7 +472,7 @@ ans / 2 =
   </ul>
   <h3>Backups and recovery</h3>
   <ul>
-    <li>While you edit, the previous version of a note is kept at most once every five minutes. Choose how many to keep in <b>Settings → Backups</b>.</li>
+    <li>While you edit, the previous version of a note is kept at most once every five minutes. Choose how many to keep in <b>Settings → Data → Automatic backups</b>.</li>
     <li><b>Restore a previous version…</b> and <b>Restore deleted note…</b> create a new note and leave the original file in place.</li>
     <li>If <code>index.json</code> is damaged, <b>Rebuild index…</b> recreates it from the note files. The old index is kept.</li>
   </ul>

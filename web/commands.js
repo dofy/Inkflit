@@ -6,6 +6,7 @@ import { selectAt, createNote, navigate, selectFirst, selectLast } from './notes
 import { deleteNote, hasDeleteNotices, restoreLastDeleted } from './delete-notices.js';
 import { formatCurrentNote } from './note-format.js';
 import { codeThemes } from './code-themes.js';
+import { uiThemes } from './ui-themes.js';
 import { blockMenuOpen, currentBlockScope, openInsertBlockMenu, canInsertBlock, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine, planAdjacentTextLine } from './block-menu.js';
 import { closeLanguageMenu, languageMenuOpen, openCurrentLanguageMenu, currentLanguageScope } from './language-menu.js';
 import { scopeAt } from './features.js';
@@ -31,7 +32,7 @@ const editorCommands = [
   { id: 'restore-last-note', label: 'note.restoreLastDeleted', group: note, aliases: ['restore undo deleted note'], key: 'u', phase: 'early', when: () => hasDeleteNotices(), run: () => restoreLastDeleted() },
   { id: 'last-note', label: 'note.last', group: note, aliases: ['last note bottom end'], key: ']', code: 'BracketRight', shift: true, run: () => selectLast() },
   { id: 'format-note', label: 'palette.formatNote', group: note, aliases: ['format note code math beautify'], run: () => formatCurrentNote() },
-  { id: 'delete-note', label: 'note.delete', group: note, aliases: ['delete note trash'], key: 'd', repeat: true, run: () => deleteNote() },
+  { id: 'delete-note', label: 'note.delete', group: note, aliases: ['delete current note trash'], key: 'd', repeat: true, run: () => deleteNote() },
   { id: 'insert-block', label: 'palette.insertBlock', group: edit, aliases: ['insert new feature block'], when: canInsertBlock, run: openInsertBlockMenu },
   { id: 'change-block', label: 'palette.changeBlockType', group: edit, aliases: ['change feature block type convert'], key: 'k', phase: 'before-menu', keyboardWhen: focused, when: editor => !!currentBlockScope(editor.state), run: editor => {
     if (!openCurrentBlockMenu(editor)) return false;
@@ -145,7 +146,7 @@ function toggleComments(editor) {
 
 // Options with several values open a second level of the palette;
 // `current` marks the value in commandState.
-const choices = (action, pairs) => () => pairs.map(([value, label]) => ({ label: t(label), aliases: [value], current: commandState[action] === value, run: () => nativeCommand(action, value) }));
+const choices = (action, pairs) => () => pairs.map(([value, label, aliases = []]) => ({ label: t(label), aliases: [value, ...aliases], current: commandState[action] === value, run: () => nativeCommand(action, value) }));
 // Presets plus the current value when it is not one of them.
 const withCurrent = (values, action) => { const value = Number(commandState[action]); return Number.isInteger(value) && !values.includes(value) ? [...values, value].sort((a, b) => b - a) : values; };
 const percent = (action, values, min, max) => Object.assign(
@@ -162,7 +163,16 @@ const backups = Object.assign(() => [
 const settingsCommands = [
   { id: 'vim-double-escape', label: 'settings.vimDoubleEscape', group: setting, aliases: ['vim escape esc double single hide window', '两次 Esc 退出窗口 关闭窗口', '兩次 Esc 關閉視窗'], children: choices('vim-double-escape', [['on', 'palette.on'], ['off', 'settings.off']]) },
   { id: 'color-scheme', label: 'settings.colorScheme', group: setting, aliases: ['appearance color scheme dark light system'], children: choices('color-scheme', [['system', 'settings.appearanceSystem'], ['light', 'settings.appearanceLight'], ['dark', 'settings.appearanceDark']]) },
-  { id: 'ui-theme', label: 'settings.accentColor', group: setting, aliases: ['appearance accent theme color'], children: choices('ui-theme', [['orange', 'settings.themeWarmOrange'], ['blue', 'settings.themeOceanBlue'], ['green', 'settings.themeSage']]) },
+  { id: 'ui-theme', label: 'settings.accentColor', group: setting, aliases: ['appearance accent theme color palette', '界面配色', '介面配色'],
+    children: choices('ui-theme', uiThemes.map(({ id, title, aliases }) => [id, title, aliases])) },
+  { id: 'note-paper', label: 'settings.notePaper', group: setting,
+    aliases: ['appearance background texture material', '背景 纸张 纸纹 布纹', '背景 紙張 紙紋 布紋'],
+    children: choices('note-paper', [['plain', 'settings.paperPlain'], ['xuan', 'settings.paperXuan'], ['felt', 'settings.paperFelt'],
+      ['sandstone', 'settings.paperSandstone'], ['linen', 'settings.paperLinen']]) },
+  { id: 'texture-strength', label: 'settings.textureStrength', group: setting,
+    aliases: ['background texture strength intensity', '背景强度 纹理浓淡', '背景強度 紋理濃淡'],
+    when: () => Boolean(commandState['note-paper']) && commandState['note-paper'] !== 'plain',
+    children: percent('texture-strength', [0, 25, 50, 75, 100], 0, 100) },
   { id: 'code-theme', label: 'settings.codeColors', group: setting, aliases: ['code syntax theme'], children: choices('code-theme', codeThemes.map(({ id, title }) => [id, title])) },
   { id: 'indent', label: 'settings.codeIndentation', group: setting, aliases: ['code indentation indent'], children: choices('indent', [['spaces2', 'settings.indentTwoSpaces'], ['spaces4', 'settings.indentFourSpaces'], ['tabs', 'Tab']]) },
   { id: 'language', label: 'settings.language', group: setting, aliases: ['language locale'], children: choices('language', [['system', 'settings.languageSystem'], ['en', 'English'], ['zh-Hans', '简体中文'], ['zh-Hant', '繁體中文'], ['ja', '日本語']]) },
@@ -211,9 +221,9 @@ export function runShortcut(event, phase) {
   return (event.repeat && !command.repeat) || command.run(editor) !== false || command.capture === true;
 }
 
-export function availableCommands() {
+export function availableCommands({ includeUnavailable = false } = {}) {
   const editor = app.editor;
-  return definitions.filter(command => command.label && (!command.when || (editor && command.when(editor))))
+  return definitions.filter(command => command.label && (includeUnavailable || !command.when || (editor && command.when(editor))))
     .map(command => ({ ...command, label: t(typeof command.label === 'function' ? command.label() : command.label),
       group: t(command.group), shortcut: shortcutLabel(command) }));
 }
