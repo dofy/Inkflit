@@ -2,15 +2,20 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-23
+
 ### Added
 
 - Slide between notes in the direction of navigation with a soft rebound.
+- Nudge the page when a shortcut tries to move past the first or last note.
 - Pin the note window from the toolbar or command palette to keep it open when pressing Esc or switching apps. Use ⌘W to close it.
 - Toggle snippet groups and individual built-in or custom snippets in Settings without deleting them.
 - Choose an installed font and size for the note editor in Appearance settings.
 
 ### Changed
 
+- Replace note scrollbars with edge cues for content above and below the visible area.
+- Put the last command first in the command palette, then rank other commands by recent usage.
 - Keep the scientific constant suggestions and placeholder picker focused on frequently used constants.
 - Refactor window and snippet settings into dedicated modules, move URL parsing into automation, and consolidate note creation and index generation.
 - Tint inline code with the selected interface palette.
@@ -19,6 +24,7 @@
 
 ### Fixed
 
+- Restore the previous scroll position when returning to a note.
 - Apply the selected interface palette and appearance throughout offline help.
 - Find the minute unit with `@min` alongside the `min()` function in math snippets.
 - Keep Return on the last line of a feature block inside the block.
@@ -27,6 +33,8 @@
 - Temporarily use an ASCII keyboard while searching feature block and snippet suggestions, then restore the previous input source.
 - Show a no-match message for `@` searches and keep the English input source active until the search ends.
 - Reload note contents in the editor after rebuilding the note index.
+
+The DMG requires Apple Silicon and macOS 13 or later. The app is ad hoc signed and has no Apple notarization. The release includes `SHA256SUMS.txt` for verification.
 
 ## [0.2.2] - 2026-11-19
 

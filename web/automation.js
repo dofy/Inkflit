@@ -16,6 +16,12 @@ function metadata(note, index) {
 const formatPreviews = new Map();
 const maxFormatPreviews = 16;
 
+function updateCachedEditor(cached, spec) {
+  const transaction = cached.state.update(spec);
+  cached.state = transaction.state;
+  cached.scroll = cached.scroll?.map(transaction.changes);
+}
+
 async function previewFormatting(state, note) {
   const before = note.content;
   const preview = await previewNoteFormat(before, app.codeIndentation);
@@ -47,9 +53,9 @@ async function applyFormatting(state, note, previewID) {
     if (!editor?.state.doc.eq(preview.doc)) throw new Error('Editor content changed since preview; preview it again');
     editor.dispatch(spec);
   } else {
-    const cached = app.editorStates.get(note.id);
-    if (cached?.doc.eq(preview.doc)) app.editorStates.set(note.id, cached.update(spec).state);
-    else if (cached) app.editorStates.delete(note.id);
+    const cached = app.editorCache.get(note.id);
+    if (cached?.state.doc.eq(preview.doc)) updateCachedEditor(cached, spec);
+    else if (cached) app.editorCache.delete(note.id);
   }
   note.content = preview.content;
   note.updated = new Date().toISOString();
@@ -173,7 +179,7 @@ export async function notesOperation(request) {
     if (text !== note.content) {
       const spec = { changes: { from: 0, to: note.content.length, insert: text }, annotations: Transaction.userEvent.of('input.external'), filter: false };
       if (note.id === state.selected) app.editor.dispatch(spec);
-      else { const cached = app.editorStates.get(note.id); if (cached) app.editorStates.set(note.id, cached.update(spec).state); note.content = text; note.updated = new Date().toISOString(); }
+      else { const cached = app.editorCache.get(note.id); if (cached) updateCachedEditor(cached, spec); note.content = text; note.updated = new Date().toISOString(); }
     }
   }
   await persistNow();

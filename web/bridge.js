@@ -5,7 +5,7 @@ import { loadNoteSnapshot, setVimEnabled, refreshBlockResults, prepareToHide } f
 import { applyToolbarLanguage } from './toolbar.js';
 import { addGuideNotes, createNote, select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
-import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandState } from './palettes.js';
+import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandHistory, setCommandState } from './palettes.js';
 import { notesOperation } from './automation.js';
 import { setUserSnippets, setSnippetPreferences, settingsSnippetControls, settingsSnippetPlaceholders } from './snippet-completion.js';
 import { closeBlockMenu } from './block-menu.js';
@@ -96,6 +96,7 @@ export function installBridge() {
     },
     openCommands,
     openNoteSearch: openSearch,
+    setCommandHistory,
     setCommandState,
     setUserSnippets,
     setSnippetPreferences,

@@ -4,13 +4,34 @@ const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)'
 const duration = 280;
 const travel = 'cubic-bezier(.24,.72,.26,1)';
 const settle = 'ease-in-out';
-let activeSlide;
+let activeSlide, edgeNudge;
 
-export function cancelPageSlide() { activeSlide?.(); }
-reducedMotion?.addEventListener('change', event => { if (event.matches) cancelPageSlide(); });
+export function cancelPageMotion() {
+  activeSlide?.cancel();
+  edgeNudge?.cancel();
+  edgeNudge = null;
+}
+reducedMotion?.addEventListener('change', event => { if (event.matches) cancelPageMotion(); });
+
+export function nudgePageEdge(direction) {
+  if (!app.editor || reducedMotion?.matches || edgeNudge) return;
+  if (activeSlide) { activeSlide.pendingEdgeDirection = direction; return; }
+
+  const animation = $('note-page').animate([
+    { transform: 'translateX(0)', easing: 'ease-out' },
+    { transform: `translateX(${-direction * 9}px)`, offset: .32, easing: settle },
+    { transform: `translateX(${direction * 2}px)`, offset: .72, easing: settle },
+    { transform: 'translateX(0)' },
+  ], 190);
+  edgeNudge = animation;
+  animation.onfinish = () => { if (edgeNudge === animation) edgeNudge = null; };
+}
 
 export function replaceNotePage(direction, replace) {
-  cancelPageSlide();
+  cancelPageMotion();
+  // CodeMirror applies pending scroll targets during layout. Resolve them
+  // before either the outgoing image or the saved viewport reads the scroll.
+  app.editor?.lineBlockAtHeight(0);
   if (!direction || !app.editor || reducedMotion?.matches) { replace(); return; }
 
   // The departing page is a visual copy. Only the new CodeMirror view receives input.
@@ -41,13 +62,19 @@ export function replaceNotePage(direction, replace) {
     { transform: 'translateX(0)' },
   ], options);
 
-  const cleanUp = () => {
-    if (activeSlide !== cleanUp) return;
-    activeSlide = null;
-    enter.cancel();
-    exit.cancel();
-    outgoing.remove();
+  const slide = {
+    pendingEdgeDirection: 0,
+    cancel() {
+      activeSlide = null;
+      enter.cancel();
+      exit.cancel();
+      outgoing.remove();
+    },
   };
-  activeSlide = cleanUp;
-  enter.onfinish = cleanUp;
+  activeSlide = slide;
+  enter.onfinish = () => {
+    if (activeSlide !== slide) return;
+    slide.cancel();
+    if (slide.pendingEdgeDirection) nudgePageEdge(slide.pendingEdgeDirection);
+  };
 }

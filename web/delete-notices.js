@@ -69,7 +69,7 @@ export function removeNote(index) {
   if (!app.state.notes.length) { const empty = newNote(); placeholder = placeholderID = empty.id; app.state.notes.push(empty); }
   if (app.state.selected === note.id) changeEditor(app.state.notes[Math.min(index, app.state.notes.length - 1)].id);
   else refreshNav();
-  const savedEditor = app.editorStates.get(note.id); app.editorStates.delete(note.id);
+  const savedEditor = app.editorCache.get(note.id); app.editorCache.delete(note.id);
   addDeleteNotice(note, savedEditor, placeholder);
   return note;
 }
@@ -84,8 +84,8 @@ export function restoreDeletedNote(id) {
   const rank = deleteOrder.indexOf(id), next = deleteOrder.slice(rank + 1).find(candidate => notes.some(note => note.id === candidate));
   const previous = deleteOrder.slice(0, rank).reverse().find(candidate => notes.some(note => note.id === candidate));
   const position = next ? notes.findIndex(note => note.id === next) : previous ? notes.findIndex(note => note.id === previous) + 1 : notes.length;
-  notes.splice(position, 0, entry.note); if (entry.savedEditor) app.editorStates.set(id, entry.savedEditor);
-  changeEditor(id); if (placeholderIndex >= 0) app.editorStates.delete(entry.placeholder);
+  notes.splice(position, 0, entry.note); if (entry.savedEditor) app.editorCache.set(id, entry.savedEditor);
+  changeEditor(id); if (placeholderIndex >= 0) app.editorCache.delete(entry.placeholder);
   entry.element.remove(); notices.delete(id); updateDeleteNotices(); persist(true);
 }
 

@@ -653,6 +653,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         syncVimEnabled()
         syncVimDoubleEscape()
         web.evaluateJavaScript("window.setWindowPinned?.(\(windowPinned ? "true" : "false"))", completionHandler: nil)
+        if let history = javaScriptJSON(UserDefaults.standard.stringArray(forKey: "commandPaletteHistory") ?? []) {
+            web.evaluateJavaScript("window.setCommandHistory?.(\(history))", completionHandler: nil)
+        }
         syncCodeTheme()
         applyWindowAppearance()
         do {
@@ -1012,6 +1015,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
+        if type == "commandHistory", let ids = body["ids"] as? [String] {
+            UserDefaults.standard.set(ids, forKey: "commandPaletteHistory")
+            return
+        }
         if type == "toolbarRegions", let width = body["width"] as? NSNumber, let regions = body["rects"] as? [[String: NSNumber]], !regions.isEmpty {
             let rects = regions.compactMap { region -> NSRect? in
                 guard let x=region["x"]?.doubleValue, let y=region["y"]?.doubleValue,

@@ -814,7 +814,13 @@ final class NativeCodeEditingTest {
     }
     static func startCommandPalette(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app);app.showWindow()
-        running?.focusNoteEditor { running?.testCommandPalette() }
+        running?.focusNoteEditor {
+            if ProcessInfo.processInfo.environment["INKFLIT_COMMAND_HISTORY_RESTART_TEST"] == "1" {
+                running?.testCommandHistoryOrder()
+            } else {
+                running?.testCommandPalette()
+            }
+        }
     }
     private func testCommandPalette() {
         key(35,"P","p",[.command,.shift]);later { [self] in
@@ -888,10 +894,24 @@ final class NativeCodeEditingTest {
                     key(6, "z", "z", .command)
                     later { [self] in content { [self] restored in
                         expect(restored, original, "Format Note undo restores the full note")
-                        app.restoreInputSource(); exit(0)
+                        testCommandHistoryOrder()
                     } }
                 }
             }
+        }
+    }
+    private func testCommandHistoryOrder() {
+        let expected = ["format-note", "new-note", "ui-theme", "toggle-vim"]
+        guard UserDefaults.standard.stringArray(forKey: "commandPaletteHistory") == expected else {
+            fail("command palette history did not preserve execution order")
+        }
+        key(35, "P", "p", [.command, .shift])
+        waitForJavaScript("""
+            document.activeElement.id === 'command-input'
+              && document.querySelector('#command-option-0[aria-selected=true] .palette-row-title')?.textContent === '\(L("palette.formatNote"))'
+            """) { [self] in
+            print("PASS command history selects the last command at the top")
+            app.restoreInputSource(); exit(0)
         }
     }
     static func startDeleteNotices(_ app: AppDelegate) {
@@ -1523,7 +1543,11 @@ final class NativeCodeEditingTest {
     }
     static func startReadingNavigation(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app); app.showWindow()
-        running?.focusNoteEditor { running?.testPageSlides { running?.testReadingAndNavigation() } }
+        running?.focusNoteEditor {
+            running?.testPageSlides {
+                running?.testPageEdgeFeedback { running?.testReadingAndNavigation() }
+            }
+        }
     }
     private func testReadingAndNavigation() {
         let script = """
@@ -1566,7 +1590,7 @@ final class NativeCodeEditingTest {
                                                 key(33, "{", "{", [.command, .shift]); later { [self] in checkNavigation("first", "1 / 3", true, false) { [self] in
                                                     print("PASS arrow buttons and Cmd bracket navigation follow page order")
                                                     print("PASS Cmd-Shift brackets jump to the first and last note")
-                                                    app.restoreInputSource(); exit(0)
+                                                    testNoteScrollCues()
                                                 } }
                                             } }
                                         } }
@@ -1627,6 +1651,174 @@ final class NativeCodeEditingTest {
                 print("PASS directional page slides, rebound and rapid navigation cleanup")
                 completion()
             }
+        }
+    }
+    private func testPageEdgeFeedback(_ completion: @escaping () -> Void) {
+        key(33, "[", "[", .command)
+        checkPageNudge("first", offsetSign: 1) { [self] in
+            key(30, "}", "}", [.command, .shift])
+            waitForJavaScript("""
+                (() => {
+                  if (JSON.parse(window.exportNotesJSON()).selected !== 'third') return false;
+                  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+                  const slide = document.getElementById('note-page').getAnimations()[0];
+                  if (!slide || !document.querySelector('.note-page-outgoing')) return false;
+                  slide.pause();
+                  return true;
+                })()
+                """) { [self] in
+                key(30, "]", "]", .command)
+                app.web.evaluateJavaScript("""
+                    (() => {
+                      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+                      const slides = document.getElementById('note-page').getAnimations();
+                      if (slides.length !== 1 || !document.querySelector('.note-page-outgoing')) return false;
+                      slides[0].finish();
+                      return true;
+                    })()
+                    """) { [self] value, error in
+                    guard error == nil, value as? Bool == true else { fail("boundary shortcut interrupted the slide") }
+                    checkPageNudge("third", offsetSign: -1) { [self] in
+                        app.web.evaluateJavaScript("window.inkflitSelectNote('first')") { [self] value, error in
+                            guard error == nil, value as? Bool == true else { fail("could not restore initial page") }
+                            print("PASS first and last page shortcut feedback, including a blocked turn during a slide")
+                            completion()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func checkPageNudge(_ note: String, offsetSign: Int, _ completion: @escaping () -> Void) {
+        waitForJavaScript("""
+            (() => {
+              if (JSON.parse(window.exportNotesJSON()).selected !== '\(note)' || document.querySelector('.note-page-outgoing')) return false;
+              const page = document.getElementById('note-page');
+              const [nudge, extra] = page.getAnimations();
+              if (matchMedia('(prefers-reduced-motion: reduce)').matches) return !nudge;
+              if (!nudge || extra) return false;
+              nudge.pause();
+              nudge.currentTime = nudge.effect.getTiming().duration * .32;
+              const delta = page.getBoundingClientRect().left - page.parentElement.getBoundingClientRect().left;
+              nudge.finish();
+              return delta * \(offsetSign) > 5;
+            })()
+            """, completion)
+    }
+    private func testNoteScrollCues() {
+        app.window.setContentSize(NSSize(width: 440, height: 530))
+        let script = """
+        const scroller = document.querySelector('#editor .cm-scroller');
+        const editorWidth = () => [scroller.clientWidth, scroller.offsetWidth];
+        async function expectCues(above, below, stage) {
+          for (let frame = 0; frame < 30; frame++) {
+            const up = document.querySelector('.note-scroll-above');
+            const down = document.querySelector('.note-scroll-below');
+            if (up?.hidden === !above && down?.hidden === !below) return;
+            await new Promise(resolve => requestAnimationFrame(resolve));
+          }
+          throw Error('Incorrect scroll cues ' + stage);
+        }
+        await expectCues(false, false, 'for a short note');
+        const viewport = document.querySelector('main');
+        const originalFlex = viewport.style.flex;
+        viewport.style.flex = '0 0 80px';
+        await expectCues(false, true, 'after reducing the viewport height');
+        viewport.style.flex = originalFlex;
+        await expectCues(false, false, 'after restoring the viewport height');
+        const longNote = Array.from({ length: 160 }, (_, index) => 'Note line ' + (index + 1)).join('\\n');
+        await window.inkflitNotesOperation({ action: 'replace', id: 'first', content: longNote });
+        scroller.scrollTop = 0;
+        await expectCues(false, true, 'at the top');
+        const [clientWidth, offsetWidth] = editorWidth();
+        if (clientWidth !== offsetWidth) throw Error('The note scroller still reserves a scrollbar gutter');
+        scroller.scrollTop = scroller.scrollHeight / 2;
+        await expectCues(true, true, 'in the middle');
+        scroller.scrollTop = scroller.scrollHeight;
+        await expectCues(true, false, 'at the bottom');
+        await window.inkflitNotesOperation({ action: 'replace', id: 'first', content: 'Short note again' });
+        await expectCues(false, false, 'after shortening the note');
+        const resizeNote = Array.from({ length: 15 }, (_, index) => 'Note line ' + (index + 1)).join('\\n');
+        await window.inkflitNotesOperation({ action: 'replace', id: 'first', content: resizeNote });
+        await expectCues(false, false, 'before resizing the window');
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("note scroll cues: \(error)") }
+            print("PASS note scroll cues track scrolling and content changes without a scrollbar gutter")
+            testScrollCuesOnWindowResize()
+        }
+    }
+    private func testScrollCuesOnWindowResize() {
+        let below = "document.querySelector('.note-scroll-below').hidden"
+        app.window.setContentSize(NSSize(width: 440, height: 330))
+        waitForJavaScript("window.innerHeight === 330 && !\(below)") { [self] in
+            app.window.setContentSize(NSSize(width: 440, height: 530))
+            waitForJavaScript("window.innerHeight === 530 && \(below)") { [self] in
+                print("PASS note scroll cues update when the native window resizes")
+                testPageScrollRestoration()
+            }
+        }
+    }
+    private func testPageScrollRestoration() {
+        let script = """
+        for (const id of ['first', 'second']) {
+          const text = Array.from({ length: 160 }, (_, index) => id + ' line ' + (index + 1)).join('\\n');
+          await window.inkflitNotesOperation({ action: 'replace', id, content: text });
+        }
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("could not prepare the page scroll fixture: \(error)") }
+            key(5, "G", "g", .shift)
+            waitForJavaScript("document.querySelector('#editor .cm-activeLine')?.textContent === 'first line 160' && document.querySelector('#editor .cm-scroller').scrollTop > 100") { [self] in
+                checkPageScrollRoundTrip()
+            }
+        }
+    }
+    private func checkPageScrollRoundTrip() {
+        let script = """
+        const scroller = () => document.querySelector('#editor .cm-scroller');
+        const previous = document.getElementById('previous');
+        const next = document.getElementById('next');
+        const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+        async function expectScroll(position, stage) {
+          for (let frame = 0; frame < 30; frame++) {
+            if (Math.abs(scroller().scrollTop - position) < 2) return;
+            await nextFrame();
+          }
+          throw Error(stage + ' expected scrollTop ' + position + ', got ' + scroller().scrollTop);
+        }
+        const firstOffset = scroller().scrollTop;
+        next.click();
+        await nextFrame();
+        await nextFrame();
+        const secondTarget = Math.floor(scroller().scrollHeight / 3);
+        scroller().scrollTop = secondTarget;
+        await nextFrame();
+        await nextFrame();
+        const secondOffset = scroller().scrollTop;
+        if (secondOffset < 100) throw Error('The second note did not scroll');
+        previous.click();
+        await expectScroll(firstOffset, 'returning to the last line of the first note');
+        if (document.querySelector('#editor .cm-activeLine')?.textContent !== 'first line 160') {
+          throw Error('The first note lost its cursor position');
+        }
+        next.click();
+        await expectScroll(secondOffset, 'restoring the second note');
+        previous.click();
+        next.click();
+        previous.click();
+        await expectScroll(firstOffset, 'returning after two immediate page turns');
+        await window.inkflitNotesOperation({ action: 'delete', id: 'first' });
+        document.querySelector('.delete-notice.is-next .delete-notice-undo').click();
+        await expectScroll(firstOffset, 'restoring the deleted note');
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("page scroll restoration: \(error)") }
+            print("PASS cursor and independent scroll positions restore after regular and rapid page turns")
+            app.restoreInputSource(); exit(0)
         }
     }
     private func checkNavigation(_ selected: String, _ position: String, _ previousDisabled: Bool, _ nextDisabled: Bool, completion: @escaping () -> Void) {
@@ -1794,7 +1986,7 @@ final class NativeCodeEditingTest {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [self] in
                                 do { guard !app.window.isVisible, try NoteFiles.read(directory).notes[1].content == "xtwo" else { fail("hide did not flush the current note") } }
                                 catch { fail("could not read hide save: \(error)") }
-                                app.showWindow(); testAutosaveFailureAndExit(directory)
+                                focusNoteEditor { [self] in testAutosaveFailureAndExit(directory) }
                             }
                         }
                     }
@@ -1805,7 +1997,7 @@ final class NativeCodeEditingTest {
     private func testAutosaveFailureAndExit(_ directory: URL) {
         let first = NoteFiles.noteURL(directory, "first")
         do { try Data("external".utf8).write(to: first, options: .atomic) } catch { fail("could not create conflict fixture") }
-        sequence([{ self.key(16, "y") }]) { [self] in
+        sequence([{ self.key(0, "a") }, { self.key(16, "y") }]) { [self] in
             app.requestFlush { [self] success, _ in
                 guard !success, (try? String(contentsOf: first, encoding: .utf8)) == "external" else { fail("external edit was overwritten") }
                 app.web.evaluateJavaScript("window.confirm=()=>true; document.getElementById('delete').click()") { [self] _, error in

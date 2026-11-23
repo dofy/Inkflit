@@ -1,7 +1,7 @@
 import { t } from './i18n.js';
-import { app, $, nativeCommand } from './app.js';
+import { app, $, nativeCommand, nativeHandler } from './app.js';
 import { createPalette } from './palette.js';
-import { filterCommands } from './command-palette.js';
+import { filterCommands, rankCommands } from './command-palette.js';
 import { searchNotes, notePreview } from './note-search.js';
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
@@ -35,6 +35,17 @@ export function openSearch(query = '') { if (!app.state) return; closeBlockMenu(
 
 export function setCommandState(value) { updateCommandState(value); if (commandPalette.open) commandPalette.render(); }
 
+const commandHistoryLimit = 50;
+let commandHistory = [];
+export function setCommandHistory(history) {
+  commandHistory = Array.isArray(history) ? history.slice(0, commandHistoryLimit) : [];
+}
+function chooseCommand(command) {
+  if (!runCommand(command)) return;
+  commandHistory = [command.id, ...commandHistory].slice(0, commandHistoryLimit);
+  nativeHandler()?.postMessage({ type: 'commandHistory', ids: commandHistory });
+}
+
 // First level: the commands, or while typing also every second-level option
 // ("Language: English") so a value can be reached in one step.
 function commandRows(query, parent) {
@@ -42,12 +53,12 @@ function commandRows(query, parent) {
     const options = parent.children(), typed = parent.children.typed?.(query);
     const matches = filterCommands(options, query);
     const rows = typed && !matches.some(option => option.label === typed.label) ? [typed, ...matches] : matches;
-    return rows.map(option => ({ ...option, group: parent.group }));
+    return rows.map(option => ({ ...option, id: parent.id, group: parent.group }));
   }
-  const commands = availableCommands();
+  const commands = rankCommands(availableCommands(), commandHistory);
   if (!query.trim()) return commands;
   const flattened = commands.flatMap(command => command.children
-    ? command.children().map(option => ({ ...option, label: `${command.label}：${option.label}`, group: command.group, aliases: [...(command.aliases || []), ...(option.aliases || [])] }))
+    ? command.children().map(option => ({ ...option, id: command.id, label: `${command.label}：${option.label}`, group: command.group, aliases: [...(command.aliases || []), ...(option.aliases || [])] }))
     : []);
   return filterCommands([...commands, ...flattened], query);
 }
@@ -71,7 +82,7 @@ export const commandPalette = createPalette({
   },
   empty: () => t('palette.noMatchingCommands'),
   levelChanged: parent => { $('command-hint').textContent = parent ? t(parent.children.typed ? 'palette.chooseOrTypeNumber' : 'palette.chooseOption') : t('palette.chooseCommand'); },
-  choose: runCommand,
+  choose: chooseCommand,
   closed: () => app.editor?.focus()
 });
 

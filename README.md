@@ -41,9 +41,13 @@ Install a local build with `./scripts/install.sh` (defaults to `~/Applications/I
 
 Run `npm test` for editor tests and `npm run test:native` for isolated native-window, code editing and Vim undo/redo tests. Builds use an ad hoc signature by default; set `INKFLIT_CODESIGN_IDENTITY` to use an Apple Development certificate. The app is not notarized.
 
-Inkflit lives in the menu bar. Press `Control + Option + Space` to show or hide it; it also hides when another app becomes active. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. In Appearance settings, choose Follow System (the default), Light, or Dark. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
+Inkflit lives in the menu bar. Press `Control + Option + Space` to open it. With the window unpinned, the same shortcut or switching apps hides it. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. In Appearance settings, choose Follow System (the default), Light, or Dark. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
 When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. To restore the default size, use **Settings → Appearance → Window size → Reset**. Hold `Option` while adjusting opacity or blur to snap to 5% increments.
+
+Use the toolbar pin or **Pin Window** in the command palette to keep the window open when switching apps. Press `⌘W` to close it. In Appearance settings, you can also choose the editor font and size.
+
+Page turns slide horizontally. Each note keeps its cursor and scroll position while Inkflit is running. Small arrows at the edges indicate content above or below the visible area.
 
 ## Keyboard shortcuts
 
@@ -61,13 +65,14 @@ When summoned, the window appears on the display containing the pointer. Inkflit
 | `⌘/` | Toggle comments on the current or selected lines |
 | `⌘⇧F` | Search all current notes |
 | `⌘⇧P` | Open the command palette to search note actions and settings |
-| `Esc` | Return to Vim Normal mode. In Normal mode, press twice within 0.6 seconds by default. Turn off **Double Esc to hide** in Editing settings to hide with one press. |
+| `⌘W` | Close the note window |
+| `Esc` | Return to Vim Normal mode. In Normal mode with the window unpinned, press twice within 0.6 seconds by default. Turn off **Double Esc to hide** in Editing settings to hide with one press. |
 
-Vim mode is enabled by default. Turn it off in Settings → Editing to type directly; `Esc` then hides the window and `⌘Z` / `⌘⇧Z` undo and redo.
+Vim mode is enabled by default. Turn it off in Settings → Editing to type directly; `Esc` then hides an unpinned window and `⌘Z` / `⌘⇧Z` undo and redo.
 
 Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and does not load vimrc. Undo history is retained per note while the app runs, but not after exit. Normal mode temporarily switches to an ASCII input source and restores the previous input method in insert mode or when the window loses focus. An active IME candidate is cancelled before Esc leaves insert mode.
 
-The command palette accepts command names and keywords. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
+The command palette accepts command names and keywords. The last command you ran appears first, followed by other recently used commands in order of frequency. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
 
 ## Feature blocks
 

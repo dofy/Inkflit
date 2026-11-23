@@ -20,7 +20,8 @@ import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
 import { snippets } from './snippet-completion.js';
 import { closeCompletion, completionStatus } from '@codemirror/autocomplete';
-import { cancelPageSlide, replaceNotePage } from './page-slide.js';
+import { cancelPageMotion, replaceNotePage } from './page-slide.js';
+import { noteScrollCues } from './scroll-cues.js';
 
 // Markdown tokens that defaultHighlightStyle colors for light mode only
 // (#219 dark blue): give them theme colors. Scoped to Markdown, so code
@@ -62,7 +63,7 @@ const plainEnter = Prec.highest(keymap.of([{ key: 'Enter', run: view => { const 
 export const isEditing = () => !app.vimEnabled || !!getCM(app.editor)?.state?.vim?.insertMode;
 
 export function prepareToHide() {
-  cancelPageSlide();
+  cancelPageMotion();
   const editor = app.editor;
   if (!editor) return;
   closeBlockMenu();
@@ -96,7 +97,7 @@ function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
     vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, listPasteRules, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
     drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage, extensions: markdownBlockMarkers }), tasks, features, noteComments, noteHeadings, noteInlineCode, noteListIndent,
-    syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, snippets,
+    syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, noteScrollCues, snippets,
     plainEnter, keymap.of([...defaultKeymap, ...historyKeymap]),
     saveOnChange
   ] });
@@ -108,19 +109,20 @@ function unmountEditor(keepHistory) {
   closeBlockMenu(); closeLanguageMenu();
   if (!app.editor) return;
   closeCompletion(app.editor);
-  if (keepHistory) app.editorStates.set(app.state.selected, app.editor.state);
+  if (keepHistory) app.editorCache.set(app.state.selected, { state: app.editor.state, scroll: app.editor.scrollSnapshot() });
   app.editor.destroy();
   app.editor = null;
 }
 
 function mountEditor(id) {
   app.state.selected = id;
-  app.editor = new EditorView({ parent: $('editor'), state: app.editorStates.get(id) || makeState(current().content) });
+  const cached = app.editorCache.get(id);
+  app.editor = new EditorView({ parent: $('editor'), state: cached?.state ?? makeState(current().content), scrollTo: cached?.scroll });
   bindVimMode();
   refreshNav(); refreshInsights(); app.editor.focus();
 }
 
-// Navigation retains each note's undo history.
+// Navigation retains each note's undo history and viewport.
 export function changeEditor(id, direction = 0) {
   replaceNotePage(direction, () => {
     unmountEditor(true);
@@ -130,9 +132,9 @@ export function changeEditor(id, direction = 0) {
 
 export function loadNoteSnapshot(snapshot) {
   // Reloaded notes may reuse IDs with different content after rebuilding the index.
-  cancelPageSlide();
+  cancelPageMotion();
   unmountEditor(false);
-  app.editorStates.clear();
+  app.editorCache.clear();
   app.state = snapshot;
   mountEditor(snapshot.selected);
 }
@@ -162,7 +164,7 @@ export function setVimEnabled(value) {
   if (enabled === app.vimEnabled) return;
   app.vimEnabled = enabled; app.mergeFirstInsert = false;
   closeBlockMenu(); closeLanguageMenu();
-  for (const [id, cached] of app.editorStates) app.editorStates.set(id, cached.update({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }).state);
+  for (const cached of app.editorCache.values()) cached.state = cached.state.update({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }).state;
   if (app.editor) { closeCompletion(app.editor); app.editor.dispatch({ effects: vimCompartment.reconfigure(enabled ? vim() : []) }); bindVimMode(); }
 }
 

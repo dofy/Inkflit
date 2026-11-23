@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {filterCommands} from '../web/command-palette.js';
+import {filterCommands, rankCommands} from '../web/command-palette.js';
 import { app } from '../web/app.js';
 import { availableCommands, commandShortcut, commandShortcutLabel } from '../web/commands.js';
 
@@ -10,6 +10,14 @@ test('command search matches localized text, aliases and multiple terms',()=>{
  assert.deepEqual(filterCommands(commands,'BLUE theme'),[commands[0]]);
  assert.deepEqual(filterCommands(commands,'设置 vim'),[commands[1]]);
  assert.deepEqual(filterCommands(commands,'nothing'),[]);
+});
+
+test('the latest available command outranks frequent commands and ties use recency', () => {
+  const commands = ['unused-a', 'frequent', 'tied-older', 'recent', 'unused-b', 'tied-newer'].map(id => ({ id }));
+  const history = ['unavailable', 'recent', 'tied-newer', 'frequent', 'tied-older', 'frequent', 'frequent', 'tied-older', 'tied-newer'];
+  assert.deepEqual(rankCommands(commands, history).map(command => command.id),
+    ['recent', 'frequent', 'tied-newer', 'tied-older', 'unused-a', 'unused-b']);
+  assert.deepEqual(rankCommands(commands, []), commands);
 });
 
 test('palette labels and keyboard lookup share command bindings', () => {

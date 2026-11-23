@@ -65,7 +65,7 @@ test('MCP format applies exactly the reviewed changes by ID, once, without switc
   const before = 'Title  stays\n:::inkflit code js\nif(true){f(1)}\n:::end';
   const notes = [note('current', 'stay here'), note('format', before)];
   app.state = { notes, selected: 'current' };
-  app.editorStates.set('format', EditorState.create({ doc: before, extensions: history() }));
+  app.editorCache.set('format', { state: EditorState.create({ doc: before, extensions: history() }) });
   const saved = [];
   globalThis.document = { getElementById: () => ({}) };
   globalThis.window = { webkit: { messageHandlers: { inkflit: { postMessage(message) {
@@ -98,14 +98,14 @@ test('MCP format applies exactly the reviewed changes by ID, once, without switc
     assert.equal(saved[0].selected, 'current');
     const expected = 'Title  stays\n:::inkflit code js\nif (true) {\n    f(1);\n}\n:::end';
     assert.equal(saved[0].notes[1].content, expected);
-    assert.equal(app.editorStates.get('format').doc.toString(), expected);
-    assert.equal(undoDepth(app.editorStates.get('format')), 1);
+    assert.equal(app.editorCache.get('format').state.doc.toString(), expected);
+    assert.equal(undoDepth(app.editorCache.get('format').state), 1);
     await assert.rejects(apply(review.preview_id), /unavailable/);
     app.codeIndentation = 'spaces4';
     const empty = await preview();
     assert.deepEqual({ changed: empty.changed, diff: empty.diff, preview_id: empty.preview_id }, { changed: false, diff: '', preview_id: null });
   } finally {
-    app.state = null; app.editorStates.clear(); app.codeIndentation = 'spaces2';
+    app.state = null; app.editorCache.clear(); app.codeIndentation = 'spaces2';
     delete globalThis.window; delete globalThis.document;
   }
 });

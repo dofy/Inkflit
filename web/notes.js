@@ -1,6 +1,7 @@
 import { app, newNote } from './app.js';
 import { persist } from './persistence.js';
 import { changeEditor } from './editor-view.js';
+import { nudgePageEdge } from './page-slide.js';
 
 // Notes are ordered like pages: the first is the oldest, new notes go last.
 export function select(id, direction = 0) { if (!app.state || app.state.selected === id) return; changeEditor(id, direction); persist(true); }
@@ -24,6 +25,7 @@ export function navigate(direction) {
   if (!app.state) return;
   const index = app.state.notes.findIndex(note => note.id === app.state.selected), next = index + direction;
   if (next >= 0 && next < app.state.notes.length) select(app.state.notes[next].id, direction);
+  else nudgePageEdge(direction);
 }
 // ⌘1–⌘9: the note at a 1-based position, if there is one.
 export function selectAt(position) {

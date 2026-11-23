@@ -95,7 +95,7 @@
 <body>
 <div class="layout">
 <nav>
-  <div class="brand"><span class="app-icon" aria-hidden="true"></span><div><b>Inkflit</b><span><span id="brand-label"></span> · 0.2.2</span></div></div>
+  <div class="brand"><span class="app-icon" aria-hidden="true"></span><div><b>Inkflit</b><span><span id="brand-label"></span> · 0.3.0</span></div></div>
   <input id="q" type="search" autocomplete="off">
   <ol id="toc"></ol>
   <p class="empty" id="empty"></p>
@@ -106,7 +106,7 @@
     <div><h1 id="title"></h1><p id="tagline"></p></div>
   </header>
   <div id="content"></div>
-  <footer>Inkflit 0.2.2 · © 2026 phpz.org · <a href="https://inkflit.phpz.org/">inkflit.phpz.org</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a></footer>
+  <footer>Inkflit 0.3.0 · © 2026 phpz.org · <a href="https://inkflit.phpz.org/">inkflit.phpz.org</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a></footer>
 </main>
 </div>
 <template data-lang="en">
@@ -118,8 +118,9 @@
   <ol>
     <li><b>Show the window</b> with the global shortcut, <kbd>⌃⌥Space</kbd> by default (you can change it in <b>Settings → General</b>), or click the menu bar icon and choose <b>Open Inkflit</b>.</li>
     <li><b>Write.</b> Changes are saved automatically; there is no Save button.</li>
-    <li><b>Hide it</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
+    <li><b>Hide an unpinned window</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
   </ol>
+  <p>Use the toolbar pin or <b>Pin Window</b> in the command palette to keep the window open when switching apps. Press <kbd>⌘W</kbd> to close it.</p>
   <h3>Where the window appears</h3>
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it. Restore the default size under <b>Settings → Appearance → Window size → Reset</b>.</p>
@@ -138,6 +139,7 @@
     <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar. <kbd>⌘⇧[</kbd> and <kbd>⌘⇧]</kbd> jump to the first and the last note.</li>
     <li><b>Jump to a page:</b> <kbd>⌘1</kbd> to <kbd>⌘9</kbd> open notes 1 to 9.</li>
   </ul>
+  <p>Pages slide horizontally. Each note keeps its cursor and scroll position while Inkflit is running. Small arrows near the right edge show that more content is above or below.</p>
   <p>The footer shows when the current note was created, in your local time. Notes created before this was recorded show no date.</p>
   <h3>Deleting and undoing</h3>
   <p><kbd>⌘D</kbd> deletes the current note right away. A notice stays for 12 seconds; press <kbd>⌘U</kbd> or click it to bring the note back.</p>
@@ -154,7 +156,7 @@
     <li>Backups and the Trash are not searched.</li>
   </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
-  <p>Runs note actions and changes settings without opening the Settings window.</p>
+  <p>Run note actions and change settings from the palette. Your last command appears first, followed by other recently used commands in order of frequency.</p>
   <p>Search for <code>format</code> and select <b>Format Note</b> to tidy expression spacing in math blocks and format JavaScript, TypeScript, JSON, HTML, CSS, Markdown, and YAML code blocks in the current note. Code uses your Code indentation setting. The whole operation can be undone in one step.</p>
   <ul>
     <li>Commands marked <b>›</b> open a second list, such as accent colors or languages. The current value has a <b>✓</b>.</li>
@@ -522,14 +524,14 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim mode</h2>
-  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. In Normal mode, press <kbd>Esc</kbd> twice within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
+  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. With the window unpinned, press <kbd>Esc</kbd> twice in Normal mode within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
   <ul>
     <li>In normal mode Inkflit switches to an ASCII keyboard layout so commands work, and restores your input method when you start typing or leave the window.</li>
     <li>An open input method candidate is cancelled before <kbd>Esc</kbd> leaves insert mode.</li>
     <li>Undo history is kept per note until you quit.</li>
   </ul>
   <p>This is Vim emulation in the editor, not Neovim, so a vimrc is not loaded.</p>
-  <p>Turn it off in <b>Settings → Edit → Vim Mode</b> or from the command palette. Then you type directly, <kbd>Esc</kbd> hides the window, and <kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> undo and redo.</p>
+  <p>Turn it off in <b>Settings → Edit → Vim Mode</b> or from the command palette. Then you type directly. <kbd>Esc</kbd> hides an unpinned window, and <kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> undo and redo.</p>
 </section>
 
 <section id="settings">
@@ -627,8 +629,9 @@ open 'inkflit://note/get?index=1'</code></pre>
   <ol>
     <li><b>打开窗口：</b>按全局快捷键，默认是 <kbd>⌃⌥Space</kbd>（可在“设置 → 通用”中更改），或点菜单栏图标，选择“打开 Inkflit”。</li>
     <li><b>开始写：</b>内容会自动保存，没有保存按钮。</li>
-    <li><b>收起窗口：</b>再按一次快捷键，或按 <kbd>Esc</kbd>（Vim Normal 模式下默认在 0.6 秒内连按两次）。切换到其他应用时也会自动收起。</li>
+    <li><b>收起窗口：</b>图钉关闭时，再按一次快捷键，或按 <kbd>Esc</kbd>（Vim Normal 模式下默认在 0.6 秒内连按两次）。切换到其他应用时也会自动收起。</li>
   </ol>
+  <p>点击工具栏图钉，或在命令面板选择「固定窗口」，切换应用时可让笔记继续留在屏幕上。按 <kbd>⌘W</kbd> 收起窗口。</p>
   <h3>窗口出现在哪里</h3>
   <p>窗口会出现在鼠标所在的显示器、你当前所在的桌面上，不会把你拉回别的桌面。窗口位置会被记住，重启后也一样。</p>
   <p>拖动工具栏中间的空白处可以移动窗口，拖动边缘可以调整大小。在「设置 → 外观 → 窗口大小」中可恢复默认尺寸。</p>
@@ -647,6 +650,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>翻页：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具栏上的箭头。<kbd>⌘⇧[</kbd> 和 <kbd>⌘⇧]</kbd> 跳到第一条和最后一条笔记。</li>
     <li><b>跳到某一页：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 打开第 1 到第 9 篇。</li>
   </ul>
+  <p>翻页时，笔记内容会横向滑动。应用运行期间，每条笔记会保留光标和滚动位置。右侧的小箭头提示上方或下方还有内容。</p>
   <p>底栏显示当前笔记的创建时间（本地时间）。在记录创建时间之前就有的笔记不显示日期。</p>
   <h3>删除与撤销</h3>
   <p><kbd>⌘D</kbd> 直接删除当前笔记。提示会保留 12 秒，按 <kbd>⌘U</kbd> 或点击提示就能找回。</p>
@@ -664,7 +668,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
   <p>搜索 <code>format</code> 并选择「格式化笔记」，可整理当前笔记里数学公式的空格，以及 JavaScript、TypeScript、JSON、HTML、CSS、Markdown 和 YAML 代码块。代码沿用「代码缩进」设置，整次操作可以一步撤销。</p>
-  <p>不用打开设置窗口，就能执行笔记操作、修改设置。</p>
+  <p>在命令面板可以执行笔记操作、修改设置。上一次执行的命令排在首位，其余近期用过的命令按使用频率排序。</p>
   <ul>
     <li>带 <b>›</b> 的命令会打开第二级列表，比如界面主色、语言。当前生效的选项带 <b>✓</b>。</li>
     <li>不透明度、模糊和自动备份可以直接输入数字，比如 <code>75</code>。</li>
@@ -1031,14 +1035,14 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim 模式</h2>
-  <p>Vim 按键默认开启。编辑器从 Normal 模式开始，按 <kbd>i</kbd> 输入，按 <kbd>Esc</kbd> 返回。在 Normal 模式下，默认在 0.6 秒内连按两次 <kbd>Esc</kbd> 会收起窗口。在「设置 → 编辑」关闭「连按两次 Esc 收起窗口」后，按一次即可。</p>
+  <p>Vim 按键默认开启。编辑器从 Normal 模式开始，按 <kbd>i</kbd> 输入，按 <kbd>Esc</kbd> 返回。图钉关闭时，在 Normal 模式下默认在 0.6 秒内连按两次 <kbd>Esc</kbd> 会收起窗口。在「设置 → 编辑」关闭「连按两次 Esc 收起窗口」后，按一次即可。</p>
   <ul>
     <li>普通模式下，Inkflit 会临时切换到英文（ASCII）输入法，让命令键直接生效；开始输入或离开窗口时恢复你原来的输入法。</li>
     <li>如果输入法候选框还开着，按 <kbd>Esc</kbd> 会先取消候选，再退出插入模式。</li>
     <li>每篇笔记的撤销记录会保留到退出应用为止。</li>
   </ul>
   <p>这是编辑器里的 Vim 模拟，不是 Neovim，不会读取 vimrc。</p>
-  <p>在“设置 → 编辑 → Vim 模式”或命令面板里可以关闭。关闭后直接输入，<kbd>Esc</kbd> 收起窗口，<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> 撤销和重做。</p>
+  <p>在“设置 → 编辑 → Vim 模式”或命令面板里可以关闭。关闭后直接输入。图钉关闭时，<kbd>Esc</kbd> 收起窗口。<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> 撤销和重做。</p>
 </section>
 
 <section id="settings">
@@ -1136,8 +1140,9 @@ open 'inkflit://note/get?index=1'</code></pre>
   <ol>
     <li><b>開啟視窗：</b>按全域快捷鍵，預設為 <kbd>⌃⌥Space</kbd>（可在「設定 → 一般」中變更），或點選單列圖示，選擇「開啟 Inkflit」。</li>
     <li><b>開始寫：</b>內容會自動儲存，沒有儲存按鈕。</li>
-    <li><b>收起視窗：</b>再按一次快捷鍵，或按 <kbd>Esc</kbd>（Vim 一般模式下預設在 0.6 秒內連按兩次）。切換到其他應用程式時也會自動收起。</li>
+    <li><b>收起視窗：</b>圖釘關閉時，再按一次快捷鍵，或按 <kbd>Esc</kbd>（Vim 一般模式下預設在 0.6 秒內連按兩次）。切換到其他應用程式時也會自動收起。</li>
   </ol>
+  <p>點擊工具列圖釘，或在命令面板選擇「固定視窗」，切換應用程式時可讓筆記保留在畫面上。按 <kbd>⌘W</kbd> 收起視窗。</p>
   <h3>視窗出現在哪裡</h3>
   <p>視窗會出現在滑鼠所在的顯示器、你目前所在的桌面上，不會把你拉回其他桌面。視窗位置會被記住，重新啟動後也一樣。</p>
   <p>拖曳工具列中間的空白處可以移動視窗，拖曳邊緣可以調整大小。可在「設定 → 外觀 → 視窗大小」中重設。</p>
@@ -1156,6 +1161,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>翻頁：</b><kbd>⌘[</kbd> 和 <kbd>⌘]</kbd>，或工具列上的箭頭。<kbd>⌘⇧[</kbd> 和 <kbd>⌘⇧]</kbd> 跳到第一則和最後一則筆記。</li>
     <li><b>跳到某一頁：</b><kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 開啟第 1 到第 9 則。</li>
   </ul>
+  <p>翻頁時，筆記內容會橫向滑動。應用程式執行期間，每則筆記會保留游標和捲動位置。右側的小箭頭提示上方或下方還有內容。</p>
   <p>底列顯示目前筆記的建立時間（本地時間）。在開始記錄建立時間之前就有的筆記不顯示日期。</p>
   <h3>刪除與復原</h3>
   <p><kbd>⌘D</kbd> 直接刪除目前筆記。提示會保留 12 秒，按 <kbd>⌘U</kbd> 或點擊提示就能找回。</p>
@@ -1173,7 +1179,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h3>命令面板 <kbd>⌘⇧P</kbd></h3>
   <p>搜尋 <code>format</code> 並選擇「格式化筆記」，可整理目前筆記中數學公式的空格，以及 JavaScript、TypeScript、JSON、HTML、CSS、Markdown 和 YAML 程式碼區塊。程式碼沿用「程式碼縮排」設定，整次操作可以一步復原。</p>
-  <p>不用開啟設定視窗，就能執行筆記操作、修改設定。</p>
+  <p>在命令面板可執行筆記操作、修改設定。上一次執行的命令排在首位，其餘近期用過的命令依使用頻率排序。</p>
   <ul>
     <li>帶 <b>›</b> 的命令會開啟第二層清單，例如介面主色、語言。目前生效的選項帶 <b>✓</b>。</li>
     <li>不透明度、模糊和自動備份可以直接輸入數字，例如 <code>75</code>。</li>
@@ -1540,14 +1546,14 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim 模式</h2>
-  <p>Vim 按鍵預設開啟。編輯器先處於一般模式，按 <kbd>i</kbd> 開始輸入，再按 <kbd>Esc</kbd> 返回。在一般模式下，預設在 0.6 秒內連按兩次 <kbd>Esc</kbd> 會收起視窗。可在「設定 → 編輯」關閉「連按兩次 Esc 收起視窗」，改用單次按鍵。</p>
+  <p>Vim 按鍵預設開啟。編輯器先處於一般模式，按 <kbd>i</kbd> 開始輸入，再按 <kbd>Esc</kbd> 返回。圖釘關閉時，在一般模式下預設在 0.6 秒內連按兩次 <kbd>Esc</kbd> 會收起視窗。可在「設定 → 編輯」關閉「連按兩次 Esc 收起視窗」，改用單次按鍵。</p>
   <ul>
     <li>一般模式下，Inkflit 會暫時切換到英文（ASCII）輸入法，讓命令鍵直接生效；開始輸入或離開視窗時恢復你原本的輸入法。</li>
     <li>如果輸入法候選視窗還開著，按 <kbd>Esc</kbd> 會先取消候選，再離開插入模式。</li>
     <li>每則筆記的復原記錄會保留到結束應用程式為止。</li>
   </ul>
   <p>這是編輯器裡的 Vim 模擬，不是 Neovim，不會讀取 vimrc。</p>
-  <p>在「設定 → 編輯 → Vim 模式」或命令面板裡可以關閉。關閉後直接輸入，<kbd>Esc</kbd> 收起視窗，<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> 復原和重做。</p>
+  <p>在「設定 → 編輯 → Vim 模式」或命令面板裡可以關閉。關閉後直接輸入。圖釘關閉時，<kbd>Esc</kbd> 收起視窗。<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> 復原和重做。</p>
 </section>
 
 <section id="settings">
@@ -1645,8 +1651,9 @@ open 'inkflit://note/get?index=1'</code></pre>
   <ol>
     <li><b>ウインドウを表示：</b>グローバルショートカット（初期設定は <kbd>⌃⌥Space</kbd>。「設定 → 一般」で変更できます）を押すか、メニューバーのアイコンから「Inkflit を開く」を選びます。</li>
     <li><b>書く：</b>変更は自動で保存されます。保存ボタンはありません。</li>
-    <li><b>隠す：</b>同じショートカットか <kbd>Esc</kbd> を押します。Vim のノーマルモードでは、既定で 0.6 秒以内に <kbd>Esc</kbd> を 2 回押します。ほかのアプリに切り替えたときも自動で隠れます。</li>
+    <li><b>隠す：</b>固定していないウインドウを隠すには、同じショートカットか <kbd>Esc</kbd> を押します。Vim のノーマルモードでは、既定で 0.6 秒以内に <kbd>Esc</kbd> を 2 回押します。ほかのアプリに切り替えたときも自動で隠れます。</li>
   </ol>
+  <p>ツールバーのピン、またはコマンドパレットの「ウインドウを固定」で、別のアプリに切り替えてもノートを開いたままにできます。閉じるには <kbd>⌘W</kbd> を押します。</p>
   <h3>ウインドウの表示場所</h3>
   <p>ウインドウはポインタがあるディスプレイの、いま使っているデスクトップに表示されます。別のデスクトップに引き戻されることはありません。位置は記憶され、再起動後も保たれます。</p>
   <p>ツールバー中央の空いている部分をドラッグすると移動、端をドラッグするとサイズを変更できます。「設定 → 外観 → ウインドウのサイズ」でリセットできます。</p>
@@ -1666,6 +1673,7 @@ open 'inkflit://note/get?index=1'</code></pre>
     <li><b>ページへ移動：</b><kbd>⌘1</kbd>〜<kbd>⌘9</kbd> で 1〜9 番目のノートを開きます。</li>
   </ul>
   <p>フッターには現在のノートの作成日時（ローカル時刻）が表示されます。作成日時の記録が始まる前からあるノートには表示されません。</p>
+  <p>ページをめくるときは内容が横にスライドします。起動中はノートごとにカーソルとスクロールの位置が保たれ、右端の小さな矢印が上下に続きがあることを示します。</p>
   <h3>削除と取り消し</h3>
   <p><kbd>⌘D</kbd> で現在のノートをすぐに削除します。通知が 12 秒間表示され、<kbd>⌘U</kbd> を押すか通知をクリックすると元に戻せます。</p>
   <p class="tip">削除したノートは完全には消えず、ゴミ箱フォルダに残ります。「設定 → バックアップ → 削除したノートを復元…」から、どのノートでも新しいノートとして復元できます。</p>
@@ -1682,7 +1690,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   </ul>
   <h3>コマンドパレット <kbd>⌘⇧P</kbd></h3>
   <p><code>format</code> で検索して「ノートを整形」を選ぶと、現在のノートの数式の空白と、JavaScript、TypeScript、JSON、HTML、CSS、Markdown、YAML のコードブロックを整形できます。コードにはインデント設定が適用され、操作全体を一度で取り消せます。</p>
-  <p>設定ウインドウを開かずに、ノートの操作や設定の変更ができます。</p>
+  <p>コマンドパレットからノートを操作したり、設定を変更したりできます。前回実行したコマンドを先頭に表示し、ほかの最近使ったコマンドは使用頻度順に並べます。</p>
   <ul>
     <li><b>›</b> の付いたコマンドは、アクセントカラーや言語などの 2 段目の一覧を開きます。現在の値には <b>✓</b> が付きます。</li>
     <li>不透明度、ぼかし、自動バックアップは数値を直接入力することもできます（例：<code>75</code>）。</li>
@@ -2049,14 +2057,14 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim モード</h2>
-  <p>Vim キーは最初からオンです。エディタはノーマルモードで始まり、<kbd>i</kbd> で入力を始め、<kbd>Esc</kbd> でノーマルモードに戻ります。ノーマルモードでは、既定で 0.6 秒以内に <kbd>Esc</kbd> を 2 回押すとウインドウが隠れます。「設定 → 編集」で「Esc を 2 回押して隠す」をオフにすると 1 回で隠せます。</p>
+  <p>Vim キーは最初からオンです。エディタはノーマルモードで始まり、<kbd>i</kbd> で入力を始め、<kbd>Esc</kbd> でノーマルモードに戻ります。固定していないウインドウでは、ノーマルモードで <kbd>Esc</kbd> を既定で 0.6 秒以内に 2 回押すと隠れます。「設定 → 編集」で「Esc を 2 回押して隠す」をオフにすると 1 回で隠せます。</p>
   <ul>
     <li>ノーマルモードでは、コマンドが効くように一時的に英字（ASCII）入力に切り替わります。入力を始めるかウインドウを離れると、元の入力方式に戻ります。</li>
     <li>変換候補が開いているときは、<kbd>Esc</kbd> でまず候補を取り消してから挿入モードを終了します。</li>
     <li>取り消し履歴はノートごとに、アプリを終了するまで保持されます。</li>
   </ul>
   <p>これはエディタ内の Vim エミュレーションで、Neovim ではありません。vimrc は読み込まれません。</p>
-  <p>「設定 → 編集 → Vim モード」またはコマンドパレットでオフにできます。オフにすると直接入力でき、<kbd>Esc</kbd> でウインドウが隠れ、<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> で取り消しとやり直しができます。</p>
+  <p>「設定 → 編集 → Vim モード」またはコマンドパレットでオフにできます。オフにすると直接入力できます。固定していないウインドウは <kbd>Esc</kbd> で隠せます。<kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> で取り消しとやり直しができます。</p>
 </section>
 
 <section id="settings">

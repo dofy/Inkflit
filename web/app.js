@@ -3,7 +3,7 @@
 export const app = {
   state: null,              // {notes: [{id, content, created?, updated}], selected}
   editor: null,             // the EditorView of the selected note
-  editorStates: new Map(),  // note id -> EditorState, keeps undo history per note
+  editorCache: new Map(),   // note id -> { state, scroll }, kept while the note is inactive
   vimEnabled: true,
   windowPinned: false,
   codeIndentation: 'spaces2',

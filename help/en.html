@@ -6,8 +6,9 @@
   <ol>
     <li><b>Show the window</b> with the global shortcut, <kbd>⌃⌥Space</kbd> by default (you can change it in <b>Settings → General</b>), or click the menu bar icon and choose <b>Open Inkflit</b>.</li>
     <li><b>Write.</b> Changes are saved automatically; there is no Save button.</li>
-    <li><b>Hide it</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
+    <li><b>Hide an unpinned window</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice within 0.6 seconds in Vim Normal mode). Switching to another app also hides it.</li>
   </ol>
+  <p>Use the toolbar pin or <b>Pin Window</b> in the command palette to keep the window open when switching apps. Press <kbd>⌘W</kbd> to close it.</p>
   <h3>Where the window appears</h3>
   <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it. Restore the default size under <b>Settings → Appearance → Window size → Reset</b>.</p>
@@ -26,6 +27,7 @@
     <li><b>Turn pages:</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>, or the arrows in the toolbar. <kbd>⌘⇧[</kbd> and <kbd>⌘⇧]</kbd> jump to the first and the last note.</li>
     <li><b>Jump to a page:</b> <kbd>⌘1</kbd> to <kbd>⌘9</kbd> open notes 1 to 9.</li>
   </ul>
+  <p>Pages slide horizontally. Each note keeps its cursor and scroll position while Inkflit is running. Small arrows near the right edge show that more content is above or below.</p>
   <p>The footer shows when the current note was created, in your local time. Notes created before this was recorded show no date.</p>
   <h3>Deleting and undoing</h3>
   <p><kbd>⌘D</kbd> deletes the current note right away. A notice stays for 12 seconds; press <kbd>⌘U</kbd> or click it to bring the note back.</p>
@@ -42,7 +44,7 @@
     <li>Backups and the Trash are not searched.</li>
   </ul>
   <h3>Command palette <kbd>⌘⇧P</kbd></h3>
-  <p>Runs note actions and changes settings without opening the Settings window.</p>
+  <p>Run note actions and change settings from the palette. Your last command appears first, followed by other recently used commands in order of frequency.</p>
   <p>Search for <code>format</code> and select <b>Format Note</b> to tidy expression spacing in math blocks and format JavaScript, TypeScript, JSON, HTML, CSS, Markdown, and YAML code blocks in the current note. Code uses your Code indentation setting. The whole operation can be undone in one step.</p>
   <ul>
     <li>Commands marked <b>›</b> open a second list, such as accent colors or languages. The current value has a <b>✓</b>.</li>
@@ -410,14 +412,14 @@ ans / 2 =
 
 <section id="vim">
   <h2>Vim mode</h2>
-  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. In Normal mode, press <kbd>Esc</kbd> twice within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
+  <p>Vim keys are on by default. The editor starts in Normal mode. Press <kbd>i</kbd> to type and <kbd>Esc</kbd> to go back. With the window unpinned, press <kbd>Esc</kbd> twice in Normal mode within 0.6 seconds by default. Turn off <b>Double Esc to hide</b> in Editing settings to hide with one press.</p>
   <ul>
     <li>In normal mode Inkflit switches to an ASCII keyboard layout so commands work, and restores your input method when you start typing or leave the window.</li>
     <li>An open input method candidate is cancelled before <kbd>Esc</kbd> leaves insert mode.</li>
     <li>Undo history is kept per note until you quit.</li>
   </ul>
   <p>This is Vim emulation in the editor, not Neovim, so a vimrc is not loaded.</p>
-  <p>Turn it off in <b>Settings → Edit → Vim Mode</b> or from the command palette. Then you type directly, <kbd>Esc</kbd> hides the window, and <kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> undo and redo.</p>
+  <p>Turn it off in <b>Settings → Edit → Vim Mode</b> or from the command palette. Then you type directly. <kbd>Esc</kbd> hides an unpinned window, and <kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd> undo and redo.</p>
 </section>
 
 <section id="settings">
