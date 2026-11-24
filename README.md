@@ -21,7 +21,7 @@ A local-first floating note app for macOS, with Markdown, Vim editing, code high
 
 <p align="center"><img src="docs/images/settings.png" alt="Inkflit preferences" width="560" /></p>
 
-On first launch, Inkflit creates seven guide notes in your system language. Settings → Restore Guide Notes adds a fresh set before your existing notes and opens the welcome note, using the current app language.
+On first launch, Inkflit creates seven guide notes in your system language. Settings → About → Restore Guide Notes adds a fresh set before your existing notes and opens the welcome note, using the current app language.
 
 The Mac release is built for Apple Silicon. Run `./scripts/package-release.sh` to create an unsigned-for-distribution DMG; the app is ad hoc signed and not notarized.
 
@@ -65,6 +65,7 @@ Page turns slide horizontally. Each note keeps its cursor and scroll position wh
 | `⌘L` | Choose a code block language |
 | `⌘O` / `⌘⇧O` | Insert an editable line below / above the current text line or feature block |
 | `⌘/` | Toggle comments on the current or selected lines |
+| `⌘+` / `⌘-` | Increase or decrease the editor font size by 1 pt. Both actions are also available in the command palette. |
 | `⌘↩` | Toggle the current checklist item or Markdown task |
 | `⌘⇧F` | Search all current notes |
 | `⌘⇧P` | Open the command palette to search note actions and settings |
@@ -77,7 +78,7 @@ Vim is provided by CodeMirror and `@replit/codemirror-vim`; it is not Neovim and
 
 The command palette accepts command names and keywords. Commands you have used are ordered by last use, most recent first. Use ↑ / ↓ to select, Return to run, and Esc to close. It includes note actions and settings for Vim, interface and code colors, indentation, and language. After a deletion, each notice has its own 12-second timer; `⌘U` restores the highlighted most recently deleted note, or you can click a specific notice.
 
-Search `format note` to format supported code blocks and math expressions in the current note. Find all searchable commands under **Settings → Open help → Command keywords**.
+Search `format note` to format supported code blocks and math expressions in the current note. Find all searchable commands under **Settings → About → Open help → Command keywords**.
 
 ## Feature blocks
 

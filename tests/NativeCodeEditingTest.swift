@@ -556,6 +556,8 @@ final class NativeCodeEditingTest {
         }
         app.showSettings()
         guard let settings=app.settingsController else { fail("settings unavailable") }
+        guard settings.testAboutControls() else { fail("About must show the bundle version and open Help") }
+        print("PASS About shows the running bundle version and opens Help")
         settings.testSelectSettingsTab(1)
         guard settings.testEditingControlsVisible() else { fail("appearance picker or preview is clipped") }
         if let expected = expectedScheme,
@@ -757,7 +759,7 @@ final class NativeCodeEditingTest {
         key(53,"\u{1b}"); key(53,"\u{1b}")
         app.showSettings()
         guard let settings = app.settingsController else { fail("settings missing") }
-        guard settings.testTabCount() == 5 else { fail("settings should have five tabs") }
+        guard settings.testTabCount() == 6 else { fail("settings should have six tabs") }
         if let directory = ProcessInfo.processInfo.environment["INKFLIT_SETTINGS_CAPTURE_DIR"], !directory.isEmpty {
             for tab in [SettingsController.Tab.general, .appearance, .edit, .snippets, .data] {
                 settings.select(tab); settings.window?.contentView?.layoutSubtreeIfNeeded(); settings.window?.displayIfNeeded()
@@ -994,6 +996,60 @@ final class NativeCodeEditingTest {
         app.web.callAsyncJavaScript(script, arguments: labels, in: nil, in: .page) { [self] result in
             if case .failure(let error) = result { fail("texture commands: \(error)") }
             print("PASS command palette applies coarse linen and custom texture strength")
+            testEditorFontSizeShortcuts()
+        }
+    }
+    private func testEditorFontSizeShortcuts() {
+        let cssSize = "document.documentElement.style.getPropertyValue('--editor-font-size')"
+        let toast = "document.getElementById('command-toast').textContent"
+        let baseline = app.windowAppearance().typography.size
+        key(24, "+", "=", [.command, .shift])
+        waitForJavaScript("\(cssSize) === '\(baseline + 1)px' && \(toast).endsWith('\(baseline + 1) pt')") { [self] in
+            key(27, "-", "-", .command)
+            waitForJavaScript("\(cssSize) === '\(baseline)px' && \(toast).endsWith('\(baseline) pt')") { [self] in
+                print("PASS native Cmd+ and Cmd- adjust the editor font size and show the current size")
+                testEditorFontSizeCommand()
+            }
+        }
+    }
+    private func testEditorFontSizeCommand() {
+        let script = """
+        const input = document.getElementById('command-input');
+        const search = text => {
+          input.value = text;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const toast = document.getElementById('command-toast');
+        const editor = document.querySelector('.cm-content');
+        const waitFor = async (condition, description) => {
+          for (let attempt = 0; attempt < 100; attempt++) {
+            if (condition()) return;
+            await new Promise(resolve => setTimeout(resolve, 30));
+          }
+          throw Error(description);
+        };
+        const changeSize = async (title, size) => {
+          window.openCommands();
+          search('font size');
+          const rows = [...document.querySelectorAll('#command-results .command-row')];
+          if (rows.length !== 2) throw Error('Expected exactly two font size commands');
+          rows.find(row => row.querySelector('.palette-row-title').textContent === title).click();
+          await waitFor(() => document.getElementById('command-panel').hidden &&
+            getComputedStyle(editor).fontSize === size + 'px' && toast.textContent.endsWith(size + ' pt'), title);
+        };
+        const baseline = parseFloat(getComputedStyle(editor).fontSize);
+        await changeSize(decreaseTitle, baseline - 1);
+        await changeSize(increaseTitle, baseline);
+        await changeSize(increaseTitle, baseline + 1);
+        await waitFor(() => !toast.textContent, 'font size toast did not clear');
+        return true;
+        """
+        let baseline = app.windowAppearance().typography.size
+        let labels = ["increaseTitle": L("palette.increaseFontSize"), "decreaseTitle": L("palette.decreaseFontSize")]
+        app.web.callAsyncJavaScript(script, arguments: labels, in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("editor font size command: \(error)") }
+            guard app.windowAppearance().typography.size == baseline + 1 else { fail("editor font size command did not persist") }
+            print("PASS two direct font size commands show the new size and clear the toast")
             testFormatCommand()
         }
     }
@@ -1014,21 +1070,107 @@ final class NativeCodeEditingTest {
         """
         app.web.callAsyncJavaScript(script, arguments: ["original": original], in: nil, in: .page) { [self] result in
             if case .failure(let error) = result { fail("run Format Note: \(error)") }
-            let selectedContent = "(() => { const state = JSON.parse(window.exportNotesJSON()); return state.notes.find(note => note.id === state.selected).content; })()"
-            waitForJavaScript("\(selectedContent).includes('f(1);')") { [self] in
+            waitForCommandToast(L("toast.noteFormatted")) { [self] in
                 content { [self] text in
                     expect(text, expected, "Format Note updates math and code in WKWebView")
-                    key(6, "z", "z", .command)
-                    later { [self] in content { [self] restored in
-                        expect(restored, original, "Format Note undo restores the full note")
-                        testCommandHistoryOrder()
-                    } }
+                    chooseTestCommand("format note") { [self] in
+                        waitForCommandToast(L("toast.noFormattingChanges")) { [self] in
+                            key(6, "z", "z", .command)
+                            later { [self] in content { [self] restored in
+                                expect(restored, original, "Format Note undo restores the full note")
+                                testCopyCodeToast()
+                            } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func chooseTestCommand(_ query: String, _ completion: @escaping () -> Void) {
+        let script = """
+        window.openCommands();
+        const input = document.getElementById('command-input');
+        input.value = query;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const rows = document.querySelectorAll('#command-results .command-row');
+        if (rows.length !== 1) throw Error('Expected one command for ' + query);
+        rows[0].click();
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["query": query], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("run \(query): \(error)") }
+            completion()
+        }
+    }
+    private func waitForCommandToast(_ text: String, _ completion: @escaping () -> Void) {
+        let literal = String(decoding: try! JSONEncoder().encode(text), as: UTF8.self)
+        waitForJavaScript("document.getElementById('command-toast').textContent === \(literal)", completion)
+    }
+    private func testCopyCodeToast() {
+        let pasteboard = NSPasteboard.withUniqueName()
+        app.testCodePasteboard = pasteboard
+        let code = "console.log(42);"
+        let script = """
+        const id = JSON.parse(window.exportNotesJSON()).selected;
+        await window.inkflitNotesOperation({ action: 'replace', id, content: 'code js\\n' + code });
+        return true;
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["code": code], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("prepare code copy: \(error)") }
+            key(125, "\u{f701}")
+            key(8, "c", "c", .command)
+            waitForCommandToast(L("toast.codeCopied")) { [self] in
+                guard pasteboard.string(forType: .string) == code else { fail("Cmd+C did not copy the code") }
+                pasteboard.clearContents()
+                app.web.evaluateJavaScript("document.getElementById('command-toast').textContent = ''") { [self] _, _ in
+                    chooseTestCommand("copy code block") { [self] in
+                        waitForCommandToast(L("toast.codeCopied")) { [self] in
+                            guard pasteboard.string(forType: .string) == code else { fail("copy command did not copy the code") }
+                            pasteboard.releaseGlobally()
+                            app.testCodePasteboard = nil
+                            print("PASS Cmd+C and Copy Code Block write to the pasteboard and show feedback")
+                            testGlobalShortcutToasts()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func testGlobalShortcutToasts() {
+        chooseTestCommand("clear shortcut") { [self] in
+            waitForCommandToast(L("settings.globalShortcutCleared")) { [self] in
+                guard app.hotKeyDisabled, UserDefaults.standard.bool(forKey: "hotKeyDisabled") else {
+                    fail("clear command left the global shortcut enabled")
+                }
+                chooseTestCommand("reset shortcut") { [self] in
+                    waitForJavaScript("""
+                        document.getElementById('command-toast').textContent.includes('⌃⌥Space') ||
+                          document.getElementById('save').classList.contains('error')
+                        """) { [self] in
+                        if app.hotKeyDisabled {
+                            if ProcessInfo.processInfo.environment["INKFLIT_REQUIRE_SHORTCUT_RESTORE_TEST"] == "1" {
+                                fail("default global shortcut could not be registered")
+                            }
+                            print("PASS clearing the global shortcut shows a toast, and a registration conflict reports an error")
+                            testCommandHistoryOrder()
+                        } else {
+                            let message = L("toast.globalShortcutRestored").replacingOccurrences(of: "%s", with: "⌃⌥Space")
+                            waitForCommandToast(message) { [self] in
+                                guard app.hotKey != nil, !UserDefaults.standard.bool(forKey: "hotKeyDisabled") else {
+                                    fail("restored global shortcut did not persist")
+                                }
+                                print("PASS clearing and restoring the global shortcut show the correct feedback")
+                                testCommandHistoryOrder()
+                            }
+                        }
+                    }
                 }
             }
         }
     }
     private func testCommandHistoryOrder() {
-        let expected = ["format-note", "ui-theme", "texture-strength", "note-paper", "new-note", "toggle-vim"]
+        let expected = ["reset-shortcut", "clear-shortcut", "copy-code-block", "format-note", "increase-editor-font-size",
+                        "decrease-editor-font-size", "ui-theme", "texture-strength", "note-paper", "new-note", "toggle-vim"]
         guard UserDefaults.standard.stringArray(forKey: "commandPaletteHistory") == expected else {
             fail("command palette history did not preserve execution order")
         }
@@ -1036,11 +1178,14 @@ final class NativeCodeEditingTest {
         guard appearance.paper == .linen, appearance.textureStrength == 37 else {
             fail("texture commands did not persist their values")
         }
+        guard appearance.typography.size == 15 else { fail("editor font size did not survive restart") }
         key(35, "P", "p", [.command, .shift])
         waitForJavaScript("""
             document.activeElement.id === 'command-input'
-              && document.querySelector('#command-option-0[aria-selected=true] .palette-row-title')?.textContent === '\(L("palette.formatNote"))'
-              && document.querySelector('#command-option-1 .palette-row-title')?.textContent === '\(L("settings.accentColor"))'
+              && document.querySelector('#command-option-0[aria-selected=true] .palette-row-title')?.textContent === '\(L("palette.resetShortcut"))'
+              && document.querySelector('#command-option-1 .palette-row-title')?.textContent === '\(L("settings.clearGlobalShortcut"))'
+              && getComputedStyle(document.querySelector('.cm-content')).fontSize === '15px'
+              && !document.getElementById('command-toast').textContent
             """) { [self] in
             print("PASS command history keeps the last two distinct commands at the top")
             app.restoreInputSource(); exit(0)
@@ -1421,6 +1566,11 @@ final class NativeCodeEditingTest {
               if(find('# code heading')?.classList.contains('cm-note-heading')) errors.push('code styled as heading');
               if(!item?.querySelector('.list-checkbox') || item.querySelector('.tok-heading') ||
                  dash?.classList.contains('cm-note-heading') || !dash || dash.querySelector('.tok-heading')) errors.push('a dash after the list styled the checklist as a heading');
+              for (const line of [item, dash, code]) {
+                const style = getComputedStyle(line);
+                const ratio = parseFloat(style.lineHeight) / parseFloat(style.fontSize);
+                if (Math.abs(ratio - 1.65) > .02) errors.push('unexpected editor line spacing: '+ratio);
+              }
               for(const theme of ['orange','blue','green']) {
                 window.setUIAppearance(theme,100);
                 const root=getComputedStyle(document.documentElement), probe=document.createElement('span'); document.body.append(probe);

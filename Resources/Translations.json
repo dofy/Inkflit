@@ -365,6 +365,54 @@
     "zh-Hant": "編輯器字型大小",
     "ja": "エディタの文字サイズ"
   },
+  "palette.increaseFontSize": {
+    "en": "Increase Font Size",
+    "zh-Hans": "加大字号",
+    "zh-Hant": "放大字型",
+    "ja": "文字を拡大"
+  },
+  "palette.decreaseFontSize": {
+    "en": "Decrease Font Size",
+    "zh-Hans": "缩小字号",
+    "zh-Hant": "縮小字型",
+    "ja": "文字を縮小"
+  },
+  "toast.editorFontSize": {
+    "en": "Font size %d pt",
+    "zh-Hans": "字号 %d pt",
+    "zh-Hant": "字型大小 %d pt",
+    "ja": "文字サイズ %d pt"
+  },
+  "toast.codeCopied": {
+    "en": "Code copied",
+    "zh-Hans": "已复制代码",
+    "zh-Hant": "已複製程式碼",
+    "ja": "コードをコピーしました"
+  },
+  "toast.codeCopyFailed": {
+    "en": "Could not copy code",
+    "zh-Hans": "复制代码失败",
+    "zh-Hant": "複製程式碼失敗",
+    "ja": "コードをコピーできませんでした"
+  },
+  "toast.noteFormatted": {
+    "en": "Note formatted",
+    "zh-Hans": "笔记已格式化",
+    "zh-Hant": "筆記已格式化",
+    "ja": "ノートを整形しました"
+  },
+  "toast.noFormattingChanges": {
+    "en": "No formatting changes",
+    "zh-Hans": "没有可格式化的改动",
+    "zh-Hant": "沒有可格式化的變更",
+    "ja": "整形による変更はありません"
+  },
+  "toast.globalShortcutRestored": {
+    "en": "Global shortcut restored to %s",
+    "zh-Hans": "全局快捷键已恢复为 %s",
+    "zh-Hant": "全域快捷鍵已恢復為 %s",
+    "ja": "グローバルショートカットを %s に戻しました"
+  },
   "settings.notePaper": {
     "en": "Background texture",
     "zh-Hans": "背景材质",
@@ -490,6 +538,24 @@
     "zh-Hans": "外观",
     "zh-Hant": "外觀",
     "ja": "外観"
+  },
+  "settings.about": {
+    "en": "About",
+    "zh-Hans": "关于",
+    "zh-Hant": "關於",
+    "ja": "情報"
+  },
+  "settings.aboutVersion": {
+    "en": "Version %@",
+    "zh-Hans": "版本 %@",
+    "zh-Hant": "版本 %@",
+    "ja": "バージョン %@"
+  },
+  "settings.aboutTagline": {
+    "en": "A floating notebook for Markdown and Vim.",
+    "zh-Hans": "支持 Markdown 和 Vim 的浮窗笔记。",
+    "zh-Hant": "支援 Markdown 和 Vim 的浮動筆記。",
+    "ja": "Markdown と Vim に対応したフローティングノート。"
   },
   "settings.openHelp": {
     "en": "Open help",

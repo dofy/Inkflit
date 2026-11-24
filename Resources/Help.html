@@ -106,7 +106,7 @@
 <body>
 <div class="layout">
 <nav>
-  <div class="brand"><span class="app-icon" aria-hidden="true"></span><div><b>Inkflit</b><span><span id="brand-label"></span> · 0.4.0</span></div></div>
+  <div class="brand"><span class="app-icon" aria-hidden="true"></span><div><b>Inkflit</b><span><span id="brand-label"></span> · 0.5.0</span></div></div>
   <input id="q" type="search" autocomplete="off">
   <ol id="toc"></ol>
   <p class="empty" id="empty"></p>
@@ -117,7 +117,7 @@
     <div><h1 id="title"></h1><p id="tagline"></p></div>
   </header>
   <div id="content"></div>
-  <footer>Inkflit 0.4.0 · © 2026 phpz.org · <a href="https://inkflit.phpz.org/">inkflit.phpz.org</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a></footer>
+  <footer>Inkflit 0.5.0 · © 2026 phpz.org · <a href="https://inkflit.phpz.org/">inkflit.phpz.org</a> · <a href="https://github.com/dofy/Inkflit">GitHub</a></footer>
 </main>
 </div>
 <template data-lang="en">
@@ -138,7 +138,7 @@
   <h3>Guide notes</h3>
   <ul>
     <li>The first launch creates seven guide notes in your language. Edit or delete them freely.</li>
-    <li><b>Restore Guide Notes</b> at the bottom of Settings adds a fresh set at the front and opens the welcome note.</li>
+    <li><b>Settings → About → Restore Guide Notes</b> adds a fresh set at the front and opens the welcome note.</li>
   </ul>
 </section>
 
@@ -221,6 +221,8 @@
 <tr data-command="language"><td><code>locale</code></td><td>Language</td></tr>
 <tr data-command="color-scheme"><td><code>color scheme</code></td><td>Appearance</td></tr>
 <tr data-command="ui-theme"><td><code>accent color</code></td><td>Accent color</td></tr>
+<tr data-command="increase-editor-font-size"><td><code>increase font size</code></td><td>Increase Font Size</td></tr>
+<tr data-command="decrease-editor-font-size"><td><code>decrease font size</code></td><td>Decrease Font Size</td></tr>
 <tr data-command="note-paper"><td><code>background material</code></td><td>Background texture</td></tr>
 <tr data-command="texture-strength"><td><code>texture strength</code></td><td>Texture strength</td></tr>
 <tr data-command="opacity"><td><code>window opacity</code></td><td>Window opacity</td></tr>
@@ -620,6 +622,7 @@ ans / 2 =
       <tr><td>Edit</td><td>Vim mode, Double Esc to hide, code indentation</td></tr>
       <tr><td>Snippets</td><td>Custom snippets and <a href="#writing">snippet availability</a></td></tr>
       <tr><td>Data</td><td>Notes folder, automatic backups, previous versions, Trash, index recovery</td></tr>
+      <tr><td>About</td><td>Installed version, Restore Guide Notes, and Open help</td></tr>
     </tbody>
   </table>
   <p>Choose Follow System (the default), Light, or Dark under <b>Appearance</b>. Under <b>Accent color</b>, the multicolor palettes coordinate the toolbar, note, and menus. Choices include Cola Red &amp; Blue, Christmas, Lacquer Red, Midnight Gold, and Peacock &amp; Gold. Each follows your selected appearance mode.</p>
@@ -631,7 +634,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>Keyboard shortcuts</h2>
   <p>The global shortcut works from any app and can be changed in Settings. The others work while the note window is active.</p>
-  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide an unpinned window. In Vim Normal mode, press twice by default.</td></tr><tr><td><kbd>⌘W</kbd></td><td>Close the note window, including when pinned</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>First / last note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘↩</kbd></td><td>Toggle the current checklist or Markdown task</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
+  <table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody><tr class="group"><td colspan="2">Window</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>Show or hide Inkflit from any app (default; change it in Settings)</td></tr><tr><td><kbd>Esc</kbd></td><td>Hide an unpinned window. In Vim Normal mode, press twice by default.</td></tr><tr><td><kbd>⌘W</kbd></td><td>Close the note window, including when pinned</td></tr><tr><td><kbd>⌘,</kbd></td><td>Open Settings</td></tr><tr class="group"><td colspan="2">Notes</td></tr><tr><td><kbd>⌘N</kbd></td><td>New note at the end</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>Previous / next note</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>First / last note</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>Jump to note 1–9</td></tr><tr><td><kbd>⌘D</kbd></td><td>Delete the current note</td></tr><tr><td><kbd>⌘U</kbd></td><td>Restore the last deleted note (within 12 seconds)</td></tr><tr class="group"><td colspan="2">Search and commands</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>Search notes</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>Command palette</td></tr><tr class="group"><td colspan="2">Editing</td></tr><tr><td><kbd>⌘+</kbd> / <kbd>⌘-</kbd></td><td>Increase / decrease the editor font size (⌘= also increases it)</td></tr><tr><td><kbd>⌘↩</kbd></td><td>Toggle the current checklist or Markdown task</td></tr><tr><td><kbd>⌘/</kbd></td><td>Comment or uncomment lines</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>New line below / above the current line or block</td></tr><tr><td><kbd>⌘K</kbd></td><td>Change the current block type</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>Delete the current block</td></tr><tr><td><kbd>⌘L</kbd></td><td>Choose the code block language</td></tr><tr><td><kbd>⌘C</kbd></td><td>Copy the whole code block when nothing is selected</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>Undo / redo (with Vim off)</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -716,7 +719,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h3>引导笔记</h3>
   <ul>
     <li>第一次启动时，Inkflit 按你的语言创建七篇引导笔记，可以随意修改或删除。</li>
-    <li>设置窗口底部的“重新生成引导笔记”：在最前面放一套新的引导，并打开欢迎页。</li>
+    <li>在「设置 → 关于」选择「重新生成引导笔记」，在最前面放一套新的引导，并打开欢迎页。</li>
   </ul>
 </section>
 
@@ -799,6 +802,8 @@ open 'inkflit://note/get?index=1'</code></pre>
 <tr data-command="language"><td><code>locale</code></td><td>语言</td></tr>
 <tr data-command="color-scheme"><td><code>color scheme</code></td><td>显示模式</td></tr>
 <tr data-command="ui-theme"><td><code>accent color</code></td><td>界面主色</td></tr>
+<tr data-command="increase-editor-font-size"><td><code>increase font size</code></td><td>加大字号</td></tr>
+<tr data-command="decrease-editor-font-size"><td><code>decrease font size</code></td><td>缩小字号</td></tr>
 <tr data-command="note-paper"><td><code>background material</code></td><td>背景材质</td></tr>
 <tr data-command="texture-strength"><td><code>texture strength</code></td><td>纹理强度</td></tr>
 <tr data-command="opacity"><td><code>window opacity</code></td><td>窗口不透明度</td></tr>
@@ -1198,6 +1203,7 @@ ans / 2 =
       <tr><td>编辑</td><td>Vim 模式、连按两次 Esc 收起窗口、代码缩进</td></tr>
       <tr><td>片段</td><td>自定义片段和<a href="#writing">片段开关</a></td></tr>
       <tr><td>数据</td><td>笔记保存位置、自动备份、历史版本、回收站、索引恢复</td></tr>
+      <tr><td>关于</td><td>当前版本、重新生成引导笔记、打开使用帮助</td></tr>
     </tbody>
   </table>
   <p>在<b>外观</b>中选择跟随系统（默认）、浅色或深色。<b>界面主色</b>中的可乐红蓝、圣诞松绿、朱漆红、午夜黑金和孔雀蓝金会一起调整工具栏、正文和菜单的配色，每套都随显示模式切换。</p>
@@ -1209,7 +1215,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>快捷键</h2>
   <p>全局快捷键在任何应用里都能用，可以在设置中更改。其他快捷键在笔记窗口激活时可用。</p>
-  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>收起未固定的窗口（Vim Normal 模式下默认连按两次）</td></tr><tr><td><kbd>⌘W</kbd></td><td>收起笔记窗口，固定时也可用</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一条 / 最后一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切换当前清单项或 Markdown 任务的完成状态</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
+  <table><thead><tr><th>按键</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">窗口</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）</td></tr><tr><td><kbd>Esc</kbd></td><td>收起未固定的窗口（Vim Normal 模式下默认连按两次）</td></tr><tr><td><kbd>⌘W</kbd></td><td>收起笔记窗口，固定时也可用</td></tr><tr><td><kbd>⌘,</kbd></td><td>打开设置</td></tr><tr class="group"><td colspan="2">笔记</td></tr><tr><td><kbd>⌘N</kbd></td><td>在末尾新建笔记</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一条 / 下一条笔记</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一条 / 最后一条笔记</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 条笔记</td></tr><tr><td><kbd>⌘D</kbd></td><td>删除当前笔记</td></tr><tr><td><kbd>⌘U</kbd></td><td>恢复刚删除的笔记（12 秒内）</td></tr><tr class="group"><td colspan="2">搜索与命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜索笔记</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">编辑</td></tr><tr><td><kbd>⌘+</kbd> / <kbd>⌘-</kbd></td><td>增大 / 减小编辑器字号（⌘= 也可放大）</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切换当前清单项或 Markdown 任务的完成状态</td></tr><tr><td><kbd>⌘/</kbd></td><td>注释或取消注释</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在当前行或块下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>更改当前块类型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>删除当前块</td></tr><tr><td><kbd>⌘L</kbd></td><td>选择代码块语言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未选中内容时复制整个代码块</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>撤销 / 重做（关闭 Vim 时）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -1294,7 +1300,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h3>引導筆記</h3>
   <ul>
     <li>第一次啟動時，Inkflit 依你的語言建立七篇引導筆記，可以隨意修改或刪除。</li>
-    <li>設定視窗底部的「重新產生引導筆記」：在最前面放一套新的引導，並開啟歡迎頁。</li>
+    <li>在「設定 → 關於」選擇「重新產生引導筆記」，在最前面放一套新的引導，並開啟歡迎頁。</li>
   </ul>
 </section>
 
@@ -1377,6 +1383,8 @@ open 'inkflit://note/get?index=1'</code></pre>
 <tr data-command="language"><td><code>locale</code></td><td>語言</td></tr>
 <tr data-command="color-scheme"><td><code>color scheme</code></td><td>顯示模式</td></tr>
 <tr data-command="ui-theme"><td><code>accent color</code></td><td>介面主色</td></tr>
+<tr data-command="increase-editor-font-size"><td><code>increase font size</code></td><td>放大字型</td></tr>
+<tr data-command="decrease-editor-font-size"><td><code>decrease font size</code></td><td>縮小字型</td></tr>
 <tr data-command="note-paper"><td><code>background material</code></td><td>背景材質</td></tr>
 <tr data-command="texture-strength"><td><code>texture strength</code></td><td>紋理強度</td></tr>
 <tr data-command="opacity"><td><code>window opacity</code></td><td>視窗不透明度</td></tr>
@@ -1776,6 +1784,7 @@ ans / 2 =
       <tr><td>編輯</td><td>Vim 模式、連按兩次 Esc 收起視窗、程式碼縮排</td></tr>
       <tr><td>片段</td><td>自訂片段和<a href="#writing">片段開關</a></td></tr>
       <tr><td>資料</td><td>筆記儲存位置、自動備份、歷史版本、回收站、索引還原</td></tr>
+      <tr><td>關於</td><td>目前版本、重新產生引導筆記、開啟使用說明</td></tr>
     </tbody>
   </table>
   <p>在<b>外觀</b>中選擇跟隨系統（預設）、淺色或深色。<b>介面主色</b>中的可樂紅藍、聖誕松綠、朱漆紅、午夜黑金和孔雀藍金會一起調整工具列、正文和選單的配色，每套都隨顯示模式切換。</p>
@@ -1787,7 +1796,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>快捷鍵</h2>
   <p>全域快捷鍵在任何應用程式裡都能使用，可以在設定中變更。其他快捷鍵在筆記視窗作用中時可用。</p>
-  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>收起未固定的視窗（Vim 一般模式下預設連按兩次）</td></tr><tr><td><kbd>⌘W</kbd></td><td>收起筆記視窗，固定時也可用</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一則 / 最後一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切換目前清單項目或 Markdown 待辦的完成狀態</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
+  <table><thead><tr><th>按鍵</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">視窗</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）</td></tr><tr><td><kbd>Esc</kbd></td><td>收起未固定的視窗（Vim 一般模式下預設連按兩次）</td></tr><tr><td><kbd>⌘W</kbd></td><td>收起筆記視窗，固定時也可用</td></tr><tr><td><kbd>⌘,</kbd></td><td>開啟設定</td></tr><tr class="group"><td colspan="2">筆記</td></tr><tr><td><kbd>⌘N</kbd></td><td>在最後新增筆記</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>上一則 / 下一則筆記</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>第一則 / 最後一則筆記</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>跳到第 1–9 則筆記</td></tr><tr><td><kbd>⌘D</kbd></td><td>刪除目前筆記</td></tr><tr><td><kbd>⌘U</kbd></td><td>還原剛刪除的筆記（12 秒內）</td></tr><tr class="group"><td colspan="2">搜尋與命令</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>搜尋筆記</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>命令面板</td></tr><tr class="group"><td colspan="2">編輯</td></tr><tr><td><kbd>⌘+</kbd> / <kbd>⌘-</kbd></td><td>放大 / 縮小編輯器字型（⌘= 也可放大）</td></tr><tr><td><kbd>⌘↩</kbd></td><td>切換目前清單項目或 Markdown 待辦的完成狀態</td></tr><tr><td><kbd>⌘/</kbd></td><td>註解或取消註解</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>在目前行或區塊下方 / 上方插入空行</td></tr><tr><td><kbd>⌘K</kbd></td><td>變更目前區塊類型</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>刪除目前區塊</td></tr><tr><td><kbd>⌘L</kbd></td><td>選擇程式碼區塊語言</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選取內容時複製整個程式碼區塊</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>復原 / 重做（關閉 Vim 時）</td></tr></tbody></table>
 </section>
 
 <section id="data">
@@ -1872,7 +1881,7 @@ open 'inkflit://note/get?index=1'</code></pre>
   <h3>ガイドノート</h3>
   <ul>
     <li>初回起動時に、使用中の言語で 7 つのガイドノートが作成されます。自由に編集・削除できます。</li>
-    <li>設定ウインドウ下部の「ガイドノートを再作成」：新しいガイドを先頭に追加し、ようこそページを開きます。</li>
+    <li>「設定 → 情報」で「ガイドノートを再作成」を選ぶと、新しいガイドを先頭に追加し、ようこそページを開きます。</li>
   </ul>
 </section>
 
@@ -1955,6 +1964,8 @@ open 'inkflit://note/get?index=1'</code></pre>
 <tr data-command="language"><td><code>locale</code></td><td>言語</td></tr>
 <tr data-command="color-scheme"><td><code>color scheme</code></td><td>外観モード</td></tr>
 <tr data-command="ui-theme"><td><code>accent color</code></td><td>アクセントカラー</td></tr>
+<tr data-command="increase-editor-font-size"><td><code>increase font size</code></td><td>文字を拡大</td></tr>
+<tr data-command="decrease-editor-font-size"><td><code>decrease font size</code></td><td>文字を縮小</td></tr>
 <tr data-command="note-paper"><td><code>background material</code></td><td>背景の質感</td></tr>
 <tr data-command="texture-strength"><td><code>texture strength</code></td><td>質感の強さ</td></tr>
 <tr data-command="opacity"><td><code>window opacity</code></td><td>ウインドウの不透明度</td></tr>
@@ -2354,6 +2365,7 @@ ans / 2 =
       <tr><td>編集</td><td>Vim モード、Esc を 2 回押してウインドウを隠す設定、コードのインデント</td></tr>
       <tr><td>スニペット</td><td>自分のスニペットと<a href="#writing">スニペットの有効設定</a></td></tr>
       <tr><td>データ</td><td>ノートの保存場所、自動バックアップ、履歴、ゴミ箱、インデックス復旧</td></tr>
+      <tr><td>情報</td><td>現在のバージョン、ガイドノートを再作成、ヘルプを開く</td></tr>
     </tbody>
   </table>
   <p><b>外観</b>で「システムに従う」（標準）、「ライト」、「ダーク」から選べます。<b>アクセントカラー</b>には「コーラの赤と青」「クリスマス」「漆の朱」「ミッドナイトゴールド」「ピーコックブルーと金」もあります。いずれもツールバー、本文、メニューに複数の色を組み合わせ、表示モードに合わせて切り替わります。</p>
@@ -2365,7 +2377,7 @@ ans / 2 =
 <section id="shortcuts">
   <h2>キーボードショートカット</h2>
   <p>グローバルショートカットはどのアプリからでも使え、設定で変更できます。そのほかはノートのウインドウがアクティブなときに使えます。</p>
-  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>固定していないウインドウを隠す（Vim のノーマルモードでは既定で 2 回）</td></tr><tr><td><kbd>⌘W</kbd></td><td>ノートウインドウを閉じる（固定中も有効）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>最初 / 最後のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘↩</kbd></td><td>現在のチェック項目または Markdown タスクの完了状態を切り替える</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
+  <table><thead><tr><th>キー</th><th>操作</th></tr></thead><tbody><tr class="group"><td colspan="2">ウインドウ</td></tr><tr><td><kbd>⌃⌥Space</kbd></td><td>どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）</td></tr><tr><td><kbd>Esc</kbd></td><td>固定していないウインドウを隠す（Vim のノーマルモードでは既定で 2 回）</td></tr><tr><td><kbd>⌘W</kbd></td><td>ノートウインドウを閉じる（固定中も有効）</td></tr><tr><td><kbd>⌘,</kbd></td><td>設定を開く</td></tr><tr class="group"><td colspan="2">ノート</td></tr><tr><td><kbd>⌘N</kbd></td><td>末尾に新規ノート</td></tr><tr><td><kbd>⌘[</kbd> / <kbd>⌘]</kbd></td><td>前 / 次のノート</td></tr><tr><td><kbd>⌘⇧[</kbd> / <kbd>⌘⇧]</kbd></td><td>最初 / 最後のノート</td></tr><tr><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td><td>1〜9 番目のノートへ移動</td></tr><tr><td><kbd>⌘D</kbd></td><td>現在のノートを削除</td></tr><tr><td><kbd>⌘U</kbd></td><td>直前に削除したノートを復元（12 秒以内）</td></tr><tr class="group"><td colspan="2">検索とコマンド</td></tr><tr><td><kbd>⌘⇧F</kbd></td><td>ノートを検索</td></tr><tr><td><kbd>⌘⇧P</kbd></td><td>コマンドパレット</td></tr><tr class="group"><td colspan="2">編集</td></tr><tr><td><kbd>⌘+</kbd> / <kbd>⌘-</kbd></td><td>エディタの文字を拡大 / 縮小（⌘= でも拡大）</td></tr><tr><td><kbd>⌘↩</kbd></td><td>現在のチェック項目または Markdown タスクの完了状態を切り替える</td></tr><tr><td><kbd>⌘/</kbd></td><td>行をコメント / 解除</td></tr><tr><td><kbd>⌘O</kbd> / <kbd>⌘⇧O</kbd></td><td>現在の行またはブロックの下 / 上に空行を追加</td></tr><tr><td><kbd>⌘K</kbd></td><td>現在のブロックの種類を変更</td></tr><tr><td><kbd>⌘⇧D</kbd></td><td>現在のブロックを削除</td></tr><tr><td><kbd>⌘L</kbd></td><td>コードブロックの言語を選択</td></tr><tr><td><kbd>⌘C</kbd></td><td>未選択時にコードブロック全体をコピー</td></tr><tr><td><kbd>⌘Z</kbd> / <kbd>⌘⇧Z</kbd></td><td>取り消し / やり直し（Vim オフ時）</td></tr></tbody></table>
 </section>
 
 <section id="data">

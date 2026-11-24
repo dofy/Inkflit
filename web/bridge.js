@@ -14,6 +14,7 @@ import { normalizeIndentation } from './code-editing.js';
 import { applyCodeTheme, codeThemes } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 import { clearEscapeHint, setVimDoubleEscape } from './keys.js';
+import { showToast } from './toast.js';
 
 // Everything the native app calls on `window`, in one place.
 
@@ -60,6 +61,7 @@ function loadNotesBase64(value) {
 
 export function installBridge() {
   Object.assign(window, {
+    showToast,
     // Notes and saving
     loadNotesBase64,
     saveResult,

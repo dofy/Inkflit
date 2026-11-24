@@ -56,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var testSaveRetryScheduled: Bool { saveWork != nil && pendingSave != nil }
     var testSaveTimes: [TimeInterval] = []
     var testAutomationCallbacks: [URL] = []
+    var testCodePasteboard: NSPasteboard?
     #endif
     var requireExistingStorage = false
 
@@ -394,9 +395,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             backdrop?.isHidden = appearance.blur == 0; backdrop?.alphaValue = CGFloat(appearance.blur) / 100
         }
         let textureScale = Double(appearance.textureStrength) / Double(WindowAppearance.defaultTextureStrength)
-        guard let colors = javaScriptJSON([appearance.theme, appearance.opacity, appearance.colorScheme.rawValue, appearance.paper.rawValue, textureScale]),
-              let typography = javaScriptJSON([appearance.typography.family, appearance.typography.size]) else { return }
-        web?.evaluateJavaScript("window.setUIAppearance?.(...\(colors)); window.setEditorTypography?.(...\(typography))", completionHandler: nil)
+        if let colors = javaScriptJSON([appearance.theme, appearance.opacity, appearance.colorScheme.rawValue, appearance.paper.rawValue, textureScale]) {
+            web?.evaluateJavaScript("window.setUIAppearance?.(...\(colors))", completionHandler: nil)
+        }
+        applyEditorTypography(appearance.typography)
+    }
+    private func applyEditorTypography(_ typography: EditorTypography) {
+        guard let arguments = javaScriptJSON([typography.family, typography.size]) else { return }
+        web?.evaluateJavaScript("window.setEditorTypography?.(...\(arguments))", completionHandler: nil)
     }
     func syncLanguage() {
         guard let json = javaScriptJSON([Localization.current]) else { return }
@@ -1051,9 +1057,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 UserDefaults.standard.set(value == "on", forKey: "windowPinned")
             case "quit": NSApp.terminate(nil)
             case "record-shortcut": withSettings(.general) { $0.recordGlobalShortcut() }
-            case "clear-shortcut": clearShortcut(); settingsController?.refresh()
+            case "clear-shortcut":
+                clearShortcut()
+                settingsController?.refresh()
+                showCommandToast("settings.globalShortcutCleared")
             case "reset-shortcut":
                 if let error = restoreDefaultShortcut() { showError(error) }
+                else { showCommandToast("toast.globalShortcutRestored", shortcutLabel()) }
                 settingsController?.refresh()
             case "login-settings": SMAppService.openSystemSettingsLoginItems()
             case "choose-notes-folder": withSettings(.data) { $0.chooseStoragePressed() }
@@ -1074,6 +1084,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             case "color-scheme":
                 guard let scheme = WindowColorScheme(rawValue: value) else { return }
                 var appearance = windowAppearance(); appearance.colorScheme = scheme; updateWindowAppearance(appearance); settingsController?.refresh()
+            case "editor-font-size":
+                let typography = windowAppearance().typography
+                let range = EditorTypography.sizes
+                let size: Int
+                switch value {
+                case "increase": size = min(range.upperBound, typography.size + 1)
+                case "decrease": size = max(range.lowerBound, typography.size - 1)
+                default: return
+                }
+                if size != typography.size {
+                    UserDefaults.standard.set(size, forKey: "editorFontSize")
+                    applyEditorTypography(EditorTypography(family: typography.family, size: size))
+                    settingsController?.refresh()
+                }
+                showCommandToast("toast.editorFontSize", String(size))
             case "note-paper":
                 guard let paper = NotePaper(rawValue: value) else { return }
                 var appearance = windowAppearance(); appearance.paper = paper
@@ -1146,8 +1171,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             return
         }
         if type == "copyCode", let content = body["content"] as? String {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(content, forType: .string)
+            #if INKFLIT_NATIVE_TEST
+            let pasteboard = testCodePasteboard ?? .general
+            #else
+            let pasteboard = NSPasteboard.general
+            #endif
+            pasteboard.clearContents()
+            let copied = pasteboard.setString(content, forType: .string)
+            showCommandToast(copied ? "toast.codeCopied" : "toast.codeCopyFailed")
             return
         }
         if type == "mode", let mode = body["mode"] as? String {
@@ -1161,6 +1192,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private func javaScriptJSON(_ value: Any) -> String? {
         guard let data = try? JSONSerialization.data(withJSONObject: value) else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+    private func showCommandToast(_ key: String, _ value: String = "") {
+        guard let arguments = javaScriptJSON([key, value]) else { return }
+        web.evaluateJavaScript("window.showToast?.(...\(arguments))", completionHandler: nil)
     }
     func showError(_ message: String) {
         if let text = javaScriptJSON([message]) { web.evaluateJavaScript("window.saveResult(false, \(text)[0])", completionHandler: nil) }

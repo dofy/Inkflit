@@ -37,6 +37,20 @@ test('palette labels and keyboard lookup share command bindings', () => {
   assert.equal(commandShortcut({ ...event, key: 'p', code: 'KeyP', shiftKey: true }, 'palette').id, 'open-command-palette');
 });
 
+test('editor font shortcuts accept plus, equals, and minus', () => {
+  for (const [key, code, shiftKey, id] of [
+    ['=', 'Equal', false, 'increase-editor-font-size'],
+    ['+', 'Equal', true, 'increase-editor-font-size'],
+    ['+', 'NumpadAdd', false, 'increase-editor-font-size'],
+    ['-', 'Minus', false, 'decrease-editor-font-size'],
+    ['-', 'NumpadSubtract', false, 'decrease-editor-font-size'],
+  ]) {
+    const event = { key, code, metaKey: true, shiftKey };
+    assert.equal(commandShortcut(event, 'palette')?.id, id);
+    assert.equal(commandShortcut({ ...event, altKey: true }, 'palette'), null);
+  }
+});
+
 test('the interface color command can find multicolor themes by name', () => {
   const originalLanguage = lang();
   try {

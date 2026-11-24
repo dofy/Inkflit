@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0] - 2026-11-24
+
+### Added
+
+- Add an About tab in Settings with the installed version, copyright, and buttons to restore guide notes and open the offline help.
+- Adjust the editor font size by 1 pt with ⌘+ or ⌘−, or with the Increase Font Size and Decrease Font Size commands. A brief toast shows the current size.
+- Confirm when a code block is copied, whether formatting changed the note, and when the global shortcut is cleared or restored from the command palette. The restore message shows the shortcut.
+
+### Changed
+
+- Increase the line spacing for note text, checklists, and code blocks.
+
+The DMG requires Apple Silicon and macOS 13 or later. The app is ad hoc signed and has no Apple notarization. The release includes `SHA256SUMS.txt` for verification.
+
 ## [0.4.0] - 2026-11-23
 
 ### Added

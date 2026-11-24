@@ -5,6 +5,7 @@ import { t } from './i18n.js';
 import { selectAt, createNote, navigate, selectFirst, selectLast } from './notes.js';
 import { deleteNote, hasDeleteNotices, restoreLastDeleted } from './delete-notices.js';
 import { formatCurrentNote } from './note-format.js';
+import { showToast } from './toast.js';
 import { codeThemes } from './code-themes.js';
 import { uiThemes } from './ui-themes.js';
 import { blockMenuOpen, currentBlockScope, openInsertBlockMenu, canInsertBlock, deleteCurrentBlock, openCurrentBlockMenu, planAdjacentBlockLine, planAdjacentTextLine } from './block-menu.js';
@@ -23,6 +24,12 @@ const focused = editor => editor.hasFocus;
 const editorMenusClosed = () => !blockMenuOpen() && !languageMenuOpen();
 const focusedWithoutMenus = editor => focused(editor) && editorMenusClosed();
 const editorCommands = [
+  { id: 'increase-editor-font-size', label: 'palette.increaseFontSize', group: setting,
+    aliases: ['increase font size', '放大字号', '放大字號'], key: '+', alternateKeys: [{ key: '=' }, { key: '+', shift: true }],
+    phase: 'palette', repeat: true, run: () => nativeCommand('editor-font-size', 'increase') },
+  { id: 'decrease-editor-font-size', label: 'palette.decreaseFontSize', group: setting,
+    aliases: ['decrease font size', '减小字号', '縮小字號'], key: '-', phase: 'palette', repeat: true,
+    run: () => nativeCommand('editor-font-size', 'decrease') },
   { id: 'new-note', label: 'note.new', group: note, aliases: ['new create note'], key: 'n', repeat: true, run: () => createNote() },
   { id: 'find-note', label: 'palette.searchNotes', group: note, aliases: ['search find note'],
     key: 'f', shift: true, phase: 'palette', run: () => paletteActions?.toggleSearch() },
@@ -31,7 +38,10 @@ const editorCommands = [
   { id: 'first-note', label: 'note.first', group: note, aliases: ['first note top start'], key: '[', code: 'BracketLeft', shift: true, run: () => selectFirst() },
   { id: 'restore-last-note', label: 'note.restoreLastDeleted', group: note, aliases: ['restore undo deleted note'], key: 'u', phase: 'early', when: () => hasDeleteNotices(), run: () => restoreLastDeleted() },
   { id: 'last-note', label: 'note.last', group: note, aliases: ['last note bottom end'], key: ']', code: 'BracketRight', shift: true, run: () => selectLast() },
-  { id: 'format-note', label: 'palette.formatNote', group: note, aliases: ['format note code math beautify'], run: () => formatCurrentNote() },
+  { id: 'format-note', label: 'palette.formatNote', group: note, aliases: ['format note code math beautify'], run: async () => {
+    const changed = await formatCurrentNote();
+    if (changed !== undefined) showToast(changed ? 'toast.noteFormatted' : 'toast.noFormattingChanges');
+  } },
   { id: 'delete-note', label: 'note.delete', group: note, aliases: ['delete current note trash'], key: 'd', repeat: true, run: () => deleteNote() },
   { id: 'insert-block', label: 'palette.insertBlock', group: edit, aliases: ['insert new feature block'], when: canInsertBlock, run: openInsertBlockMenu },
   { id: 'change-block', label: 'palette.changeBlockType', group: edit, aliases: ['change feature block type convert'], key: 'k', phase: 'before-menu', keyboardWhen: focused, when: editor => !!currentBlockScope(editor.state), run: editor => {
@@ -125,8 +135,14 @@ function copyCodeBlock(editor) {
   const content = doc.sliceString(from, Math.max(from, to));
   const handler = nativeHandler();
   if (handler) handler.postMessage({ type: 'copyCode', content });
-  else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(content).catch(() => {});
-  else return false;
+  else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(content).then(
+    () => showToast('toast.codeCopied'),
+    () => showToast('toast.codeCopyFailed')
+  );
+  else {
+    showToast('toast.codeCopyFailed');
+    return false;
+  }
   return true;
 }
 
@@ -189,9 +205,10 @@ const settingsCommands = [
 const definitions = [...editorCommands, ...nativeCommands, ...settingsCommands];
 const byId = new Map(definitions.map(command => [command.id, command]));
 const bindingKey = (phase, shift, key) => `${phase}:${shift ? 'shift' : 'plain'}:${key}`;
-const bindings = new Map(editorCommands.filter(command => command.key).map(command => [
-  bindingKey(command.phase || 'main', command.shift, command.code || command.key), command
-]));
+const bindings = new Map(editorCommands.filter(command => command.key).flatMap(command => {
+  const keys = [{ key: command.code || command.key, shift: command.shift }, ...(command.alternateKeys || [])];
+  return keys.map(({ key, shift }) => [bindingKey(command.phase || 'main', shift, key), command]);
+}));
 
 // Prefer an explicit physical key when a layout changes the shifted character.
 export function commandShortcut(event, phase) {

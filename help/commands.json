@@ -56,6 +56,8 @@
         {"id": "language", "keyword": "locale", "labels": ["settings.language"]},
         {"id": "color-scheme", "keyword": "color scheme", "labels": ["settings.colorScheme"]},
         {"id": "ui-theme", "keyword": "accent color", "labels": ["settings.accentColor"]},
+        {"id": "increase-editor-font-size", "keyword": "increase font size", "labels": ["palette.increaseFontSize"]},
+        {"id": "decrease-editor-font-size", "keyword": "decrease font size", "labels": ["palette.decreaseFontSize"]},
         {"id": "note-paper", "keyword": "background material", "labels": ["settings.notePaper"]},
         {"id": "texture-strength", "keyword": "texture strength", "labels": ["settings.textureStrength"]},
         {"id": "opacity", "keyword": "window opacity", "labels": ["settings.windowOpacity"]},

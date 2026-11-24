@@ -276,10 +276,12 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let snippetsEditor = SnippetsEditor()
     private var snippetsLoaded = false
     /// Tabs in order; the raw value is the tab index.
-    enum Tab: Int { case general, appearance, edit, snippets, data }
+    enum Tab: Int { case general, appearance, edit, snippets, data, about }
     var rebuildIndex: (() -> String?)?
     var generateOnboarding: ((@escaping (String?) -> Void) -> Void)?
     private let onboardingButton = NSButton(title: L("settings.restoreGuideNotes"), target: nil, action: nil)
+    private let helpButton = NSButton(title: L("settings.openHelp"), target: nil, action: nil)
+    private let aboutVersion = NSTextField(labelWithString: "")
     private let vimSwitch = OrangeSwitch(frame: .zero)
     private let vimDoubleEscapeSwitch = OrangeSwitch(frame: .zero)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -536,25 +538,73 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
             (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
+            (.about, L("settings.about"), aboutPage()),
         ]
         for (tab, title, content) in pages {
             precondition(tab.rawValue == tabs.numberOfTabViewItems, "tabs must be added in Tab order")
             let item = NSTabViewItem(identifier: title); item.label = title; item.view = content; tabs.addTabViewItem(item)
         }
-        tabs.heightAnchor.constraint(equalToConstant: 460).isActive = true
-        let help = NSButton(title: L("settings.openHelp"), target: self, action: #selector(openHelp)); help.bezelStyle = .rounded
-        onboardingButton.target = self; onboardingButton.action = #selector(onboardingPressed); onboardingButton.bezelStyle = .rounded
-        let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
-        let footerActions = NSStackView(views: [onboardingButton, help]); footerActions.orientation = .horizontal; footerActions.spacing = 6
-        let footer = NSStackView(views: [copyright, footerActions]); footer.orientation = .horizontal; footer.alignment = .centerY; footer.distribution = .gravityAreas
-        let stack = NSStackView(views: [header, tabs, footer]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 16
+        let stack = NSStackView(views: [header, tabs]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
         window.contentView?.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor, constant: 24), stack.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor, constant: -24),
-            stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 20), stack.bottomAnchor.constraint(lessThanOrEqualTo: window.contentView!.bottomAnchor, constant: -16),
-            tabs.widthAnchor.constraint(equalTo: stack.widthAnchor), footer.widthAnchor.constraint(equalTo: stack.widthAnchor)
+            stack.topAnchor.constraint(equalTo: window.contentView!.topAnchor, constant: 20), stack.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor, constant: -24),
+            tabs.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
+    }
+    private func aboutPage() -> NSView {
+        let page = NSView()
+        let icon = NSImageView()
+        icon.image = Bundle.main.url(forResource: "Inkflit", withExtension: "icns")
+            .flatMap { NSImage(contentsOf: $0) } ?? NSApp.applicationIconImage
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.setAccessibilityElement(false)
+        icon.widthAnchor.constraint(equalToConstant: 104).isActive = true
+        icon.heightAnchor.constraint(equalTo: icon.widthAnchor).isActive = true
+
+        let title = label("Inkflit", size: 26, weight: .semibold)
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+        aboutVersion.stringValue = String(format: L("settings.aboutVersion"), version)
+        aboutVersion.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        aboutVersion.textColor = .secondaryLabelColor
+        aboutVersion.isSelectable = true
+        let tagline = label(L("settings.aboutTagline"), size: 13)
+
+        onboardingButton.target = self
+        onboardingButton.action = #selector(onboardingPressed)
+        onboardingButton.bezelStyle = .rounded
+        onboardingButton.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: nil)
+        onboardingButton.imagePosition = .imageLeading
+        helpButton.target = self
+        helpButton.action = #selector(openHelp)
+        helpButton.bezelStyle = .rounded
+        helpButton.image = NSImage(systemSymbolName: "book", accessibilityDescription: nil)
+        helpButton.imagePosition = .imageLeading
+        let actions = NSStackView(views: [onboardingButton, helpButton])
+        actions.orientation = .horizontal
+        actions.alignment = .centerY
+        actions.spacing = 8
+
+        let divider = NSBox()
+        divider.boxType = .separator
+        divider.widthAnchor.constraint(equalToConstant: 248).isActive = true
+        let copyright = label("© 2026 phpz.org", size: 11, color: .secondaryLabelColor)
+        let content = NSStackView(views: [icon, title, aboutVersion, tagline, actions, divider, copyright])
+        content.orientation = .vertical
+        content.alignment = .centerX
+        content.spacing = 6
+        content.setCustomSpacing(12, after: aboutVersion)
+        content.setCustomSpacing(24, after: tagline)
+        content.setCustomSpacing(20, after: actions)
+        content.setCustomSpacing(12, after: divider)
+        content.translatesAutoresizingMaskIntoConstraints = false
+        page.addSubview(content)
+        NSLayoutConstraint.activate([
+            content.centerXAnchor.constraint(equalTo: page.centerXAnchor),
+            content.centerYAnchor.constraint(equalTo: page.centerYAnchor)
+        ])
+        return page
     }
     private func typographyControls() -> NSView {
         editorFontPicker.addItem(withTitle: L("settings.editorFontDefault"))
@@ -808,7 +858,24 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     func testTabCount() -> Int { tabs.numberOfTabViewItems }
     func testVimSwitchState() -> Bool { vimSwitch.state == .on }
     func testSelectSettingsTab(_ index: Int) { tabs.selectTabViewItem(at: index) }
+    func testAboutControls() -> Bool {
+        select(.about)
+        window?.contentView?.layoutSubtreeIfNeeded()
+        let tab = tabs.tabViewItem(at: Tab.about.rawValue)
+        guard tab.label == L("settings.about"), let page = tab.view,
+              let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+              aboutVersion.stringValue == String(format: L("settings.aboutVersion"), version),
+              [aboutVersion, onboardingButton, helpButton].allSatisfy({ view in
+                  view.isDescendant(of: page) && !view.bounds.isEmpty && page.bounds.contains(view.convert(view.bounds, to: page))
+              }) else { return false }
+        helpButton.performClick(nil)
+        let opened = helpWindow?.window?.isVisible == true
+        helpWindow?.close()
+        window?.makeKeyAndOrderFront(nil)
+        return opened
+    }
     func testGenerateOnboarding() -> Bool {
+        select(.about)
         guard let root = window?.contentView else { return false }
         root.layoutSubtreeIfNeeded()
         let rect = onboardingButton.convert(onboardingButton.bounds, to: root)

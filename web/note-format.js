@@ -179,7 +179,8 @@ export async function formatCurrentNote() {
   const doc = editor.state.doc;
   const changes = await planNoteFormat(doc, app.codeIndentation);
   // The user may have edited the note or switched away while formatting code.
-  if (changes.length && app.editor === editor && editor.state.doc === doc) {
-    editor.dispatch(noteFormatTransaction(changes));
-  }
+  if (app.editor !== editor || editor.state.doc !== doc) return;
+  if (!changes.length) return false;
+  editor.dispatch(noteFormatTransaction(changes));
+  return true;
 }
