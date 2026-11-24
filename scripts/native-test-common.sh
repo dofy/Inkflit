@@ -20,6 +20,7 @@ setup_native_test() {
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $test_bundle_id" "$test_app/Contents/Info.plist"
   swiftc -D INKFLIT_NATIVE_TEST Sources/*.swift tests/NativeCodeEditingTest.swift \
     -o "$test_app/Contents/MacOS/Inkflit" \
-    -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement
+    -framework Cocoa -framework WebKit -framework Carbon -framework ServiceManagement \
+    -F "$test_app/Contents/Frameworks" -framework Sparkle -Xlinker -rpath -Xlinker '@loader_path/../Frameworks'
   codesign --force --sign - --timestamp=none "$test_app"
 }

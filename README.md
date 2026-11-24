@@ -43,6 +43,8 @@ Run `npm test` for editor tests and `npm run test:native` for isolated native-wi
 
 Inkflit lives in the menu bar. Press `Control + Option + Space` to open it. With the window unpinned, the same shortcut or switching apps hides it. Drag the top strip or empty middle of the toolbar to move the window. The default window is portrait 2:3 and can be resized freely. Open Settings from the menu bar or with `⌘,` to configure the shortcut, launch at login, note location, accent, opacity, background blur, code colors and indentation. In Appearance settings, choose Follow System (the default), Light, or Dark. Language follows the system by default; English, Simplified Chinese, Traditional Chinese and Japanese can be selected in Settings. Offline help is available there.
 
+Automatic update checks are enabled by default. Go to **Settings → General** to turn them off or select **Check Now…**. Inkflit installs updates after you confirm.
+
 When summoned, the window appears on the display containing the pointer. Inkflit remembers the window's position as a percentage of the available travel range (the display's usable size minus the window size), including after restart. The window size is remembered too. To restore the default size, use **Settings → Appearance → Window size → Reset**. Hold `Option` while adjusting opacity or blur to snap to 5% increments. Opening Settings keeps the note visible for a live preview.
 
 Use the toolbar pin, `⌘⇧T`, or the command palette to cycle through Normal, Keep Open, and Always on Top. Both pin modes keep the window open when you press `Esc` or switch apps. Always on Top also floats above other windows. Press `⌘W` to close it.

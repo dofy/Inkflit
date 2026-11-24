@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-24
+
+- Check for new releases automatically or manually from Settings → General. Automatic checks can be turned off.
 - Cycle Normal, Keep Open, and Always on Top with the toolbar pin, ⌘⇧T, or the command palette.
 - Keep the note visible next to Settings when space allows. The global shortcut brings a pinned note to the display under the pointer.
 - Keep the checklist cursor and ordinary character edits out of the checkbox marker and indentation. Deleting leading text preserves the item's level. Use Tab and Shift-Tab to change the level.

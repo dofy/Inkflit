@@ -1,6 +1,7 @@
 import Cocoa
 import Carbon
 import ServiceManagement
+import Sparkle
 import WebKit
 
 struct CodeTheme: Decodable {
@@ -272,6 +273,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let shortcut = ShortcutField(frame: .zero)
     private let shortcutMessage = NSTextField(wrappingLabelWithString: L("settings.globalShortcutHint"))
     private let loginSwitch = OrangeSwitch(frame: .zero)
+    private let updateSwitch = OrangeSwitch(frame: .zero)
+    private let checkForUpdatesButton = NSButton(title: L("settings.checkForUpdates"), target: nil, action: nil)
+    private let updater: SPUUpdater?
+    private var updateAvailability: NSKeyValueObservation?
     private let loginMessage = NSTextField(wrappingLabelWithString: L("settings.launchManually"))
     private let loginSettings = NSButton(title: L("settings.openSystemSettings"), target: nil, action: nil)
     private let storageMessage = NSTextField(wrappingLabelWithString: "")
@@ -362,7 +367,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void,
         getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void,
         resetWindowSize: @escaping () -> Void,
-        loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?
+        loginStatus: @escaping () -> SMAppService.Status, setLogin: @escaping (Bool) -> String?,
+        updater: SPUUpdater?
     ) {
         self.getShortcut = getShortcut; self.saveShortcut = saveShortcut; self.clearShortcut = clearShortcut
         self.resetShortcut = resetShortcut; self.loginStatus = loginStatus; self.setLogin = setLogin
@@ -373,11 +379,15 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         self.getCodeLineNumbers = getCodeLineNumbers; self.setCodeLineNumbers = setCodeLineNumbers
         self.getTheme = getTheme; self.setTheme = setTheme
         self.getAppearance = getAppearance; self.setAppearance = setAppearance; self.resetWindowSize = resetWindowSize
+        self.updater = updater
         let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = L("settings.windowTitle"); window.isReleasedWhenClosed = false; window.center()
         super.init(window: window)
         window.shortcutField = shortcut
         buildUI(window)
+        updateAvailability = updater?.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
+            self?.checkForUpdatesButton.isEnabled = updater.canCheckForUpdates
+        }
         shortcut.onCapture = { [weak self] code, mods in
             guard let self else { return L("error.settingsUnavailable") }
             let error = self.saveShortcut(code, mods)
@@ -395,7 +405,10 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let field = NSTextField(labelWithString: text); field.font = .systemFont(ofSize: size, weight: weight); field.textColor = color; return field
     }
     private func section(_ title: String, icon: String, detail: String, controls: NSView, message: NSTextField? = nil) -> NSView {
-        let heading = label(title, size: 14, weight: .semibold)
+        let heading = NSTextField(wrappingLabelWithString: title)
+        heading.font = .systemFont(ofSize: 14, weight: .semibold)
+        heading.maximumNumberOfLines = 2
+        heading.preferredMaxLayoutWidth = 160
         // Wraps to a second line instead of being cut off in longer languages.
         let subtitle = NSTextField(wrappingLabelWithString: detail); subtitle.font = .systemFont(ofSize: 12); subtitle.textColor = .secondaryLabelColor
         subtitle.maximumNumberOfLines = 2; subtitle.preferredMaxLayoutWidth = 160
@@ -475,6 +488,16 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         loginSettings.target = self; loginSettings.action = #selector(openLoginSettings); loginSettings.bezelStyle = .rounded; loginSettings.isHidden = true
         let loginControls = NSStackView(views: [loginSettings, loginSwitch]); loginControls.orientation = .horizontal; loginControls.alignment = .centerY; loginControls.spacing = 8
         let loginSection = section(L("settings.launchAtLogin"), icon: "power", detail: L("settings.launchAtLoginDetail"), controls: loginControls, message: loginMessage)
+        updateSwitch.target = self
+        updateSwitch.action = #selector(automaticUpdatesChanged)
+        updateSwitch.setAccessibilityLabel(L("settings.automaticUpdateChecks"))
+        checkForUpdatesButton.target = self
+        checkForUpdatesButton.action = #selector(checkForUpdates)
+        checkForUpdatesButton.bezelStyle = .rounded
+        checkForUpdatesButton.isEnabled = false
+        let updateControls = NSStackView(views: [checkForUpdatesButton, updateSwitch])
+        updateControls.orientation = .horizontal; updateControls.alignment = .centerY; updateControls.spacing = 8
+        let updateSection = section(L("settings.automaticUpdateChecks"), icon: "arrow.clockwise", detail: L("settings.automaticUpdateChecksDetail"), controls: updateControls)
         let chooseStorage = NSButton(title: L("settings.chooseFolder"), target: self, action: #selector(chooseStoragePressed)); chooseStorage.bezelStyle = .rounded
         storageMessage.lineBreakMode = .byTruncatingMiddle; storageMessage.maximumNumberOfLines = 1
         let storageSection = section(L("settings.notesLocation"), icon: "folder", detail: L("settings.notesLocationDetail"), controls: chooseStorage, message: storageMessage)
@@ -571,7 +594,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         snippetsEditor.save = { [weak self] snippets in self?.saveSnippets?(snippets) }
         let snippetsSection = section(L("settings.snippets"), icon: "text.badge.plus", detail: L("settings.snippetsDetail"), controls: NSView(), message: NSTextField(wrappingLabelWithString: L("settings.snippetsHint")))
         let pages: [(Tab, String, NSView)] = [
-            (.general, L("settings.general"), page([loginSection, languageSection, shortcutSection])),
+            (.general, L("settings.general"), page([loginSection, languageSection, shortcutSection, updateSection])),
             (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, typographySection, paperSection, textureStrengthSection, opacitySection, blurSection, sizeSection, themeGroup], scrollable: true)),
             (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection, codeLineNumbers, relativeLineNumbers])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
@@ -695,6 +718,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let status = loginStatus()
         loginSwitch.state = status == .enabled || status == .requiresApproval ? .on : .off
         loginSwitch.setAccessibilityValue(loginSwitch.state == .on ? 1 : 0); loginSwitch.needsDisplay = true
+        updateSwitch.isEnabled = updater != nil
+        refreshUpdateSwitch()
         loginSettings.isHidden = status != .requiresApproval
         switch status {
         case .enabled: loginMessage.stringValue = L("settings.launchAtLoginOn")
@@ -729,6 +754,17 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         if let error { loginMessage.stringValue = error }
     }
     @objc private func openLoginSettings() { SMAppService.openSystemSettingsLoginItems() }
+    @objc private func checkForUpdates() { updater?.checkForUpdates() }
+    @objc private func automaticUpdatesChanged() {
+        updater?.automaticallyChecksForUpdates = updateSwitch.state == .on
+        refreshUpdateSwitch()
+    }
+    private func refreshUpdateSwitch() {
+        let enabled = updater?.automaticallyChecksForUpdates ?? false
+        updateSwitch.state = enabled ? .on : .off
+        updateSwitch.setAccessibilityValue(enabled ? 1 : 0)
+        updateSwitch.needsDisplay = true
+    }
     @objc private func vimChanged() { setVimEnabled(vimSwitch.state == .on) }
     @objc private func vimDoubleEscapeChanged() { setVimDoubleEscape(vimDoubleEscapeSwitch.state == .on) }
     @objc private func indentationChanged() {
@@ -783,7 +819,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private func applySettingsAccent(_ theme: String) {
         let accent = UIThemes.accent(theme)
         symbols.forEach { $0.contentTintColor = accent }
-        for toggle in [loginSwitch, vimSwitch, vimDoubleEscapeSwitch, codeLineNumbersSwitch, relativeCodeLineNumbersSwitch] {
+        for toggle in [loginSwitch, updateSwitch, vimSwitch, vimDoubleEscapeSwitch, codeLineNumbersSwitch, relativeCodeLineNumbersSwitch] {
             toggle.accentColor = accent
         }
         sliderTicks.forEach { $0.accentColor = accent }

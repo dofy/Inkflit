@@ -2,6 +2,7 @@ import Cocoa
 import WebKit
 import Carbon
 import ServiceManagement
+import Sparkle
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NotePanel!
@@ -13,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     var hotKeyID: UInt32 = 0
     var hotKeyItem: NSMenuItem!
     var settingsController: SettingsController?
+    private var updateController: SPUStandardUpdaterController?
     var reopenLanguageSettings = false
     var activationObserver: NSObjectProtocol?
     let isolatedTest = ProcessInfo.processInfo.environment["INKFLIT_ISOLATED_TEST"] == "1"
@@ -163,6 +165,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             else if handlerStatus != noErr || !registerHotKey(code: hotKeyCode, modifiers: hotKeyModifiers) { reportHotKeyFailure() }
         }
         showWindow()
+        if !isolatedTest {
+            updateController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_TEST_SETTINGS"] == "1" { showSettings() }
     }
     func configureStorage() {
@@ -499,7 +504,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 setLogin: { [weak self] enabled in
                     guard let self else { return L("error.settingsUnavailable") }
                     return self.setLoginItem(enabled)
-                })
+                }, updater: updateController?.updater)
             settingsController?.loadSnippets = { [weak self] in
                 guard let self else { throw NoteStorageError.invalidSnapshot }
                 return try self.userSnippets()
