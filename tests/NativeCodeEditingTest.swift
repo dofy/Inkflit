@@ -232,11 +232,55 @@ final class NativeCodeEditingTest {
                 let actual=app.window.frame
                 guard abs(actual.minX-expected.minX)<2, abs(actual.minY-expected.minY)<2 else { fail("mouse-screen placement: expected \(expected), got \(actual)") }
                 print("PASS actual multi-screen summon preserves edge percentages")
-                testPlacementSliders()
+                for mode in [WindowPinMode.keepOpen, .alwaysOnTop] {
+                    UserDefaults.standard.set(mode.rawValue, forKey: "windowPinMode")
+                    mode.apply(to: app.window)
+                    app.window.setFrame(frame, display: false)
+                    guard app.window.isVisible, app.window.screen?.frame == other.frame else { fail("could not position visible pinned note") }
+                    app.toggleWindow()
+                    let actual = app.window.frame
+                    guard app.window.isVisible, app.window.screen?.frame == destination.frame,
+                          abs(actual.minX - expected.minX) < 2, abs(actual.minY - expected.minY) < 2 else {
+                        fail("global shortcut did not relocate \(mode) to the pointer display: \(actual)")
+                    }
+                }
+                print("PASS global shortcut moves both visible pin modes to the pointer display")
+                testSettingsPreview([.off, .keepOpen, .alwaysOnTop])
             }
             return
         } else { print("SKIP real multi-screen summon: only one display available") }
-        testPlacementSliders()
+        testSettingsPreview([.off, .keepOpen, .alwaysOnTop])
+    }
+    private func testSettingsPreview(_ modes: ArraySlice<WindowPinMode>) {
+        guard let mode = modes.first else { testPlacementSliders(); return }
+        app.settingsController?.window?.orderOut(nil)
+        UserDefaults.standard.set(mode.rawValue, forKey: "windowPinMode")
+        mode.apply(to: app.window)
+        if mode == .off { app.window.orderOut(nil) }
+        app.showSettings()
+        app.hideWindow(automatically: true)
+        later { [self] in
+            guard app.window.isVisible, let settings = app.settingsController?.window, settings.isVisible,
+                  settings.isKeyWindow, settings.level == app.window.level else {
+                fail("settings did not keep \(mode) visible and editable")
+            }
+            if let screen = app.window.screen, screen.visibleFrame.width >= settings.frame.width {
+                let left = app.window.frame.minX - screen.visibleFrame.minX
+                let right = screen.visibleFrame.maxX - app.window.frame.maxX
+                if max(left, right) >= settings.frame.width + 12 {
+                    guard screen.visibleFrame.contains(settings.frame), !settings.frame.intersects(app.window.frame) else {
+                        fail("settings overlap the note despite room beside it")
+                    }
+                }
+            }
+            print("PASS Settings keeps the \(mode) note visible for preview")
+            if mode == .alwaysOnTop {
+                UserDefaults.standard.set(WindowPinMode.off.rawValue, forKey: "windowPinMode")
+                WindowPinMode.off.apply(to: app.window)
+                settings.orderOut(nil)
+            }
+            testSettingsPreview(modes.dropFirst())
+        }
     }
     private func testPlacementSliders() {
         app.showSettings()
@@ -392,8 +436,7 @@ final class NativeCodeEditingTest {
     }
     private func testPinnedWindow() {
         clickToolbarButton(5)
-        waitForJavaScript("document.getElementById('pin-window').getAttribute('aria-pressed') === 'true'") { [self] in
-            guard UserDefaults.standard.bool(forKey: "windowPinned") else { fail("pin preference was not saved") }
+        waitForWindowPinMode(.keepOpen) { [self] in
             app.toggleWindow()
             key(34, "i")
             waitForJavaScript("document.getElementById('mode').textContent === 'INSERT'") { [self] in
@@ -417,50 +460,59 @@ final class NativeCodeEditingTest {
             key(53, "\u{1b}")
             later { [self] in
                 guard app.window.isVisible else { fail("Escape hid the pinned window") }
-                guard let close = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
-                                                   timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: app.window.windowNumber,
-                                                   context: nil, characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13),
-                      NSApp.mainMenu?.performKeyEquivalent(with: close) == true else { fail("Cmd-W was not handled") }
-                later { [self] in
-                    guard !app.window.isVisible else { fail("Cmd-W did not close the pinned window") }
-                    focusNoteEditor { [self] in
-                        setWindowPinFromPalette(false) { [self] in
-                            setWindowPinFromPalette(true) { [self] in testUnpinnedWindow() }
-                        }
-                    }
-                }
+                closePinnedWindow { [self] in testAlwaysOnTop() }
             }
         }
     }
-    private func setWindowPinFromPalette(_ pinned: Bool, completion: @escaping () -> Void) {
-        key(35, "P", "p", [.command, .shift])
-        waitForJavaScript("document.activeElement.id === 'command-input'") { [self] in
-            app.web.evaluateJavaScript("""
-                (() => {
-                    const input = document.getElementById('command-input');
-                    input.value = 'toggle window pin';
-                    input.dispatchEvent(new Event('input'));
-                })()
-                """) { [self] _, error in
-                guard error == nil else { fail("could not search for the window pin command") }
-                let label = L(pinned ? "palette.pinWindow" : "palette.unpinWindow")
-                waitForJavaScript("document.querySelector('#command-results [aria-selected=true] .palette-row-title')?.textContent === '\(label)'") { [self] in
-                    key(36, "\r")
-                    waitForJavaScript("document.getElementById('command-panel').hidden && document.getElementById('pin-window').getAttribute('aria-pressed') === '\(pinned)'") { [self] in
-                        guard UserDefaults.standard.bool(forKey: "windowPinned") == pinned else { fail("palette did not save the pin preference") }
-                        completion()
-                    }
+    private func closePinnedWindow(_ completion: @escaping () -> Void) {
+        guard let close = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+                                           timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: app.window.windowNumber,
+                                           context: nil, characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13),
+              NSApp.mainMenu?.performKeyEquivalent(with: close) == true else { fail("Cmd-W was not handled") }
+        later { [self] in
+            guard !app.window.isVisible else { fail("Cmd-W did not close the pinned window") }
+            focusNoteEditor(completion)
+        }
+    }
+    private func waitForWindowPinMode(_ mode: WindowPinMode, _ completion: @escaping () -> Void) {
+        let top = mode == .alwaysOnTop
+        let upright = mode != .off
+        waitForJavaScript("""
+            document.getElementById('pin-window').dataset.mode === '\(mode.rawValue)' &&
+            document.getElementById('pin-window').getAttribute('aria-label') === '\(L("windowPin." + mode.rawValue))' &&
+            (getComputedStyle(document.querySelector('#pin-window svg')).transform === 'none') === \(upright) &&
+            (getComputedStyle(document.querySelector('#pin-window .pin-head')).fill !== 'none') === \(top) &&
+            document.querySelectorAll('#pin-window svg path').length === 2
+            """) { [self] in
+            later { [self] in
+                guard UserDefaults.standard.string(forKey: "windowPinMode") == mode.rawValue,
+                      app.window.level == (top ? .floating : .normal),
+                      app.window.collectionBehavior.contains(.canJoinAllSpaces) == top else {
+                    fail("wrong native pin mode or preference: \(mode)")
+                }
+                completion()
+            }
+        }
+    }
+    private func testAlwaysOnTop() {
+        key(17, "T", "t", [.command, .shift])
+        waitForWindowPinMode(.alwaysOnTop) { [self] in
+            key(53, "\u{1b}")
+            app.hideWindow(automatically: true)
+            later { [self] in
+                guard app.window.isVisible else { fail("automatic hiding closed the Always on Top window") }
+                closePinnedWindow { [self] in
+                    chooseTestCommand("pin window") { [self] in testUnpinnedWindow() }
                 }
             }
         }
     }
     private func testUnpinnedWindow() {
-        clickToolbarButton(5)
-        waitForJavaScript("document.getElementById('pin-window').getAttribute('aria-pressed') === 'false'") { [self] in
+        waitForWindowPinMode(.off) { [self] in
             key(53, "\u{1b}")
             later { [self] in
                 guard !app.window.isVisible else { fail("Escape did not close the unpinned window") }
-                print("PASS toolbar and command palette pin, Vim and plain Escape, and Cmd-W")
+                print("PASS three pin modes through toolbar, Cmd-Shift-T, and palette; Escape and Cmd-W")
                 app.restoreInputSource(); exit(0)
             }
         }
@@ -468,6 +520,133 @@ final class NativeCodeEditingTest {
     static func startSettingsAccent(_ app: AppDelegate) {
         running=NativeCodeEditingTest(app)
         running?.focusNoteEditor { running?.testSettingsAccent() }
+    }
+    static func startCodeLineNumbers(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app)
+        running?.focusNoteEditor { running?.testCodeLineNumbers() }
+    }
+    private func testCodeLineNumbers() {
+        app.showSettings()
+        guard let settings = app.settingsController else { fail("line number settings unavailable") }
+        settings.select(.edit)
+        guard settings.testEditingControlsVisible() else { fail("line number switches are clipped") }
+        let restarted = ProcessInfo.processInfo.environment["INKFLIT_TEST_NUMBER_PREFS_RESTART"] == "1"
+        let absolute = [1, 2, 3, 4, 1, 2]
+        guard settings.testCodeLineNumberControls(enabled: restarted, relative: restarted) else {
+            fail("line number preferences on open")
+        }
+        if restarted {
+            waitForNumbers(absolute) { [self] in
+                print("PASS code line number preferences survive restart")
+                app.restoreInputSource(); exit(0)
+            }
+            return
+        }
+        waitForNumbers([]) { [self] in
+            settings.testToggleCodeLineNumbers()
+            guard settings.testCodeLineNumberControls(enabled: true, relative: false) else { fail("relative switch did not enable") }
+            waitForNumbers(absolute) { [self] in
+                settings.testToggleCodeLineNumbers(relative: true)
+                guard settings.testCodeLineNumberControls(enabled: true, relative: true) else { fail("relative switch did not save") }
+                settings.window?.orderOut(nil)
+                focusNoteEditor { [self] in
+                    sequence([{ self.key(21, "4") }, { self.key(38, "j") }]) { [self] in
+                        waitForNumbers([2, 1, 3, 1, 1, 2]) { [self] in
+                            sequence([{ self.key(38, "j") }]) { [self] in
+                                waitForNumbers([3, 2, 1, 4, 1, 2]) { [self] in
+                                    testToggleNumbersAndChangeNote(settings)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private func testToggleNumbersAndChangeNote(_ settings: SettingsController) {
+        let script = """
+        const input = document.getElementById('command-input');
+        const search = query => {
+          input.value = query;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        const row = (title, current = false) => [...document.querySelectorAll('#command-results .command-row')]
+          .find(row => row.querySelector('.palette-row-title').textContent === title
+            && (!current || row.getAttribute('aria-current') === 'true'));
+        const waitFor = async (read, description) => {
+          for (let attempt = 0; attempt < 40; attempt++) {
+            const value = read();
+            if (value) return value;
+            await new Promise(resolve => setTimeout(resolve, 30));
+          }
+          throw Error(description);
+        };
+        const numbers = () => [...document.querySelectorAll('.cm-code-numbered-line')].map(line => line.dataset.codeLineNumber).join(',');
+        const mainOn = main + '：' + on, mainOff = main + '：' + off;
+        const relativeOn = relative + '：' + on, relativeOff = relative + '：' + off;
+
+        window.openCommands();
+        search('code line numbers');
+        await waitFor(() => row(mainOn, true), 'code line numbers on');
+        row(mainOff).click();
+        await waitFor(() => numbers() === '', 'code line numbers hidden');
+
+        window.openCommands();
+        search('code line numbers');
+        await waitFor(() => row(mainOff, true), 'code line numbers off');
+        search('relative line numbers');
+        if (row(relative)) throw Error('relative command available while line numbers are off');
+        search('code line numbers');
+        row(mainOn).click();
+        await waitFor(() => numbers() === '3,2,1,4,1,2', 'relative preference restored');
+
+        window.openCommands();
+        search('relative line numbers');
+        await waitFor(() => row(relativeOn, true), 'relative line numbers on');
+        row(relativeOff).click();
+        await waitFor(() => numbers() === '1,2,3,4,1,2', 'absolute line numbers restored');
+
+        window.openCommands();
+        search('relative line numbers');
+        await waitFor(() => row(relativeOff, true), 'relative line numbers off');
+        row(relativeOn).click();
+        return true;
+        """
+        let labels = ["main": L("settings.codeLineNumbers"), "relative": L("settings.relativeCodeLineNumbers"),
+                      "on": L("palette.on"), "off": L("settings.off")]
+        app.web.callAsyncJavaScript(script, arguments: labels, in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("line number commands: \(error)") }
+            waitForNumbers([3, 2, 1, 4, 1, 2]) { [self] in
+                guard settings.testCodeLineNumberControls(enabled: true, relative: true) else { fail("palette did not sync with Settings") }
+                app.web.evaluateJavaScript("window.inkflitSelectNote('whole-code')") { [self] _, _ in
+                    // The whole-note mode header is editable and starts with the cursor on it.
+                    waitForNumbers([1, 2, 3]) { [self] in
+                        print("PASS code line number gutter, settings and palette dependency, relative numbers and note switching")
+                        app.restoreInputSource(); exit(0)
+                    }
+                }
+            }
+        }
+    }
+    private func waitForNumbers(_ expected: [Int], _ completion: @escaping () -> Void) {
+        waitForJavaScript("""
+        (() => {
+          const lines = [...document.querySelectorAll('.cm-code-numbered-line')];
+          if (JSON.stringify(lines.map(line => Number(line.dataset.codeLineNumber))) !== JSON.stringify(\(expected))) return false;
+          return lines.every(line => {
+            const number = line.dataset.codeLineNumber;
+            const gutter = getComputedStyle(line, '::after');
+            const surface = getComputedStyle(line, '::before');
+            const padding = parseFloat(getComputedStyle(line).paddingInlineStart);
+            return line.classList.contains('cm-code-line')
+              && gutter.content === '"' + number + '"'
+              && gutter.backgroundColor !== 'rgba(0, 0, 0, 0)'
+              && gutter.backgroundColor !== surface.backgroundColor
+              && Math.abs(parseFloat(gutter.height) - line.getBoundingClientRect().height) < 1
+              && parseFloat(gutter.width) < padding;
+          });
+        })()
+        """, completion)
     }
     static func startNotePaper(_ app: AppDelegate) {
         running = NativeCodeEditingTest(app)
@@ -517,6 +696,7 @@ final class NativeCodeEditingTest {
               settings.testSelectColorScheme(scheme),
               settings.testSetSliderValues(opacity: opacity, blur: 0) else { fail("could not apply texture settings") }
         guard settings.testSetTextureStrength(strength) == (paper != .plain) else { fail("texture slider availability") }
+        guard settings.testTextureStrengthAvailability(enabled: paper != .plain) else { fail("texture slider disabled appearance") }
         let saved = app.windowAppearance()
         guard saved.paper == paper, saved.textureStrength == strength, saved.opacity == opacity else { fail("texture preference mismatch") }
         let alpha = Double(opacity) / 100
@@ -2828,7 +3008,151 @@ final class NativeCodeEditingTest {
                         expect(text, bothChecked, "Command Return on a Markdown task continuation in insert mode")
                         sequence([{ self.key(36, "\r", "\r", .command) }]) { [self] in content { [self] text in
                             expect(text, listChecked, "Command Return toggles the Markdown task back")
-                            app.restoreInputSource(); exit(0)
+                            testCompletedChecklistText()
+                        } }
+                    } }
+                } }
+            }
+        }
+    }
+    private func testCompletedChecklistText() {
+        let script = """
+        const marks = () => [...document.querySelectorAll('#editor .cm-completed-task-text')];
+        const checkText = expected => {
+          const parts = marks();
+          if (parts.map(part => part.textContent).join('') !== expected) throw Error('wrong text marked as complete');
+          for (const part of parts) {
+            const style = getComputedStyle(part);
+            if (style.textDecorationLine !== 'line-through' || !(+style.opacity > 0 && +style.opacity < 1)
+                || part.querySelector('.task-checkbox')) throw Error('completed task appearance');
+          }
+        };
+        checkText('alpha beta');
+        document.querySelector('#editor .task-checkbox[aria-checked="true"]').click();
+        checkText('');
+        const note = await window.inkflitNotesOperation({action:'create', content:fixture});
+        window.inkflitSelectNote(note.note.id);
+        checkText('parent');
+        return true;
+        """
+        let fixture = "list: Today\n[X] parent\n  child\n:::inkflit code js\n[x] literal\n:::end"
+        app.web.callAsyncJavaScript(script, arguments: ["fixture": fixture], in: nil, in: .page) { [self] result in
+            if case .failure(let error) = result { fail("completed checklist text: \(error)") }
+            print("PASS completed checklist text, click to reopen, nested and literal items")
+            app.restoreInputSource(); exit(0)
+        }
+    }
+    static func startChecklistPrefix(_ app: AppDelegate) {
+        running = NativeCodeEditingTest(app)
+        running?.focusNoteEditor { running?.testChecklistPrefix() }
+    }
+    private func testChecklistPrefix() {
+        let original = "list: Today\n\n[ ] First item\n  Child item\nLast item"
+        let spaces = Array(repeating: { self.key(49, " ") }, count: 10)
+        sequence([
+            { self.key(19, "2") }, { self.key(38, "j") }, { self.key(29, "0") }, { self.key(4, "h") },
+            { self.key(34, "i") }, { self.key(51, "\u{7f}") }
+        ] + spaces + [{ self.key(7, "x") }, { self.key(53, "\u{1b}") }]) { [self] in content { [self] text in
+            expect(text, original.replacingOccurrences(of: "First item", with: "xFirst item"), "Vim 0, h, Backspace and Space preserve the root checkbox")
+            sequence([
+                { self.key(7, "X", "x", .shift) }, { self.key(7, "x") }, { self.key(38, "j") }, { self.key(29, "0") },
+                { self.key(4, "h") }, { self.key(4, "h") }, { self.key(34, "i") }, { self.key(51, "\u{7f}") }
+            ] + spaces + [{ self.key(16, "y") }, { self.key(49, " ") }]) { [self] in content { [self] text in
+                expect(text, original.replacingOccurrences(of: "Child item", with: "y Child item"), "Space cannot deepen a checklist child and still works inside its text")
+                testDeleteChecklistDash()
+            } }
+        } }
+    }
+    private func testDeleteChecklistDash() {
+        let original = "list: Today\n\n- hello\n  - child\n- last"
+        let rootFixed = "list: Today\n\nhello\n  - child\n- last"
+        let bothFixed = "list: Today\n\nhello\n  child\n- last"
+        let script = """
+        const result = await window.inkflitNotesOperation({ action: 'create', content: original });
+        return window.inkflitSelectNote(result.note.id);
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["original": original], in: nil, in: .page) { [self] result in
+            guard case .success(let value) = result, value as? Bool == true else { fail("select checklist deletion fixture: \(result)") }
+            focusNoteEditor { [self] in
+                sequence([{ self.key(19, "2") }, { self.key(38, "j") }, { self.key(29, "0") }, { self.key(7, "x") }]) { [self] in content { [self] text in
+                    expect(text, rootFixed, "Vim x on a leading dash keeps the item at the root")
+                    sequence([{ self.key(38, "j") }, { self.key(29, "0") }, { self.key(7, "x") }]) { [self] in content { [self] text in
+                        expect(text, bothFixed, "Vim x on a child dash preserves indentation")
+                        sequence([{ self.key(32, "u") }]) { [self] in content { [self] text in
+                            expect(text, rootFixed, "Vim undo restores the dash and original spacing together")
+                            testVimAutoIndentChecklist()
+                        } }
+                    } }
+                } }
+            }
+        }
+    }
+    private func createVimIndentNote(_ content: String, _ completion: @escaping () -> Void) {
+        let script = """
+        const result = await window.inkflitNotesOperation({ action: 'create', content });
+        return window.inkflitSelectNote(result.note.id);
+        """
+        app.web.callAsyncJavaScript(script, arguments: ["content": content], in: nil, in: .page) { [self] result in
+            guard case .success(let value) = result, value as? Bool == true else { fail("select Vim auto-indent fixture: \(result)") }
+            focusNoteEditor(completion)
+        }
+    }
+    private func testVimAutoIndentChecklist() {
+        let original = "list: Today\n\nroot\n      parent\n        child\n    sibling\n# Another list\n    unchanged"
+        let expected = "list: Today\n\nroot\n  parent\n    child\n  sibling\n# Another list\n    unchanged"
+        createVimIndentNote(original) { [self] in
+            sequence([{ self.key(20, "3") }, { self.key(38, "j") }, { self.key(24, "=") }, { self.key(24, "=") }]) { [self] in content { [self] text in
+                expect(text, expected, "Vim == repairs the current checklist section and preserves its tree")
+                sequence([{ self.key(32, "u") }]) { [self] in content { [self] text in
+                    expect(text, original, "Vim undo restores checklist auto-indent in one step")
+                    testVimAutoIndentCode()
+                } }
+            } }
+        }
+    }
+    private func testVimAutoIndentCode() {
+        let original = "code js\nif (ok) {\nif (ready) {\nwork();\n}\n}"
+        let expected = "code js\nif (ok) {\n    if (ready) {\n        work();\n    }\n}"
+        app.updateCodeIndentation("spaces4")
+        createVimIndentNote(original) { [self] in
+            sequence([{ self.key(38, "j") }, { self.key(21, "4") }, { self.key(24, "=") }, { self.key(24, "=") }]) { [self] in
+                let ready = "JSON.parse(window.exportNotesJSON()).notes.some(note => note.content.includes('        work();'))"
+                waitForJavaScript(ready) { [self] in
+                    content { [self] text in
+                        expect(text, expected, "Vim 4== uses JavaScript syntax and the four-space preference")
+                        sequence([{ self.key(32, "u") }]) { [self] in content { [self] text in
+                            expect(text, original, "Vim undo restores code auto-indent in one step")
+                            testVimChecklistShift()
+                        } }
+                    }
+                }
+            }
+        }
+    }
+    private func shiftVimChecklist(right: Bool, includingNextLine: Bool = false, _ completion: @escaping () -> Void) {
+        let shift = { self.key(right ? 47 : 43, right ? ">" : "<", right ? "." : ",", .shift) }
+        var keys: [() -> Void] = []
+        if includingNextLine { keys.append { self.key(19, "2") } }
+        sequence(keys + [shift, shift], completion)
+    }
+    private func testVimChecklistShift() {
+        let original = "list: Today\nhello\n  asdf\n    asdfasdfasdf"
+        let outdented = "list: Today\nhello\nasdf\n  asdfasdfasdf"
+        createVimIndentNote(original) { [self] in
+            sequence([{ self.key(19, "2") }, { self.key(38, "j") }]) { [self] in
+                shiftVimChecklist(right: true) { [self] in content { [self] text in
+                    expect(text, original, "Vim >> blocks a parent at the limit and preserves its child")
+                    shiftVimChecklist(right: false) { [self] in content { [self] text in
+                        expect(text, outdented, "Vim << outdents the whole checklist subtree")
+                        shiftVimChecklist(right: true) { [self] in content { [self] text in
+                            expect(text, original, "Vim >> shifts the parent and child together")
+                            shiftVimChecklist(right: false, includingNextLine: true) { [self] in content { [self] text in
+                                expect(text, outdented, "Vim 2<< shifts each selected descendant once")
+                                sequence([{ self.key(32, "u") }]) { [self] in content { [self] text in
+                                    expect(text, original, "Vim u restores the shifted subtree in one step")
+                                    app.restoreInputSource(); exit(0)
+                                } }
+                            } }
                         } }
                     } }
                 } }

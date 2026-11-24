@@ -18,6 +18,10 @@ export function isChecklistItem(line) {
   const text = line.text.trim();
   return !!text && !/^(\/\/|#{1,6}(?:\s|$))/.test(text);
 }
+export function checklistContentStart(line, marker = taskMarker(line)) {
+  const from = marker ? marker.from + 3 : line.from;
+  return from + /^[ \t]*/.exec(line.text.slice(from - line.from))[0].length;
+}
 export function checklistToggleChange(state, line) {
   const marker = taskMarker(line);
   return marker ? toggleMarker(state, marker.from) : { from: line.from + /^\s*/.exec(line.text)[0].length, insert: '[x] ' };
@@ -85,8 +89,10 @@ export function planTaskToggle(state) {
 
 // In normal mode a task marker is represented by a widget, so put the Vim
 // cursor on its text rather than drawing a source character over the checkbox.
-export function taskContentPosition(state, pos) {
+export function taskContentPosition(state, pos, includeMarkdown = true) {
   const line=state.doc.lineAt(pos);
+  if(scopeAt(state.doc,line.number)?.mode==='list' && isChecklistItem(line)) return Math.max(pos,checklistContentStart(line));
+  if(!includeMarkdown)return pos;
   const marker=taskMarker(line);
   if(!marker)return pos;
   const { from } = marker, end=from+3;
@@ -94,17 +100,25 @@ export function taskContentPosition(state, pos) {
   if(isTaskCode(state,line.number,from))return pos;
   return Math.min(line.to,end+(line.text[end-line.from]===' '?1:0));
 }
+const completedTaskText = Decoration.mark({ class: 'cm-completed-task-text' });
+
 function taskDecorations(view) {
   const decorations = [], state = view.state, doc = state.doc;
+  let lastLine = 0;
   for (const range of view.visibleRanges) {
-    let line = doc.lineAt(range.from);
-    while (line.from <= range.to) {
+    for (let pos = range.from; pos <= range.to;) {
+      const line = doc.lineAt(pos);
+      pos = line.to + 1;
+      if (line.number <= lastLine) continue;
+      lastLine = line.number;
       const marker = taskMarker(line);
       if (marker && !isTaskCode(state, line.number, marker.from)) {
         decorations.push(Decoration.replace({widget:new TaskCheckbox(marker.from, marker.checked)}).range(marker.from, marker.from + 3));
+        if (marker.checked && scopeAt(doc, line.number)?.mode === 'list') {
+          const from = checklistContentStart(line, marker);
+          if (from < line.to) decorations.push(completedTaskText.range(from, line.to));
+        }
       }
-      if (line.to >= doc.length) break;
-      line = doc.lineAt(line.to + 1);
     }
   }
   return Decoration.set(decorations, true);

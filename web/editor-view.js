@@ -10,11 +10,12 @@ import { deferAutoSave, persist } from './persistence.js';
 import { refreshNav } from './toolbar.js';
 import { codeLanguage } from './code-languages.js';
 import { blockProtection, nearestEditablePosition, visibleCopiedText, markerRanges } from './block-protection.js';
-import { listPasteRules } from './list-editing.js';
+import { checklistPrefixProtection, listPasteRules } from './list-editing.js';
 import { closeBlockMenu, updateBlockMenu, openMenuAfterInput } from './block-menu.js';
 import { languageMenuOpen, closeLanguageMenu } from './language-menu.js';
 import { tasks, taskContentPosition } from './tasks.js';
 import { features, analyzeCurrent, setRateListener, rateEffect } from './feature-view.js';
+import { codeLineNumbers } from './code-line-numbers.js';
 import { scopeAt, calculationModes, markdownBlockMarkers } from './features.js';
 import { noteComments, isCodeAt } from './comments.js';
 import { noteHeadings, noteInlineCode, noteListIndent } from './typography.js';
@@ -22,6 +23,7 @@ import { snippets } from './snippet-completion.js';
 import { closeCompletion, completionStatus } from '@codemirror/autocomplete';
 import { cancelPageMotion, replaceNotePage } from './page-slide.js';
 import { noteScrollCues } from './scroll-cues.js';
+import { indentVimSelection, shiftVimListSelection } from './vim-indent.js';
 
 // Markdown tokens that defaultHighlightStyle colors for light mode only
 // (#219 dark blue): give them theme colors. Scoped to Markdown, so code
@@ -95,8 +97,8 @@ const saveOnChange = EditorView.updateListener.of(update => {
 
 function makeState(content) {
   const initial = EditorState.create({ doc: content, selection: { anchor: nearestEditablePosition(Text.of(content.split('\n')), 0, 0, true) }, extensions: [
-    vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, listPasteRules, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
-    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage, extensions: markdownBlockMarkers }), tasks, features, noteComments, noteHeadings, noteInlineCode, noteListIndent,
+    vimCompartment.of(app.vimEnabled ? vim() : []), history(), blockProtection, checklistPrefixProtection, listPasteRules, EditorView.clipboardOutputFilter.of(visibleCopiedText), mergeFirstInsert,
+    drawSelection(), highlightActiveLine(), markdown({ codeLanguages: codeLanguage, extensions: markdownBlockMarkers }), tasks, features, codeLineNumbers, noteComments, noteHeadings, noteInlineCode, noteListIndent,
     syntaxHighlighting(defaultHighlightStyle), syntaxHighlighting(markdownColors), syntaxHighlighting(classHighlighter), EditorView.lineWrapping, scrollOff, noteScrollCues, snippets,
     plainEnter, keymap.of([...defaultKeymap, ...historyKeymap]),
     saveOnChange
@@ -189,6 +191,16 @@ registers.pushText = function (name, operator, text, linewise, blockwise) {
   return originalPushText.call(this, name, operator, text, linewise, blockwise);
 };
 Vim.defineEx('write', 'w', () => { if (app.state) persist(true); });
+const indentAuto = CodeMirror.commands.indentAuto;
+CodeMirror.commands.indentAuto = cm => {
+  if (!indentVimSelection(cm.cm6)) indentAuto(cm);
+};
+for (const [method, right] of [['indentMore', true], ['indentLess', false]]) {
+  const indent = CodeMirror.prototype[method];
+  CodeMirror.prototype[method] = function () {
+    if (this.state.vim?.insertMode || !shiftVimListSelection(this.cm6, right)) indent.call(this);
+  };
+}
 
 // Vim search (/ ? * # n N) skips matches in hidden block marker lines, so
 // "list" is not found inside ":::inkflit list".

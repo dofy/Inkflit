@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EditorState } from '@codemirror/state';
+import { EditorSelection, EditorState } from '@codemirror/state';
 import { history, undo, redo } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { blockProtection } from '../web/block-protection.js';
-import { planListIndent } from '../web/list-editing.js';
+import { checklistPrefixProtection, listPasteRules, planListIndent } from '../web/list-editing.js';
 import { planTaskToggle } from '../web/tasks.js';
+import { shiftVimListSelection } from '../web/vim-indent.js';
 
 test('task toggle works at the beginning, middle and end of either kind of item', () => {
   for (const [doc, item, checked] of [
@@ -45,7 +46,72 @@ test('task toggle ignores code, headings, comments and ordinary prose', () => {
   }
 });
 
+test('checklist positions and local character edits respect the item prefix', () => {
+  for (const [prefix, item] of [['[ ] ', '根項'], ['  ', '子項'], [' \t[x]  ', '已完成'], ['  - [ ] ', '任务']]) {
+    const doc = `list\nroot\n${prefix}${item}`;
+    const state = EditorState.create({ doc, extensions: [blockProtection, checklistPrefixProtection] });
+    const line = state.doc.line(3), start = line.from + prefix.length;
+    for (let pos = line.from; pos < start; pos++) {
+      const moved = state.update({ selection: { anchor: pos } }).state;
+      assert.equal(moved.selection.main.head, start, prefix);
+      assert.equal(moved.update({ changes: { from: pos, insert: 'x' }, userEvent: 'input.type' }).newDoc.toString(), doc);
+    }
+    const backward = state.update({ changes: { from: start - 1, to: start }, userEvent: 'delete.backward' });
+    assert.equal(backward.newDoc.toString(), doc);
+    const visualDelete = state.update({ changes: { from: line.from, to: start + 1 }, userEvent: 'input.type.compose' });
+    assert.equal(visualDelete.newDoc.line(3).text, prefix + item.slice(1));
+    const edit = state.update({ changes: { from: start, insert: '新' }, userEvent: 'input.type' });
+    assert.equal(edit.newDoc.line(3).text, prefix + '新' + item);
+    let atStart = state.update({ selection: { anchor: start } }).state;
+    for (let i = 0; i < 10; i++) {
+      atStart = atStart.update(atStart.replaceSelection(' '), { userEvent: 'input.type' }).state;
+    }
+    assert.equal(atStart.doc.toString(), doc, prefix);
+    assert.equal(atStart.selection.main.head, start);
+    const interior = state.update({ changes: { from: start + 1, insert: ' ' }, userEvent: 'input.type' });
+    assert.equal(interior.newDoc.line(3).text, prefix + item[0] + ' ' + item.slice(1));
+    const removeLine = state.update({ changes: { from: line.from - 1, to: line.to }, userEvent: 'delete.line' });
+    assert.equal(removeLine.newDoc.toString(), 'list\nroot');
+  }
+
+  const doc = 'list\n  // note\n  ## heading\n:::inkflit code js\n  code\n:::end';
+  const state = EditorState.create({ doc, extensions: [blockProtection, checklistPrefixProtection] });
+  for (const lineNo of [2, 3, 5]) {
+    const from = state.doc.line(lineNo).from;
+    assert.equal(state.update({ selection: { anchor: from } }).newSelection.main.head, from);
+  }
+
+  for (const [line, expected] of [['', ''], ['  ', '  '], ['[ ]', '[ ] '], ['[ ] ', '[ ] ']]) {
+    const doc = 'list\nroot\n' + line;
+    let state = EditorState.create({ doc, selection: { anchor: doc.length }, extensions: [blockProtection, checklistPrefixProtection] });
+    for (let i = 0; i < 3; i++) {
+      state = state.update(state.replaceSelection(' '), { userEvent: 'input.type.compose' }).state;
+    }
+    assert.equal(state.doc.line(3).text, expected);
+  }
+});
+
 function make(doc, pos) { return EditorState.create({doc,selection:{anchor:doc.indexOf(pos)},extensions:[history(),blockProtection]}); }
+
+test('deleting leading checklist text preserves the existing indentation in one undo step', () => {
+  for (const [line, expected, scope] of [
+    ['- hello', 'hello', 'list: Today'],
+    ['  - child', '  child', 'list: Today'],
+    ['  [x] - \tchild', '  [x] child', ':::inkflit list'],
+    ['keep - spaces', 'keep  spaces', 'list: Today'],
+    ['- hello', ' hello', ':::inkflit code text'],
+  ]) {
+    const footer = scope.startsWith(':::') ? '\n:::end' : '';
+    const doc = `${scope}\nroot\n${line}\n  untouched${footer}`;
+    const at = doc.indexOf('-');
+    const state = EditorState.create({doc, selection:{anchor:at}, extensions:[history(), blockProtection, checklistPrefixProtection, listPasteRules]});
+    let next = state.update({changes:{from:at, to:at + 1}, selection:{anchor:at}, userEvent:'input.type.compose.start'}).state;
+    assert.equal(next.doc.toString(), `${scope}\nroot\n${expected}\n  untouched${footer}`);
+    assert.equal(next.selection.main.head, at);
+    assert.equal(undo({state:next, dispatch:tr => { next = tr.state; }}), true);
+    assert.equal(next.doc.toString(), doc);
+  }
+});
 function apply(state,key) { const spec=planListIndent(state,key); assert.ok(spec); return state.update(spec).state; }
 
 test('Tab and Shift-Tab indent checklist items at the line start and keep the cursor',()=>{
@@ -121,7 +187,7 @@ test('pasted items follow the same indent rules, keeping their own structure',as
  let undone=withHistory; undo({state:undone,dispatch:tr=>{undone=tr.state;}});
  assert.equal(undone.doc.toString(),'list\n');
 });
-test('Vim put and shift follow the same indent rules',async()=>{
+test('Vim put and generic indentation follow the same list hierarchy',async()=>{
  const {listPasteRules}=await import('../web/list-editing.js');
  const run=(doc,spec)=>EditorState.create({doc,extensions:[listPasteRules]}).update({...spec,userEvent:'input.type.compose'}).state.doc.toString();
  assert.equal(run('list\nroot\n',{changes:{from:10,insert:'      a\n        b\n'}}),'list\nroot\n  a\n    b\n','p of indented lines');
@@ -133,6 +199,18 @@ test('Vim put and shift follow the same indent rules',async()=>{
  const typed=EditorState.create({doc:'list\nroot\n  child',extensions:[listPasteRules]}).update({changes:{from:10,insert:'  '},userEvent:'input.type'}).state.doc.toString();
  assert.equal(typed,'list\nroot\n    child','typed spaces are kept');
  assert.equal(run('list\nroot\n    deep',{changes:{from:14,to:15}}),'list\nroot\n    eep','x inside text is not re-levelled');
+});
+
+test('Vim shifting a range moves each checklist subtree once and keeps the regular shift on other lines', () => {
+  const doc = 'header\n:::inkflit list\nroot\n  parent\n    child\n:::end\n  tail';
+  let state = EditorState.create({doc, extensions:[EditorState.allowMultipleSelections.of(true), blockProtection, checklistPrefixProtection, listPasteRules]});
+  state = state.update({selection: EditorSelection.create([
+    EditorSelection.range(state.doc.line(4).from, state.doc.line(6).from),
+    EditorSelection.cursor(state.doc.line(7).from)
+  ])}).state;
+  const view = {state, dispatch(spec) { this.state = this.state.update(spec).state; }};
+  assert.equal(shiftVimListSelection(view, false), true);
+  assert.equal(view.state.doc.toString(), 'header\n:::inkflit list\nroot\nparent\n  child\n:::end\ntail');
 });
 test('removing a line re-levels the lines below it',async()=>{
  const {listPasteRules}=await import('../web/list-editing.js');

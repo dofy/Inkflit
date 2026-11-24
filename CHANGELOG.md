@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+- Cycle Normal, Keep Open, and Always on Top with the toolbar pin, ⌘⇧T, or the command palette.
+- Keep the note visible next to Settings when space allows. The global shortcut brings a pinned note to the display under the pointer.
+- Keep the checklist cursor and ordinary character edits out of the checkbox marker and indentation. Deleting leading text preserves the item's level. Use Tab and Shift-Tab to change the level.
+- Strike through completed checklist items and dim their text.
+- In Vim Normal mode, use `==` to repair checklist indentation or reindent the current line according to the code language and editor setting.
+- Use Vim `>>` and `<<` to shift a checklist item with its descendants while respecting the existing depth limit.
+- Remove the system shadow's rectangular rim around the rounded note window.
+- Show absolute or relative line numbers in a shaded gutter in code blocks. Change either setting from Settings → Edit or the command palette.
+- Dim the texture strength control when the background is set to Plain.
+
 ## [0.5.0] - 2026-11-24
 
 ### Added

@@ -5,11 +5,14 @@ export const app = {
   editor: null,             // the EditorView of the selected note
   editorCache: new Map(),   // note id -> { state, scroll }, kept while the note is inactive
   vimEnabled: true,
-  windowPinned: false,
+  windowPinMode: 'off',
   codeIndentation: 'spaces2',
   keyStartDoc: null,        // document before the current keystroke (Vim undo grouping)
   mergeFirstInsert: false,
 };
+
+export const windowPinModes = ['off', 'keepOpen', 'alwaysOnTop'];
+export const nextWindowPinMode = () => windowPinModes[(windowPinModes.indexOf(app.windowPinMode) + 1) % windowPinModes.length];
 
 export const $ = id => document.getElementById(id);
 export const current = () => app.state.notes.find(note => note.id === app.state.selected);

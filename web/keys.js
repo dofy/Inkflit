@@ -86,7 +86,7 @@ function escapeKey(event) {
   if (pending || endedStops) clearEscapeHint();
   if (pending) return;
   consume(event);
-  if (endedStops || app.windowPinned) return;
+  if (endedStops || app.windowPinMode !== 'off') return;
   if (app.vimEnabled && vimState && vimDoubleEscape) vimEscapeToHide();
   else runCommand('hide-window');
 }

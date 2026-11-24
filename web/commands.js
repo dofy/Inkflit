@@ -1,6 +1,6 @@
 import { Vim, getCM } from '@replit/codemirror-vim';
 import { toggleLineComment } from '@codemirror/commands';
-import { app, nativeCommand, nativeHandler } from './app.js';
+import { app, nativeCommand, nativeHandler, nextWindowPinMode } from './app.js';
 import { t } from './i18n.js';
 import { selectAt, createNote, navigate, selectFirst, selectLast } from './notes.js';
 import { deleteNote, hasDeleteNotices, restoreLastDeleted } from './delete-notices.js';
@@ -24,6 +24,14 @@ const focused = editor => editor.hasFocus;
 const editorMenusClosed = () => !blockMenuOpen() && !languageMenuOpen();
 const focusedWithoutMenus = editor => focused(editor) && editorMenusClosed();
 const editorCommands = [
+  { id: 'toggle-window-pin', label: () => `windowPin.${nextWindowPinMode()}`, group: windowGroup,
+    aliases: ['toggle pin window', 'stay always on top', '图钉 固定窗口 置顶', '圖釘 固定視窗 置頂', 'ウインドウを固定'],
+    key: 't', shift: true, phase: 'palette', run: () => {
+      const mode = nextWindowPinMode();
+      window.setWindowPinMode(mode);
+      nativeCommand('pin-window', mode);
+      showToast(`windowPin.${mode}`);
+    } },
   { id: 'increase-editor-font-size', label: 'palette.increaseFontSize', group: setting,
     aliases: ['increase font size', '放大字号', '放大字號'], key: '+', alternateKeys: [{ key: '=' }, { key: '+', shift: true }],
     phase: 'palette', repeat: true, run: () => nativeCommand('editor-font-size', 'increase') },
@@ -76,18 +84,10 @@ const editorCommands = [
 const native = (id, label, aliases, group = setting, nativeShortcut = false) =>
   ({ id, label, aliases, group, nativeShortcut, run: () => nativeCommand(id) });
 const nativeCommands = [
-  { ...native('hide-window', 'palette.hideWindow', ['hide close window', '关闭窗口 立即收起窗口', '關閉視窗 立即收起視窗'], windowGroup, true), when: () => !app.windowPinned, run: () => {
+  { ...native('hide-window', 'palette.hideWindow', ['hide close window', '关闭窗口 立即收起窗口', '關閉視窗 立即收起視窗'], windowGroup, true), when: () => app.windowPinMode === 'off', run: () => {
     if (nativeHandler()) nativeCommand('hide-window');
     else window.inkflitHideRequested = (window.inkflitHideRequested || 0) + 1;
   } },
-  { id: 'toggle-window-pin', label: () => app.windowPinned ? 'palette.unpinWindow' : 'palette.pinWindow',
-    aliases: ['toggle pin unpin keep window open', '防止窗口收起 图钉', '防止視窗收起 圖釘', 'ウインドウを開いたまま'], group: windowGroup,
-    run: editor => {
-      const pinned = !app.windowPinned;
-      window.setWindowPinned(pinned);
-      nativeCommand('pin-window', pinned ? 'on' : 'off');
-      editor.focus();
-    } },
   native('quit', 'app.quit', ['quit exit inkflit'], windowGroup, true),
   native('settings', 'palette.openSettings', ['settings preferences'], setting, true),
   native('toggle-vim', () => app.vimEnabled ? 'palette.disableVim' : 'palette.enableVim', ['vim mode toggle']),
@@ -176,8 +176,9 @@ const backups = Object.assign(() => [
   ...withCurrent([10, 20, 50, 100], 'backup').sort((a, b) => a - b).map(count => ({ label: versions(count), aliases: [String(count)], current: commandState.backup === String(count), run: () => nativeCommand('backup', String(count)) }))
 ], { typed: query => { const count = Number(query.trim()); return Number.isInteger(count) && count >= 1 && count <= 1_000_000 ? { label: versions(count), run: () => nativeCommand('backup', String(count)) } : null; } });
 
+const onOff = [['on', 'palette.on'], ['off', 'settings.off']];
 const settingsCommands = [
-  { id: 'vim-double-escape', label: 'settings.vimDoubleEscape', group: setting, aliases: ['vim escape esc double single hide window', '两次 Esc 退出窗口 关闭窗口', '兩次 Esc 關閉視窗'], children: choices('vim-double-escape', [['on', 'palette.on'], ['off', 'settings.off']]) },
+  { id: 'vim-double-escape', label: 'settings.vimDoubleEscape', group: setting, aliases: ['vim escape esc double single hide window', '两次 Esc 退出窗口 关闭窗口', '兩次 Esc 關閉視窗'], children: choices('vim-double-escape', onOff) },
   { id: 'color-scheme', label: 'settings.colorScheme', group: setting, aliases: ['appearance color scheme dark light system'], children: choices('color-scheme', [['system', 'settings.appearanceSystem'], ['light', 'settings.appearanceLight'], ['dark', 'settings.appearanceDark']]) },
   { id: 'ui-theme', label: 'settings.accentColor', group: setting, aliases: ['appearance accent theme color palette', '界面配色', '介面配色'],
     children: choices('ui-theme', uiThemes.map(({ id, title, aliases }) => [id, title, aliases])) },
@@ -191,12 +192,18 @@ const settingsCommands = [
     children: percent('texture-strength', [0, 25, 50, 75, 100], 0, 100) },
   { id: 'code-theme', label: 'settings.codeColors', group: setting, aliases: ['code syntax theme'], children: choices('code-theme', codeThemes.map(({ id, title }) => [id, title])) },
   { id: 'indent', label: 'settings.codeIndentation', group: setting, aliases: ['code indentation indent'], children: choices('indent', [['spaces2', 'settings.indentTwoSpaces'], ['spaces4', 'settings.indentFourSpaces'], ['tabs', 'Tab']]) },
+  { id: 'code-line-numbers', label: 'settings.codeLineNumbers', group: setting,
+    aliases: ['code line numbers', '绝对行号', '絕對行號'],
+    children: choices('code-line-numbers', onOff) },
+  { id: 'relative-line-numbers', label: 'settings.relativeCodeLineNumbers', group: setting,
+    aliases: ['relative line numbers'], when: () => commandState['code-line-numbers'] === 'on',
+    children: choices('relative-line-numbers', onOff) },
   { id: 'language', label: 'settings.language', group: setting, aliases: ['language locale'], children: choices('language', [['system', 'settings.languageSystem'], ['en', 'English'], ['zh-Hans', '简体中文'], ['zh-Hant', '繁體中文'], ['ja', '日本語']]) },
   { id: 'reset-window-size', label: 'settings.resetWindowSize', group: setting, aliases: ['restore reset default window size', '恢复窗口预设大小 恢复默认窗口大小', '恢復視窗預設大小'], run: () => nativeCommand('reset-window-size') },
   { id: 'opacity', label: 'settings.windowOpacity', group: setting, aliases: ['window opacity transparency'], children: percent('opacity', [100, 90, 80, 70, 60, 50], 50, 100) },
   { id: 'blur', label: 'settings.backgroundBlur', group: setting, aliases: ['background blur'], children: percent('blur', [0, 20, 40, 60, 80, 100], 0, 100) },
   { id: 'backup', label: 'settings.automaticBackups', group: setting, aliases: ['automatic backup versions'], children: backups },
-  { id: 'login', label: 'settings.launchAtLogin', group: setting, aliases: ['launch at login startup'], children: choices('login', [['on', 'palette.on'], ['off', 'settings.off']]) },
+  { id: 'login', label: 'settings.launchAtLogin', group: setting, aliases: ['launch at login startup'], children: choices('login', onOff) },
   { id: 'snippets', label: 'palette.manageSnippets', group: setting, aliases: ['snippets text replacement @'], run: () => nativeCommand('snippets') },
   { id: 'onboarding', label: 'settings.restoreGuideNotes', group: setting, aliases: ['restore guide notes onboarding'], run: () => nativeCommand('onboarding') },
   { id: 'help', label: 'settings.openHelp', group: setting, aliases: ['help guide documentation'], run: () => nativeCommand('help') }

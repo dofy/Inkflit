@@ -29,7 +29,9 @@ $('delete').onclick = () => runCommand('delete-note');
 $('previous').onclick = () => runCommand('previous-note');
 $('next').onclick = () => runCommand('next-note');
 $('search').onclick = () => runCommand('find-note');
-$('pin-window').onclick = () => runCommand('toggle-window-pin');
+$('pin-window').onclick = () => {
+  if (runCommand('toggle-window-pin')) app.editor.focus();
+};
 
 installKeys();
 installBridge();

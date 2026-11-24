@@ -1,6 +1,22 @@
 import Cocoa
 import WebKit
 
+enum WindowPinMode: String {
+    case off, keepOpen, alwaysOnTop
+
+    static func current(in defaults: UserDefaults = .standard) -> Self {
+        if let saved = defaults.string(forKey: "windowPinMode"), let mode = Self(rawValue: saved) { return mode }
+        return defaults.bool(forKey: "windowPinned") ? .keepOpen : .off
+    }
+
+    func apply(to window: NSPanel) {
+        window.level = self == .alwaysOnTop ? .floating : .normal
+        window.collectionBehavior = self == .alwaysOnTop
+            ? [.canJoinAllSpaces, .fullScreenAuxiliary]
+            : [.moveToActiveSpace, .fullScreenAuxiliary]
+    }
+}
+
 final class NotePanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
@@ -85,6 +101,16 @@ enum WindowPlacement {
     static func onScreen(_ frame: NSRect, from source: NSRect, to destination: NSRect) -> NSRect {
         guard source.width > 0, source.height > 0, destination.width > 0, destination.height > 0 else { return frame }
         return self.frame(size: frame.size, anchor: anchor(frame, in: source), in: destination)
+    }
+
+    static func settingsOrigin(_ settings: NSRect, beside note: NSRect, in screen: NSRect) -> NSPoint {
+        if screen.contains(settings), !settings.intersects(note) { return settings.origin }
+        let gap: CGFloat = 12
+        let left = note.minX - screen.minX, right = screen.maxX - note.maxX
+        let x = left > right ? note.minX - settings.width - gap : note.maxX + gap
+        let y = note.maxY - settings.height
+        return NSPoint(x: max(screen.minX, min(x, screen.maxX - settings.width)),
+                       y: max(screen.minY, min(y, screen.maxY - settings.height)))
     }
 }
 

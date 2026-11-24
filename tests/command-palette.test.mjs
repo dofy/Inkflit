@@ -91,10 +91,15 @@ test('the hide command is available only when the window is unpinned', async () 
   app.editor = { state: EditorState.create() };
   try {
     assert.equal(canHide(), true);
-    app.windowPinned = true;
-    assert.equal(canHide(), false);
+    const shortcut = {metaKey: true, shiftKey: true, key: 'T', code: 'KeyT'};
+    assert.equal(commandShortcut(shortcut, 'palette').id, 'toggle-window-pin');
+    assert.equal(commandShortcutLabel('toggle-window-pin'), '⌘⇧T');
+    for (const mode of ['keepOpen', 'alwaysOnTop']) {
+      app.windowPinMode = mode;
+      assert.equal(canHide(), false);
+    }
   } finally {
     app.editor = null;
-    app.windowPinned = false;
+    app.windowPinMode = 'off';
   }
 });

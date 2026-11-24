@@ -8,9 +8,9 @@
     <li><b>Write.</b> Changes are saved automatically; there is no Save button.</li>
     <li><b>Hide an unpinned window</b> with the same shortcut or <kbd>Esc</kbd> (by default, twice in Vim Normal mode). Switching to another app also hides it.</li>
   </ol>
-  <p>Use the toolbar pin or <b>Pin Window</b> in the command palette to keep the window open when pressing <kbd>Esc</kbd> or switching apps. Press <kbd>⌘W</kbd> to close it.</p>
+  <p>Use the toolbar pin, <kbd>⌘⇧T</kbd>, or the command palette to cycle through <b>Normal</b>, <b>Keep Open</b>, and <b>Always on Top</b>. Both pin modes keep the window open when you press <kbd>Esc</kbd> or switch apps. Always on Top floats above other windows. Press <kbd>⌘W</kbd> to close it.</p>
   <h3>Where the window appears</h3>
-  <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart.</p>
+  <p>The window opens on the display under the pointer, on the Space you are using now, so it never pulls you back to another desktop. It keeps the position you gave it, also after a restart. Opening Settings keeps the note visible for a live preview.</p>
   <p>Drag the toolbar's empty middle to move the window, and drag an edge to resize it. Restore the default size under <b>Settings → Appearance → Window size → Reset</b>.</p>
   <h3>Guide notes</h3>
   <ul>
@@ -417,6 +417,7 @@ ans / 2 =
     <li>With nothing selected, <kbd>⌘C</kbd> copies the whole block.</li>
   </ul>
   <p>Choose 2 spaces, 4 spaces, or tabs under <b>Settings → Edit → Code indentation</b>. Choose and preview a theme under <b>Settings → Appearance → Code colors</b>.</p>
+  <p>Use <b>Settings → Edit → Show code line numbers</b> to number each code block from 1. Turn on <b>Relative line numbers</b> to show the distance from the cursor within its block. The cursor line and other blocks still show absolute numbers.</p>
 </section>
 
 <section id="vim">
@@ -439,7 +440,7 @@ ans / 2 =
     <tbody>
       <tr><td>General</td><td>Launch at login, language, the global shortcut</td></tr>
       <tr><td>Appearance</td><td>Appearance mode, accent color, editor font and size, background texture, texture strength, window size reset, window opacity, background blur, code colors. Hold <kbd>⌥</kbd> while dragging a slider to move in 5% steps.</td></tr>
-      <tr><td>Edit</td><td>Vim mode, Double Esc to hide, code indentation</td></tr>
+      <tr><td>Edit</td><td>Vim mode, Double Esc to hide, code indentation, code line numbers, relative line numbers</td></tr>
       <tr><td>Snippets</td><td>Custom snippets and <a href="#writing">snippet availability</a></td></tr>
       <tr><td>Data</td><td>Notes folder, automatic backups, previous versions, Trash, index recovery</td></tr>
       <tr><td>About</td><td>Installed version, Restore Guide Notes, and Open help</td></tr>
@@ -447,7 +448,7 @@ ans / 2 =
   </table>
   <p>Choose Follow System (the default), Light, or Dark under <b>Appearance</b>. Under <b>Accent color</b>, the multicolor palettes coordinate the toolbar, note, and menus. Choices include Cola Red &amp; Blue, Christmas, Lacquer Red, Midnight Gold, and Peacock &amp; Gold. Each follows your selected appearance mode.</p>
   <h3>Background texture</h3>
-  <p>Choose Plain, Xuan paper, Wool felt, Fine sandstone, or Coarse linen under <b>Settings → Appearance → Background texture</b>. <b>Texture strength</b> starts at 50% and controls how visible the texture is. Set it to 0% for a solid background. Use <b>Window opacity</b> to control how much of the desktop shows through.</p>
+  <p>Choose Plain, Xuan paper, Wool felt, Fine sandstone, or Coarse linen under <b>Settings → Appearance → Background texture</b>. <b>Texture strength</b> starts at 50% and controls how visible the texture is. Set it to 0% for a solid background. Use <b>Window opacity</b> to control how much of the desktop shows through. Selecting Plain disables the texture strength slider and preserves its value.</p>
   <p>In the command palette, type <code>background material</code> or search for a surface by name. With a texture selected, open <code>texture strength</code> and enter a value such as <code>37%</code>.</p>
 </section>
 

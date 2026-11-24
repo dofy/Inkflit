@@ -38,7 +38,7 @@
       "title": "app.window",
       "rows": [
         {"id": "hide-window", "keyword": "close window", "labels": ["palette.hideWindow"]},
-        {"id": "toggle-window-pin", "keyword": "pin window", "labels": ["palette.pinWindow", "palette.unpinWindow"]},
+        {"id": "toggle-window-pin", "keyword": "pin window", "labels": ["windowPin.keepOpen", "windowPin.alwaysOnTop", "windowPin.off"]},
         {"id": "quit", "keyword": "quit inkflit", "labels": ["app.quit"]}
       ]
     },
@@ -65,6 +65,8 @@
         {"id": "reset-window-size", "keyword": "reset window size", "labels": ["settings.resetWindowSize"]},
         {"id": "code-theme", "keyword": "code syntax theme", "labels": ["settings.codeColors"]},
         {"id": "indent", "keyword": "code indentation", "labels": ["settings.codeIndentation"]},
+        {"id": "code-line-numbers", "keyword": "code line numbers", "labels": ["settings.codeLineNumbers"]},
+        {"id": "relative-line-numbers", "keyword": "relative line numbers", "labels": ["settings.relativeCodeLineNumbers"]},
         {"id": "choose-notes-folder", "keyword": "notes directory", "labels": ["settings.chooseNotesFolder"]},
         {"id": "backup", "keyword": "backup versions", "labels": ["settings.automaticBackups"]},
         {"id": "restore-version", "keyword": "restore version", "labels": ["settings.restorePreviousVersion"]},

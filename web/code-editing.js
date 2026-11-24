@@ -3,6 +3,10 @@ import { lineCommentMarker } from './code-languages.js';
 
 export const indentationOptions = ['spaces2', 'spaces4', 'tabs'];
 export function normalizeIndentation(value) { return indentationOptions.includes(value) ? value : 'spaces2'; }
+export function codeIndentationUnit(value) {
+  const indentation = normalizeIndentation(value);
+  return indentation === 'tabs' ? '\t' : indentation === 'spaces4' ? '    ' : '  ';
+}
 const pairs = {'(':')','[':']','{':'}','"':'"',"'":"'",'`':'`'};
 const openers = new Set(['(','[','{']);
 
@@ -44,7 +48,7 @@ export function planCodeEdit(state, key, options={}) {
   const context=lexicalContext(doc.sliceString(scopeStart,selection.from),language);
   const next=doc.sliceString(selection.to,Math.min(doc.length,selection.to+1));
   const before=doc.sliceString(line.from,pos), after=doc.sliceString(pos,line.to);
-  const unit=normalizeIndentation(options.indentation)==='tabs'?'\t':normalizeIndentation(options.indentation)==='spaces4'?'    ':'  ';
+  const unit=codeIndentationUnit(options.indentation);
   const edit=(from,to,insert,anchor,userEvent='input.type')=>({changes:{from,to,insert},selection:{anchor},userEvent});
 
   if(key==='Enter') {

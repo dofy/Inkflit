@@ -139,6 +139,6 @@ export const blockProtection=EditorState.transactionFilter.of(tr=>{
   const sel=tr.newSelection.main;
   if(!sel.empty)return tr;
   let safe=nearestEditablePosition(tr.newDoc,sel.head,tr.startState.selection.main.head,tr.docChanged);
-  if(!tr.docChanged)safe=taskContentPosition(tr.state,safe);
+  safe=taskContentPosition(tr.state,safe,!tr.docChanged);
   return safe===sel.head ? tr : [tr,{selection:{anchor:safe},sequential:true}];
 });

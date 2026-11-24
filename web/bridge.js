@@ -1,8 +1,8 @@
 import { t, setLanguage, lang } from './i18n.js';
-import { app, $, newNote, resolveNativeRequest } from './app.js';
+import { app, $, newNote, resolveNativeRequest, windowPinModes } from './app.js';
 import { saveResult, snapshotForFlush } from './persistence.js';
 import { loadNoteSnapshot, setVimEnabled, refreshBlockResults, prepareToHide } from './editor-view.js';
-import { applyToolbarLanguage } from './toolbar.js';
+import { applyToolbarLanguage, updateWindowPinButton } from './toolbar.js';
 import { addGuideNotes, createNote, select } from './notes.js';
 import { updateDeleteNotices } from './delete-notices.js';
 import { applyPaletteLanguage, commandPalette, openCommands, openSearch, searchPalette, setCommandHistory, setCommandState } from './palettes.js';
@@ -11,6 +11,7 @@ import { setUserSnippets, setSnippetPreferences, settingsSnippetControls, settin
 import { closeBlockMenu } from './block-menu.js';
 import { closeLanguageMenu } from './language-menu.js';
 import { normalizeIndentation } from './code-editing.js';
+import { setCodeLineNumbers } from './code-line-numbers.js';
 import { applyCodeTheme, codeThemes } from './code-themes.js';
 import { applyUIAppearance } from './ui-themes.js';
 import { clearEscapeHint, setVimDoubleEscape } from './keys.js';
@@ -91,10 +92,12 @@ export function installBridge() {
     // Window and panels
     focusEditor: () => { app.editor?.focus(); },
     prepareToHide,
-    setWindowPinned: pinned => {
-      app.windowPinned = pinned;
+    setWindowPinMode: mode => {
+      if (!windowPinModes.includes(mode)) return;
+      app.windowPinMode = mode;
       clearEscapeHint();
-      $('pin-window').setAttribute('aria-pressed', String(pinned));
+      updateWindowPinButton();
+      if (commandPalette.open) commandPalette.render();
     },
     openCommands,
     openNoteSearch: openSearch,
@@ -112,6 +115,7 @@ export function installBridge() {
     setVimEnabled,
     setVimDoubleEscape,
     setCodeIndentation: value => { app.codeIndentation = normalizeIndentation(value); },
+    setCodeLineNumbers,
     setCodeTheme: value => { codeTheme = value; applyColors(); },
     setEditorTypography: (family, size) => {
       const style = document.documentElement.style;

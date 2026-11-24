@@ -275,6 +275,30 @@
     "zh-Hant": "程式碼區塊的縮排方式",
     "ja": "コードブロックのインデント"
   },
+  "settings.codeLineNumbers": {
+    "en": "Show code line numbers",
+    "zh-Hans": "显示代码行号",
+    "zh-Hant": "顯示程式碼行號",
+    "ja": "コードの行番号を表示"
+  },
+  "settings.codeLineNumbersDetail": {
+    "en": "Number the lines in each code block",
+    "zh-Hans": "在每个代码块内显示行号",
+    "zh-Hant": "在每個程式碼區塊內顯示行號",
+    "ja": "コードブロックごとに行番号を表示します"
+  },
+  "settings.relativeCodeLineNumbers": {
+    "en": "Relative line numbers",
+    "zh-Hans": "相对行号",
+    "zh-Hant": "相對行號",
+    "ja": "相対行番号"
+  },
+  "settings.relativeCodeLineNumbersDetail": {
+    "en": "Count lines from the cursor within its code block",
+    "zh-Hans": "在光标所在的代码块内显示距当前行的行数",
+    "zh-Hant": "在游標所在的程式碼區塊內顯示距目前行的行數",
+    "ja": "カーソルがあるブロック内で、現在行からの行数を表示します"
+  },
   "settings.codeColors": {
     "en": "Code colors",
     "zh-Hans": "代码配色",
@@ -1817,23 +1841,23 @@
     "zh-Hant": "再按一次 Esc 收起視窗",
     "ja": "もう一度 Esc でウインドウを隠す"
   },
-  "toolbar.pinWindow": {
-    "en": "Keep window open",
-    "zh-Hans": "防止窗口收起",
-    "zh-Hant": "防止視窗收起",
+  "windowPin.off": {
+    "en": "Normal Window",
+    "zh-Hans": "普通窗口",
+    "zh-Hant": "一般視窗",
+    "ja": "通常のウインドウ"
+  },
+  "windowPin.keepOpen": {
+    "en": "Keep Window Open",
+    "zh-Hans": "保持窗口打开",
+    "zh-Hant": "保持視窗開啟",
     "ja": "ウインドウを開いたままにする"
   },
-  "palette.pinWindow": {
-    "en": "Pin Window",
-    "zh-Hans": "固定窗口",
-    "zh-Hant": "固定視窗",
-    "ja": "ウインドウを固定"
-  },
-  "palette.unpinWindow": {
-    "en": "Unpin Window",
-    "zh-Hans": "取消固定窗口",
-    "zh-Hant": "取消固定視窗",
-    "ja": "ウインドウの固定を解除"
+  "windowPin.alwaysOnTop": {
+    "en": "Always on Top",
+    "zh-Hans": "置顶",
+    "zh-Hant": "置頂",
+    "ja": "常に最前面に表示"
   },
   "settings.insertPlaceholder": {
     "en": "Insert placeholder",

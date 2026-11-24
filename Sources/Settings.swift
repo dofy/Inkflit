@@ -117,6 +117,11 @@ struct EditorTypography {
     }
 }
 
+struct CodeLineNumberPreferences {
+    var enabled = false
+    var relative = false
+}
+
 /// A compact switch with an app-colored on state and standard button behavior.
 final class OrangeSwitch: NSButton {
     var accentColor: NSColor = .systemOrange { didSet { needsDisplay = true } }
@@ -129,13 +134,13 @@ final class OrangeSwitch: NSButton {
     override var intrinsicContentSize: NSSize { NSSize(width: 50, height: 26) }
     override func draw(_ dirtyRect: NSRect) {
         let track = bounds.insetBy(dx: 1, dy: 2)
-        (state == .on ? accentColor : NSColor.quaternaryLabelColor).setFill()
+        (state == .on && isEnabled ? accentColor : NSColor.quaternaryLabelColor).setFill()
         NSBezierPath(roundedRect: track, xRadius: track.height / 2, yRadius: track.height / 2).fill()
         let size = track.height - 4
         let x = state == .on ? track.maxX - size - 2 : track.minX + 2
         NSColor.white.setFill()
         NSBezierPath(ovalIn: NSRect(x: x, y: track.minY + 2, width: size, height: size)).fill()
-        if window?.firstResponder === self {
+        if isEnabled && window?.firstResponder === self {
             NSColor.keyboardFocusIndicatorColor.setStroke()
             let focus = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: bounds.height / 2, yRadius: bounds.height / 2)
             focus.lineWidth = 1; focus.stroke()
@@ -154,7 +159,7 @@ final class AccentSliderCell: NSSliderCell {
         NSBezierPath(roundedRect: track, xRadius: 2, yRadius: 2).fill()
         let fraction = maxValue > minValue ? max(0, min(1, (doubleValue - minValue) / (maxValue - minValue))) : 0
         let active = NSRect(x: track.minX, y: track.minY, width: track.width * fraction, height: track.height)
-        if active.width > 0 { accentColor.setFill(); NSBezierPath(roundedRect: active, xRadius: 2, yRadius: 2).fill() }
+        if isEnabled && active.width > 0 { accentColor.setFill(); NSBezierPath(roundedRect: active, xRadius: 2, yRadius: 2).fill() }
     }
 }
 
@@ -177,10 +182,11 @@ final class AccentSlider: NSSlider {
 }
 
 final class SliderTicks: NSView {
+    weak var slider: NSSlider?
     var accentColor: NSColor = .systemOrange { didSet { needsDisplay = true } }
     override var intrinsicContentSize: NSSize { NSSize(width: 136, height: 8) }
     override func draw(_ dirtyRect: NSRect) {
-        accentColor.withAlphaComponent(0.65).setFill()
+        (slider?.isEnabled == false ? NSColor.quaternaryLabelColor : accentColor.withAlphaComponent(0.65)).setFill()
         let left: CGFloat = 10, width = max(0, bounds.width - 20)
         for index in 0...10 {
             let x = left + width * CGFloat(index) / 10
@@ -237,6 +243,18 @@ final class ShortcutField: NSButton {
 }
 final class SettingsWindow: NSWindow {
     weak var shortcutField: ShortcutField?
+    weak var previewWindow: NSWindow?
+
+    override func becomeKey() {
+        super.becomeKey()
+        level = previewWindow?.level ?? .normal
+    }
+
+    override func resignKey() {
+        super.resignKey()
+        level = .normal
+    }
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if let field = shortcutField, field.recording, firstResponder === field {
             field.keyDown(with: event); return true
@@ -285,6 +303,9 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let vimSwitch = OrangeSwitch(frame: .zero)
     private let vimDoubleEscapeSwitch = OrangeSwitch(frame: .zero)
     private let indentation = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let codeLineNumbersSwitch = OrangeSwitch(frame: .zero)
+    private let relativeCodeLineNumbersSwitch = OrangeSwitch(frame: .zero)
+    private var relativeCodeLineNumbersSection: NSView?
     private let themePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     private let themePreview = NSTextField(labelWithString: "")
     private let previewBox = CodeThemePreviewBox()
@@ -297,6 +318,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let languagePicker = NSPopUpButton(frame: .zero, pullsDown: false)
     var languageChanged: (() -> Void)?
     private let textureStrengthSlider = AccentSlider(value: Double(WindowAppearance.defaultTextureStrength), minValue: 0, maxValue: 100, target: nil, action: nil)
+    private var textureStrengthSection: NSView?
     private let opacitySlider = AccentSlider(value: 100, minValue: 50, maxValue: 100, target: nil, action: nil)
     private let blurSlider = AccentSlider(value: 0, minValue: 0, maxValue: 100, target: nil, action: nil)
     private let textureStrengthValue = NSTextField(labelWithString: "")
@@ -316,6 +338,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
     private let setVimDoubleEscape: (Bool) -> Void
     private let getIndentation: () -> String
     private let setIndentation: (String) -> Void
+    private let getCodeLineNumbers: () -> CodeLineNumberPreferences
+    private let setCodeLineNumbers: (CodeLineNumberPreferences) -> Void
     private let getStorage: () -> String
     private let changeStorage: (URL, @escaping (String?) -> Void) -> Void
     private var helpWindow: NSWindowController?
@@ -334,6 +358,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         getVimEnabled: @escaping () -> Bool, setVimEnabled: @escaping (Bool) -> Void,
         getVimDoubleEscape: @escaping () -> Bool, setVimDoubleEscape: @escaping (Bool) -> Void,
         getIndentation: @escaping () -> String, setIndentation: @escaping (String) -> Void,
+        getCodeLineNumbers: @escaping () -> CodeLineNumberPreferences, setCodeLineNumbers: @escaping (CodeLineNumberPreferences) -> Void,
         getTheme: @escaping () -> String, setTheme: @escaping (String) -> Void,
         getAppearance: @escaping () -> WindowAppearance, setAppearance: @escaping (WindowAppearance) -> Void,
         resetWindowSize: @escaping () -> Void,
@@ -345,6 +370,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         self.getVimEnabled = getVimEnabled; self.setVimEnabled = setVimEnabled
         self.getVimDoubleEscape = getVimDoubleEscape; self.setVimDoubleEscape = setVimDoubleEscape
         self.getIndentation = getIndentation; self.setIndentation = setIndentation
+        self.getCodeLineNumbers = getCodeLineNumbers; self.setCodeLineNumbers = setCodeLineNumbers
         self.getTheme = getTheme; self.setTheme = setTheme
         self.getAppearance = getAppearance; self.setAppearance = setAppearance; self.resetWindowSize = resetWindowSize
         let window = SettingsWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 610), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
@@ -429,7 +455,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         slider.cell = cell; slider.numberOfTickMarks = 11; slider.tickMarkPosition = .above; slider.allowsTickMarkValuesOnly = false
         slider.target = self; slider.action = #selector(appearanceChanged(_:)); slider.isContinuous = true; slider.setAccessibilityLabel(label)
         slider.widthAnchor.constraint(equalToConstant: 136).isActive = true
-        let ticks = SliderTicks(); ticks.setAccessibilityElement(false); sliderTicks.append(ticks)
+        let ticks = SliderTicks(); ticks.slider = slider; ticks.setAccessibilityElement(false); sliderTicks.append(ticks)
         let sliderColumn = NSStackView(views: [ticks, slider]); sliderColumn.orientation = .vertical; sliderColumn.alignment = .leading; sliderColumn.spacing = 0
         value.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular); value.textColor = .secondaryLabelColor
         value.widthAnchor.constraint(equalToConstant: 36).isActive = true
@@ -478,6 +504,17 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         indentation.target = self; indentation.action = #selector(indentationChanged); indentation.setAccessibilityLabel(L("settings.codeIndentation"))
         let indentMessage = NSTextField(wrappingLabelWithString: L("settings.codeIndentationHint"))
         let indentSection = section(L("settings.codeIndentation"), icon: "increase.indent", detail: L("settings.codeIndentationDetail"), controls: indentation, message: indentMessage)
+        let codeLineNumbersTitle = L("settings.codeLineNumbers")
+        codeLineNumbersSwitch.target = self; codeLineNumbersSwitch.action = #selector(codeLineNumbersChanged)
+        codeLineNumbersSwitch.setAccessibilityLabel(codeLineNumbersTitle)
+        let codeLineNumbers = section(codeLineNumbersTitle, icon: "list.number",
+                                      detail: L("settings.codeLineNumbersDetail"), controls: codeLineNumbersSwitch)
+        let relativeLineNumbersTitle = L("settings.relativeCodeLineNumbers")
+        relativeCodeLineNumbersSwitch.target = self; relativeCodeLineNumbersSwitch.action = #selector(codeLineNumbersChanged)
+        relativeCodeLineNumbersSwitch.setAccessibilityLabel(relativeLineNumbersTitle)
+        let relativeLineNumbers = section(relativeLineNumbersTitle, icon: "arrow.up.arrow.down",
+                                          detail: L("settings.relativeCodeLineNumbersDetail"), controls: relativeCodeLineNumbersSwitch)
+        relativeCodeLineNumbersSection = relativeLineNumbers
         for theme in CodeThemes.all { themePicker.addItem(withTitle: theme.title); themePicker.lastItem?.representedObject = theme.id }
         themePicker.target = self; themePicker.action = #selector(themeChanged); themePicker.setAccessibilityLabel(L("settings.codeColors"))
         let themeMessage = NSTextField(wrappingLabelWithString: L("settings.codeColorsHint"))
@@ -517,6 +554,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let textureStrengthTitle = L("settings.textureStrength")
         let textureStrengthControls = sliderControls(textureStrengthSlider, value: textureStrengthValue, label: textureStrengthTitle)
         let textureStrengthSection = section(textureStrengthTitle, icon: "slider.horizontal.3", detail: L("settings.textureStrengthDetail"), controls: textureStrengthControls)
+        self.textureStrengthSection = textureStrengthSection
         let opacitySection = section(L("settings.windowOpacity"), icon: "circle.lefthalf.filled", detail: L("settings.windowOpacityDetail"), controls: sliderControls(opacitySlider, value: opacityValue, label: L("settings.windowOpacity")), message: NSTextField(wrappingLabelWithString: L("settings.windowOpacityHint")))
         let blurSection = section(L("settings.backgroundBlur"), icon: "drop.halffull", detail: L("settings.backgroundBlurDetail"), controls: sliderControls(blurSlider, value: blurValue, label: L("settings.backgroundBlur")), message: NSTextField(wrappingLabelWithString: L("settings.backgroundBlurHint")))
         resetWindowSizeButton.bezelStyle = .rounded
@@ -535,7 +573,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let pages: [(Tab, String, NSView)] = [
             (.general, L("settings.general"), page([loginSection, languageSection, shortcutSection])),
             (.appearance, L("settings.appearance"), page([colorSchemeSection, uiThemeSection, typographySection, paperSection, textureStrengthSection, opacitySection, blurSection, sizeSection, themeGroup], scrollable: true)),
-            (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection])),
+            (.edit, L("app.edit"), page([vimSection, vimEscapeSection, indentSection, codeLineNumbers, relativeLineNumbers])),
             (.snippets, L("settings.snippets"), page([snippetsSection, snippetsEditor])),
             (.data, L("settings.data"), page([storageSection, backupSection, historySection, trashSection, rebuildSection])),
             (.about, L("settings.about"), aboutPage()),
@@ -634,6 +672,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         vimSwitch.state = getVimEnabled() ? .on : .off
         vimDoubleEscapeSwitch.state = getVimDoubleEscape() ? .on : .off
         if let index = indentation.itemArray.firstIndex(where: { ($0.representedObject as? String) == getIndentation() }) { indentation.selectItem(at: index) }
+        applyCodeLineNumberControls(getCodeLineNumbers())
         if let index = themePicker.itemArray.firstIndex(where: { ($0.representedObject as? String) == getTheme() }) { themePicker.selectItem(at: index) }
         renderThemePreview(getTheme())
         let appearance = getAppearance()
@@ -642,9 +681,7 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         editorFontPicker.selectItem(at: editorFontPicker.indexOfItem(withRepresentedObject: appearance.typography.family))
         editorSizePicker.selectItem(at: appearance.typography.size - EditorTypography.sizes.lowerBound)
         paperPicker.selectItem(at: paperPicker.indexOfItem(withRepresentedObject: appearance.paper.rawValue))
-        textureStrengthSlider.integerValue = appearance.textureStrength
-        textureStrengthSlider.isEnabled = appearance.paper != .plain
-        textureStrengthValue.stringValue = "\(appearance.textureStrength)%"
+        applyTextureStrengthControls(appearance)
         opacitySlider.integerValue = appearance.opacity; blurSlider.integerValue = appearance.blur
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         applySettingsAccent(appearance.theme)
@@ -698,6 +735,22 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         guard let value = indentation.selectedItem?.representedObject as? String else { return }
         setIndentation(value)
     }
+    @objc private func codeLineNumbersChanged() {
+        let preferences = CodeLineNumberPreferences(enabled: codeLineNumbersSwitch.state == .on,
+                                                     relative: relativeCodeLineNumbersSwitch.state == .on)
+        setCodeLineNumbers(preferences)
+        applyCodeLineNumberControls(preferences)
+    }
+    private func applyCodeLineNumberControls(_ preferences: CodeLineNumberPreferences) {
+        codeLineNumbersSwitch.state = preferences.enabled ? .on : .off
+        relativeCodeLineNumbersSwitch.state = preferences.relative ? .on : .off
+        relativeCodeLineNumbersSwitch.isEnabled = preferences.enabled
+        relativeCodeLineNumbersSection?.alphaValue = preferences.enabled ? 1 : 0.55
+        for toggle in [codeLineNumbersSwitch, relativeCodeLineNumbersSwitch] {
+            toggle.setAccessibilityValue(toggle.state == .on ? 1 : 0)
+            toggle.needsDisplay = true
+        }
+    }
     static func sliderValue(_ value: Int, optionPressed: Bool) -> Int {
         optionPressed ? Int((Double(value) / 5).rounded()) * 5 : value
     }
@@ -715,16 +768,24 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         let appearance = WindowAppearance(theme: theme, opacity: opacitySlider.integerValue, blur: blurSlider.integerValue,
                                           colorScheme: scheme, typography: typography, paper: paper,
                                           textureStrength: textureStrengthSlider.integerValue)
-        textureStrengthSlider.isEnabled = paper != .plain
-        textureStrengthValue.stringValue = "\(appearance.textureStrength)%"
+        applyTextureStrengthControls(appearance)
         opacityValue.stringValue = "\(appearance.opacity)%"; blurValue.stringValue = "\(appearance.blur)%"
         applySettingsAccent(theme)
         setAppearance(appearance)
     }
+    private func applyTextureStrengthControls(_ appearance: WindowAppearance) {
+        let enabled = appearance.paper != .plain
+        textureStrengthSlider.integerValue = appearance.textureStrength
+        textureStrengthSlider.isEnabled = enabled
+        textureStrengthValue.stringValue = "\(appearance.textureStrength)%"
+        textureStrengthSection?.alphaValue = enabled ? 1 : 0.55
+    }
     private func applySettingsAccent(_ theme: String) {
         let accent = UIThemes.accent(theme)
         symbols.forEach { $0.contentTintColor = accent }
-        loginSwitch.accentColor = accent; vimSwitch.accentColor = accent; vimDoubleEscapeSwitch.accentColor = accent
+        for toggle in [loginSwitch, vimSwitch, vimDoubleEscapeSwitch, codeLineNumbersSwitch, relativeCodeLineNumbersSwitch] {
+            toggle.accentColor = accent
+        }
         sliderTicks.forEach { $0.accentColor = accent }
         for slider in [textureStrengthSlider, opacitySlider, blurSlider] {
             (slider.cell as? AccentSliderCell)?.accentColor = accent
@@ -792,6 +853,21 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
         textureStrengthSlider.integerValue = strength
         return NSApp.sendAction(#selector(appearanceChanged(_:)), to: self, from: textureStrengthSlider)
     }
+    func testTextureStrengthAvailability(enabled: Bool) -> Bool {
+        guard let section = textureStrengthSection, let cell = textureStrengthSlider.cell else { return false }
+        return textureStrengthSlider.isEnabled == enabled && cell.isEnabled == enabled
+            && (enabled ? section.alphaValue == 1 : section.alphaValue < 1)
+    }
+    func testToggleCodeLineNumbers(relative: Bool = false) {
+        (relative ? relativeCodeLineNumbersSwitch : codeLineNumbersSwitch).performClick(nil)
+    }
+    func testCodeLineNumberControls(enabled: Bool, relative: Bool) -> Bool {
+        guard let section = relativeCodeLineNumbersSection else { return false }
+        return (codeLineNumbersSwitch.state == .on) == enabled
+            && (relativeCodeLineNumbersSwitch.state == .on) == relative
+            && relativeCodeLineNumbersSwitch.isEnabled == enabled
+            && (enabled ? section.alphaValue == 1 : section.alphaValue < 1)
+    }
     func testAppearanceControls(_ theme: String) -> Bool {
         let accent = UIThemes.accent(theme)
         guard loginSwitch.accentColor == accent, vimSwitch.accentColor == accent,
@@ -849,7 +925,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
             let page = (view as? NSScrollView)?.documentView ?? view
             return views.allSatisfy { page.bounds.insetBy(dx: -1, dy: -1).contains($0.convert($0.bounds, to: page)) }
         }
-        return fits([colorSchemePicker, editorFontPicker, editorSizePicker, paperPicker, textureStrengthSlider, resetWindowSizeButton, previewBox], on: .appearance) && fits([vimSwitch, vimDoubleEscapeSwitch, indentation], on: .edit)
+        return fits([colorSchemePicker, editorFontPicker, editorSizePicker, paperPicker, textureStrengthSlider, resetWindowSizeButton, previewBox], on: .appearance)
+            && fits([vimSwitch, vimDoubleEscapeSwitch, indentation, codeLineNumbersSwitch, relativeCodeLineNumbersSwitch], on: .edit)
     }
     func testResetWindowSize() { resetWindowSizeButton.performClick(nil) }
     func testToggleVim() { vimSwitch.performClick(nil) }
@@ -1001,7 +1078,8 @@ final class SettingsController: NSWindowController, NSTextFieldDelegate {
                                 arguments: ["theme": appearance.theme, "scheme": appearance.colorScheme.rawValue],
                                 in: nil, in: .page, completionHandler: nil)
     }
-    func show() {
+    func show(previewing note: NSWindow) {
+        (window as? SettingsWindow)?.previewWindow = note
         refresh()
         if !snippetsLoaded { reloadSnippets() }
         #if INKFLIT_NATIVE_TEST

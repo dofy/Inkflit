@@ -18,3 +18,9 @@ for appearance in light dark; do
  run_settings_test INKFLIT_TEST_EXPECT_COLOR_SCHEME="$expected"
 done
 run_settings_test INKFLIT_SETTINGS_ACCENT_TEST=0 INKFLIT_NOTE_PAPER_TEST=1
+
+appearance=light
+for restart in 0 1; do
+ printf '%s' '{"notes":[{"id":"numbers","content":"intro\n:::inkflit code js\nfirst()\n\nsecond()\nthird()\n:::end\nplain text\n```js\nfenced()\nend()\n```\n:::inkflit math\n1+2=\n:::end","updated":"1"},{"id":"whole-code","content":"code js\none()\ntwo()\nthree()","updated":"2"}],"selected":"numbers"}' > "$test_dir/notes.json"
+ run_settings_test INKFLIT_SETTINGS_ACCENT_TEST=0 INKFLIT_CODE_LINE_NUMBERS_TEST=1 INKFLIT_TEST_NUMBER_PREFS_RESTART="$restart"
+done

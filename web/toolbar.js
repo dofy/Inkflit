@@ -42,7 +42,14 @@ export function applyToolbarLanguage() {
   for (const [id, key, shortcut] of [['previous', 'note.previous', '⌘['], ['next', 'note.next', '⌘]'], ['new', 'note.new', '⌘N'], ['delete', 'note.delete', '⌘D'], ['search', 'palette.searchNotes', '⌘⇧F']]) {
     $(id).setAttribute('aria-label', t(key)); $(id).title = t(key) + ' ' + shortcut;
   }
-  const pin = $('pin-window');
-  pin.setAttribute('aria-label', t('toolbar.pinWindow'));
-  pin.title = t('toolbar.pinWindow');
+  updateWindowPinButton();
+}
+
+export function updateWindowPinButton() {
+  const pin = $('pin-window'), mode = app.windowPinMode;
+  const label = t(`windowPin.${mode}`);
+  pin.dataset.mode = mode;
+  pin.setAttribute('aria-pressed', String(mode !== 'off'));
+  pin.setAttribute('aria-label', label);
+  pin.title = label + ' ⌘⇧T';
 }

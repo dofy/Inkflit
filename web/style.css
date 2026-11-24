@@ -4,6 +4,7 @@
 .task-checkbox:hover,.task-checkbox[aria-checked="true"]{--task-tone:var(--ui-accent)}
 .task-checkbox[aria-checked="true"]:hover{--task-tone:var(--ui-button)}
 .task-checkbox:active{transform:scale(.98)}
+.cm-completed-task-text{opacity:.74;text-decoration-line:line-through}
 .task-checkbox::before,.task-checkbox::after{content:"";grid-area:1/1;box-sizing:border-box;border-radius:50%}
 .task-checkbox::before{inline-size:100%;block-size:100%;border:1px solid var(--task-tone);border-right-color:transparent;transform:rotate(-45deg)}
 .task-checkbox::after{inline-size:.25rem;block-size:.25rem;background:var(--task-tone)}
@@ -67,7 +68,7 @@ main{position:relative}.block-menu{position:absolute;z-index:10;width:272px;max-
 .actions #delete,.actions #search,.actions #pin-window{display:flex;align-items:center;justify-content:center}
 #pin-window svg{transform:rotate(30deg)}
 #pin-window[aria-pressed="true"] svg{transform:none}
-#pin-window[aria-pressed="true"] .pin-head{fill:currentColor}
+#pin-window[data-mode="alwaysOnTop"] .pin-head{fill:currentColor}
 .editor .cm-editor .cm-line{padding-left:6px;padding-right:6px}.editor .cm-editor .cm-activeLine{border-radius:6px}.editor .cm-editor .cm-block-header-line{padding-bottom:8px}.editor .cm-editor .cm-block-end-line{padding-top:4px;padding-bottom:8px}
 .block-language{text-align:left;min-width:92px;cursor:pointer}.block-language:hover,.block-language[aria-expanded="true"]{background-color:#f9ddc6}.language-menu{position:absolute;z-index:11;width:200px;max-height:240px;overflow:auto;padding:4px;border:1px solid #f0dbc9;border-radius:8px;background:#fffdfa;box-shadow:0 8px 24px rgba(84,51,29,.16)}.language-menu-item{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:7px 10px;text-align:left;color:#302921;font:13px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.language-menu-item[aria-selected="true"],.language-menu-item:hover{background:#fff0e2}.language-menu-check{color:#b95c1d}
 .cm-editor .tok-propertyName,.cm-editor .tok-attributeName{color:var(--syntax-property)!important}.cm-editor .tok-string,.cm-editor .tok-string2,.cm-editor .tok-character{color:var(--syntax-string)!important}.cm-editor .tok-keyword{color:var(--syntax-keyword)!important}.cm-editor .tok-bool,.cm-editor .tok-null,.cm-editor .tok-atom{color:var(--syntax-constant)!important}.cm-editor .tok-number{color:var(--syntax-number)!important}.cm-editor .tok-comment{color:var(--syntax-comment)!important}.cm-editor .tok-function,.cm-editor .tok-variableName.tok-function{color:var(--syntax-function)!important}.cm-editor .tok-variableName,.cm-editor .tok-typeName{color:var(--syntax-variable)!important}.cm-editor .tok-operator{color:var(--syntax-operator)!important}.cm-editor .tok-punctuation{color:var(--syntax-punctuation)!important}
@@ -114,6 +115,26 @@ header :is(.nav,.actions) button:is(:hover,[aria-pressed=true]){background:var(-
 }
 .editor .cm-content .cm-code-line.cm-activeLine { background:transparent!important; }
 .editor .cm-content .cm-code-line.cm-activeLine::before { background:var(--syntax-active); }
+.editor .cm-editor .cm-content .cm-code-numbered-line {
+  position:relative;
+  padding-inline-start:calc(var(--code-number-width) + 1.5em);
+}
+.editor .cm-content .cm-code-numbered-line::after {
+  position:absolute;
+  inset-inline-start:0;
+  inset-block:0;
+  box-sizing:border-box;
+  width:calc(var(--code-number-width) + .85em);
+  padding-inline-end:.45em;
+  content:attr(data-code-line-number);
+  text-align:end;
+  font-variant-numeric:tabular-nums;
+  background:color-mix(in srgb, var(--syntax-foreground) 8%, var(--syntax-background));
+  color:color-mix(in srgb, var(--syntax-foreground) 65%, var(--syntax-background));
+  pointer-events:none;
+  user-select:none;
+}
+.editor .cm-content .cm-code-numbered-line.cm-activeLine::after { color:var(--syntax-foreground); }
 .cm-note-heading .tok-heading{font-weight:inherit!important;text-decoration:none!important;color:inherit!important}
 .cm-note-heading .tok-meta{color:var(--ui-button,#8c5b39)!important}
 .cm-note-heading-1{font-size:calc(24em / 14);font-weight:750}

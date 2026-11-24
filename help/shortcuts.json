@@ -12,6 +12,7 @@
         {"keys": ["⌃⌥Space"], "en": "Show or hide Inkflit from any app (default; change it in Settings)", "zh-Hans": "在任意应用中显示或隐藏 Inkflit（默认快捷键，可在设置中更改）", "zh-Hant": "在任何應用程式中顯示或隱藏 Inkflit（預設快捷鍵，可在設定中變更）", "ja": "どのアプリからでも Inkflit を表示・非表示（初期設定。設定で変更可能）"},
         {"keys": ["Esc"], "en": "Hide an unpinned window. In Vim Normal mode, press twice by default.", "zh-Hans": "收起未固定的窗口（Vim Normal 模式下默认连按两次）", "zh-Hant": "收起未固定的視窗（Vim 一般模式下預設連按兩次）", "ja": "固定していないウインドウを隠す（Vim のノーマルモードでは既定で 2 回）"},
         {"keys": ["⌘W"], "en": "Close the note window, including when pinned", "zh-Hans": "收起笔记窗口，固定时也可用", "zh-Hant": "收起筆記視窗，固定時也可用", "ja": "ノートウインドウを閉じる（固定中も有効）"},
+        {"keys": ["⌘⇧T"], "en": "Cycle Normal, Keep Open, and Always on Top", "zh-Hans": "循环切换普通、保持打开和置顶", "zh-Hant": "循環切換一般、保持開啟和置頂", "ja": "通常・開いたまま・常に最前面を切り替える"},
         {"keys": ["⌘,"], "en": "Open Settings", "zh-Hans": "打开设置", "zh-Hant": "開啟設定", "ja": "設定を開く"}
       ]
     },
@@ -44,6 +45,8 @@
         {"keys": ["⌘⇧D"], "en": "Delete the current block", "zh-Hans": "删除当前块", "zh-Hant": "刪除目前區塊", "ja": "現在のブロックを削除"},
         {"keys": ["⌘L"], "en": "Choose the code block language", "zh-Hans": "选择代码块语言", "zh-Hant": "選擇程式碼區塊語言", "ja": "コードブロックの言語を選択"},
         {"keys": ["⌘C"], "en": "Copy the whole code block when nothing is selected", "zh-Hans": "未选中内容时复制整个代码块", "zh-Hant": "未選取內容時複製整個程式碼區塊", "ja": "未選択時にコードブロック全体をコピー"},
+        {"keys": ["=="], "en": "Auto-indent in Vim Normal mode. Code uses language rules and the code indentation setting, and checklists follow their levels.", "zh-Hans": "在 Vim Normal 模式下自动缩进。代码遵循语言规则和缩进设置，清单按层级调整。", "zh-Hant": "在 Vim 一般模式下自動縮排。程式碼依語言規則和縮排設定調整，清單依層級調整。", "ja": "Vim のノーマルモードで自動インデント。コードは言語の規則とインデント設定、チェックリストは階層に従います。"},
+        {"keys": [">>", "<<"], "en": "Shift indentation in Vim Normal mode. Checklist descendants move with their parent.", "zh-Hans": "在 Vim Normal 模式下缩进或反缩进。清单子项随父项一起移动。", "zh-Hant": "在 Vim 一般模式下增加或減少縮排。清單子項會跟隨父項移動。", "ja": "Vim のノーマルモードでインデントを増減。チェックリストの子項目は親項目と一緒に移動します。"},
         {"keys": ["⌘Z", "⌘⇧Z"], "en": "Undo / redo (with Vim off)", "zh-Hans": "撤销 / 重做（关闭 Vim 时）", "zh-Hant": "復原 / 重做（關閉 Vim 時）", "ja": "取り消し / やり直し（Vim オフ時）"}
       ]
     }

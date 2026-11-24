@@ -40,13 +40,13 @@ test('every shortcut row is described in every language', async () => {
 test('every palette command has a searchable keyword in every help language', async () => {
   const { groups } = JSON.parse(await read('help/commands.json'));
   const rows = groups.flatMap(group => group.rows);
-  const original = { language: lang(), windowPinned: app.windowPinned, vimEnabled: app.vimEnabled };
+  const original = { language: lang(), windowPinMode: app.windowPinMode, vimEnabled: app.vimEnabled };
   try {
     for (const language of languages) {
       setLanguage(language);
       const labels = new Map(rows.map(row => [row.id, new Set()]));
-      for (const enabled of [false, true]) {
-        app.windowPinned = enabled;
+      for (const [pinMode, enabled] of [['off', false], ['keepOpen', true], ['alwaysOnTop', true]]) {
+        app.windowPinMode = pinMode;
         app.vimEnabled = enabled;
         const commands = availableCommands({ includeUnavailable: true });
         assert.deepEqual(rows.map(row => row.id).sort(), commands.map(command => command.id).sort());
@@ -62,7 +62,7 @@ test('every palette command has a searchable keyword in every help language', as
     }
   } finally {
     setLanguage(original.language);
-    app.windowPinned = original.windowPinned;
+    app.windowPinMode = original.windowPinMode;
     app.vimEnabled = original.vimEnabled;
   }
 });

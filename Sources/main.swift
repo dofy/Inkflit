@@ -110,11 +110,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         window = NotePanel(contentRect: NSRect(origin: .zero, size: defaultSize), styleMask: [.borderless, .resizable], backing: .buffered, defer: false)
         window.title = "Inkflit"; window.minSize = NSSize(width: min(300, defaultSize.width), height: min(280, defaultSize.height))
         // Keep the note below system overlays such as macOS screenshot selection.
-        window.isFloatingPanel = false; window.level = .normal; window.hidesOnDeactivate = false
+        window.isFloatingPanel = false; window.hidesOnDeactivate = false
         // Join the active Space of the display it is shown on instead of pulling
         // the user back to the Space where the note was last open.
-        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-        window.isOpaque = false; window.backgroundColor = .clear; window.hasShadow = true
+        windowPinMode.apply(to: window)
+        window.isOpaque = false; window.backgroundColor = .clear
+        // The system shadow adds a rectangular rim around this rounded, transparent panel.
+        window.hasShadow = false
         let container = NSView(frame: NSRect(origin: .zero, size: window.frame.size))
         container.wantsLayer = true; container.layer?.cornerRadius = 12; container.layer?.masksToBounds = true
         backdrop = NSVisualEffectView(frame: container.bounds); backdrop.blendingMode = .behindWindow; backdrop.material = .underWindowBackground; backdrop.state = .active
@@ -132,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             guard let self, !self.isolatedTest, self.window.isVisible,
                   let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   activated.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
-            self.hideWindow(unlessPinned: true)
+            self.hideWindow(automatically: true)
         }
         let url = Bundle.main.resourceURL!.appendingPathComponent("web/index.html")
         web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
@@ -322,7 +324,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     private func syncVimDoubleEscape() {
         web.evaluateJavaScript("window.setVimDoubleEscape?.(\(vimDoubleEscape() ? "true" : "false"))", completionHandler: nil)
     }
-    private var windowPinned: Bool { UserDefaults.standard.bool(forKey: "windowPinned") }
+    private var windowPinMode: WindowPinMode { WindowPinMode.current() }
     func codeIndentation() -> String {
         let value = UserDefaults.standard.string(forKey: "codeIndentation") ?? "spaces2"
         return ["spaces2", "spaces4", "tabs"].contains(value) ? value : "spaces2"
@@ -335,6 +337,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
     func syncCodeIndentation() {
         let value = codeIndentation()
         web.evaluateJavaScript("window.setCodeIndentation?.('\(value)')", completionHandler: nil)
+    }
+    private func codeLineNumbers() -> CodeLineNumberPreferences {
+        let defaults = UserDefaults.standard
+        return CodeLineNumberPreferences(enabled: defaults.bool(forKey: "showCodeLineNumbers"),
+                                         relative: defaults.bool(forKey: "relativeCodeLineNumbers"))
+    }
+    private func updateCodeLineNumbers(_ preferences: CodeLineNumberPreferences) {
+        let defaults = UserDefaults.standard
+        defaults.set(preferences.enabled, forKey: "showCodeLineNumbers")
+        defaults.set(preferences.relative, forKey: "relativeCodeLineNumbers")
+        syncCodeLineNumbers()
+    }
+    private func syncCodeLineNumbers() {
+        let preferences = codeLineNumbers()
+        web.evaluateJavaScript("window.setCodeLineNumbers?.(\(preferences.enabled), \(preferences.relative))", completionHandler: nil)
     }
     func codeTheme() -> String { CodeThemes.validID(UserDefaults.standard.string(forKey: "codeTheme")) }
     func updateCodeTheme(_ value: String) {
@@ -417,10 +434,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if !isolatedTest { if hotKey != nil || hotKeyDisabled { updateHotKeyLabel() } else { reportHotKeyFailure() } }
     }
     @objc func showSettings() {
-        hideWindow(unlessPinned: true)
         makeSettingsController()
-        if reopenLanguageSettings { settingsController?.select(.general); reopenLanguageSettings = false }
-        settingsController?.show()
+        guard let settingsController, let settingsWindow = settingsController.window else { return }
+        prepareNoteWindow()
+        window.orderFrontRegardless()
+        if !settingsWindow.isVisible, let screen = window.screen {
+            let origin = WindowPlacement.settingsOrigin(settingsWindow.frame, beside: window.frame, in: screen.visibleFrame)
+            settingsWindow.setFrameOrigin(origin)
+        }
+        if reopenLanguageSettings { settingsController.select(.general); reopenLanguageSettings = false }
+        settingsController.show(previewing: window)
     }
     private func withSettings(_ tab: SettingsController.Tab, _ action: (SettingsController) -> Void) {
         showSettings()
@@ -465,6 +488,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 setVimDoubleEscape: { [weak self] value in self?.updateVimDoubleEscape(value) },
                 getIndentation: { [weak self] in self?.codeIndentation() ?? "spaces2" },
                 setIndentation: { [weak self] value in self?.updateCodeIndentation(value) },
+                getCodeLineNumbers: { [weak self] in self?.codeLineNumbers() ?? CodeLineNumberPreferences() },
+                setCodeLineNumbers: { [weak self] value in self?.updateCodeLineNumbers(value) },
                 getTheme: { [weak self] in self?.codeTheme() ?? CodeThemes.defaultID },
                 setTheme: { [weak self] value in self?.updateCodeTheme(value) },
                 getAppearance: { [weak self] in self?.windowAppearance() ?? WindowAppearance(theme: "orange", opacity: 100, blur: 0) },
@@ -530,8 +555,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
     }
     @objc func showWindow() {
+        showNoteWindow()
+    }
+    private func showNoteWindow(followPointer: Bool = false) {
+        prepareNoteWindow(followPointer: followPointer)
+        NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil)
+    }
+    private func prepareNoteWindow(followPointer: Bool = false) {
         hideGeneration += 1; hidePending = false
-        if !window.isVisible || !window.isOnActiveSpace, let target = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) {
+        let pointer = NSEvent.mouseLocation
+        if let target = NSScreen.screens.first(where: { $0.frame.contains(pointer) }),
+           !window.isVisible || !window.isOnActiveSpace || (followPointer && window.screen?.frame != target.frame) {
             let source = window.screen?.visibleFrame ?? target.visibleFrame
             let savedSize = savedWindowSize()
             let anchor = savedWindowAnchor(source: source, size: savedSize ?? window.frame.size) ?? WindowPlacement.anchor(window.frame, in: source)
@@ -539,12 +573,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             let frame = WindowPlacement.frame(size: size, anchor: anchor, in: target.visibleFrame)
             if frame != window.frame { relocatingWindow = true; window.setFrame(frame, display: false); relocatingWindow = false }
         }
-        NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil); web.evaluateJavaScript("window.focusEditor?.()", completionHandler: nil)
     }
     @objc func showSearch() { showWindow(); web.evaluateJavaScript("window.openNoteSearch?.()", completionHandler: nil) }
     func toggleWindow() {
-        if !hidePending && window.isVisible && window.isKeyWindow { hideWindow(unlessPinned: true) }
-        else { showWindow() }
+        if canHideAutomatically && !hidePending && window.isVisible && window.isKeyWindow { hideWindow(automatically: true) }
+        else { showNoteWindow(followPointer: true) }
     }
     func inputSourceID(_ source: TISInputSource) -> String? {
         guard let pointer = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
@@ -565,7 +598,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         savedInputSource = nil; forcedInputSourceID = nil
     }
     func applicationDidResignActive(_ notification: Notification) {
-        if !isolatedTest && window?.isVisible == true { hideWindow(unlessPinned: true) }
+        if !isolatedTest && window?.isVisible == true { hideWindow(automatically: true) }
     }
     func windowDidBecomeKey(_ notification: Notification) { updateInputSource() }
     func windowDidResignKey(_ notification: Notification) {
@@ -642,8 +675,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         return .terminateLater
     }
-    func hideWindow(unlessPinned: Bool = false) {
-        guard !unlessPinned || !windowPinned else { return }
+    private var canHideAutomatically: Bool {
+        guard windowPinMode == .off else { return false }
+        guard let settings = settingsController?.window else { return true }
+        return !settings.isVisible || settings.isMiniaturized
+    }
+    func hideWindow(automatically: Bool = false) {
+        guard !automatically || canHideAutomatically else { return }
         hideGeneration += 1; hidePending = true; let request = hideGeneration
         requestFlush { [weak self] success, _ in
             guard let self, self.hideGeneration == request else { return }
@@ -652,7 +690,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 guard let self, self.hideGeneration == request else { return }
                 if let error { self.showError(L("error.saveFailedDetail") + error.localizedDescription); self.showWindow(); return }
                 self.hidePending = false
-                guard !unlessPinned || !self.windowPinned else { return }
+                guard !automatically || self.canHideAutomatically else { return }
                 self.restoreInputSource(); self.window.orderOut(nil)
             }
         }
@@ -663,9 +701,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         syncSnippetPreferences()
         syncLanguage()
         syncCodeIndentation()
+        syncCodeLineNumbers()
         syncVimEnabled()
         syncVimDoubleEscape()
-        web.evaluateJavaScript("window.setWindowPinned?.(\(windowPinned ? "true" : "false"))", completionHandler: nil)
+        web.evaluateJavaScript("window.setWindowPinMode?.('\(windowPinMode.rawValue)')", completionHandler: nil)
         if let history = javaScriptJSON(UserDefaults.standard.stringArray(forKey: "commandPaletteHistory") ?? []) {
             web.evaluateJavaScript("window.setCommandHistory?.(\(history))", completionHandler: nil)
         }
@@ -784,6 +823,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_NOTE_PAPER_TEST"] == "1" {
             NativeCodeEditingTest.startNotePaper(self)
         }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CODE_LINE_NUMBERS_TEST"] == "1" {
+            NativeCodeEditingTest.startCodeLineNumbers(self)
+        }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_BLOCK_CALC_TEST"] == "1" {
             NativeCodeEditingTest.startBlockCalculation(self)
         }
@@ -798,6 +840,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_VIM_BOUNDARIES_TEST"] == "1" {
             NativeCodeEditingTest.startVimBoundaries(self)
+        }
+        if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_CHECKLIST_PREFIX_TEST"] == "1" {
+            NativeCodeEditingTest.startChecklistPrefix(self)
         }
         if isolatedTest && ProcessInfo.processInfo.environment["INKFLIT_VIM_TOGGLE_TEST"] == "1" {
             NativeCodeEditingTest.startVimToggle(self)
@@ -1051,10 +1096,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
             let value = body["value"] as? String ?? ""
             switch action {
             case "settings": showSettings()
-            case "hide-window": hideWindow(unlessPinned: true)
+            case "hide-window": hideWindow(automatically: true)
             case "pin-window":
-                guard value == "on" || value == "off" else { return }
-                UserDefaults.standard.set(value == "on", forKey: "windowPinned")
+                guard let mode = WindowPinMode(rawValue: value) else { return }
+                UserDefaults.standard.set(mode.rawValue, forKey: "windowPinMode")
+                mode.apply(to: window)
             case "quit": NSApp.terminate(nil)
             case "record-shortcut": withSettings(.general) { $0.recordGlobalShortcut() }
             case "clear-shortcut":
@@ -1110,6 +1156,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 updateWindowAppearance(appearance); settingsController?.refresh()
             case "code-theme": updateCodeTheme(value); settingsController?.refresh()
             case "indent": updateCodeIndentation(value); settingsController?.refresh()
+            case "code-line-numbers", "relative-line-numbers":
+                guard value == "on" || value == "off" else { return }
+                var numbers = codeLineNumbers()
+                if action == "code-line-numbers" {
+                    numbers.enabled = value == "on"
+                } else {
+                    guard numbers.enabled else { return }
+                    numbers.relative = value == "on"
+                }
+                updateCodeLineNumbers(numbers)
+                settingsController?.refresh()
             case "language":
                 guard value == "system" || Localization.supported.contains(value) else { return }
                 UserDefaults.standard.set(value, forKey: "language"); syncLanguage()
@@ -1135,6 +1192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                 settingsController?.refresh()
             case "state":
                 let appearance = windowAppearance(), defaults = UserDefaults.standard
+                let numbers = codeLineNumbers()
                 let limit = NoteFiles.backupVersionLimit(defaults)
                 let login = loginItemStatus()
                 let state: [String: String] = [
@@ -1145,6 +1203,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKSc
                     "note-paper": appearance.paper.rawValue, "texture-strength": String(appearance.textureStrength),
                     "vim-double-escape": vimDoubleEscape() ? "on" : "off",
                     "code-theme": codeTheme(), "indent": codeIndentation(), "language": Localization.preference,
+                    "code-line-numbers": numbers.enabled ? "on" : "off",
+                    "relative-line-numbers": numbers.relative ? "on" : "off",
                     "opacity": String(appearance.opacity), "blur": String(appearance.blur),
                     "backup": limit == 0 ? "off" : limit < 0 ? "unlimited" : String(limit),
                     "login": login == .enabled || login == .requiresApproval ? "on" : "off"]
